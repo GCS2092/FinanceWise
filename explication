@@ -1,0 +1,108 @@
+📱💰 FinanceWise
+
+👉 Application de gestion budgétaire intelligente (Sénégal)
+
+🎯 Vision de FinanceWise
+
+FinanceWise est une application mobile ultra simple qui aide les utilisateurs à comprendre et contrôler leur argent sans effort, adaptée au contexte sénégalais (FCFA, Wave, Orange Money, revenus irréguliers).
+
+👉 Objectif :
+
+“Ouvrir l’app → voir où va ton argent en 3 secondes”
+
+⚡ Fonctionnalités clés de FinanceWise
+🟢 1. Dashboard principal (cœur de l’app)
+
+Flutter
+
+C’est l’écran unique principal :
+
+💰 Solde actuel
+📉 Dépenses du mois
+💸 Revenus du mois
+📊 Top catégories de dépenses
+⚠️ alertes budget dépassé
+
+👉 Aucun menu complexe
+👉 Tout est visible immédiatement
+
+🧠 2. Détection automatique des dépenses (zéro effort)
+Lecture des SMS Wave / Orange Money
+Analyse des notifications
+Ajout automatique des transactions
+
+👉 L’utilisateur ne saisit presque rien
+
+🏷️ 3. Catégorisation intelligente
+
+Les dépenses sont automatiquement classées :
+
+🍲 Nourriture (street food, restaurants)
+🚖 Transport (car rapide, taxi, Yango)
+📶 Internet / data mobile
+💰 Mobile money / transferts
+🎁 dépenses personnelles
+🏫 école / université
+📊 4. Gestion de budget simple
+budget mensuel par catégorie
+suivi automatique
+barres de progression
+alertes si dépassement
+📥 5. Ajout manuel minimal
+bouton “Ajouter une dépense”
+2 champs max :
+montant
+catégorie
+
+👉 rapide et optionnel
+
+🔔 6. Notifications intelligentes
+budget dépassé
+dépenses anormales
+résumé hebdomadaire
+alertes économies possibles
+☁️ 7. Synchronisation backend
+
+Laravel
+
+stockage sécurisé
+calcul automatique des budgets
+traitement des SMS
+génération des statistiques
+🔒 8. Sécurité et confidentialité
+données chiffrées
+authentification sécurisée (token)
+option mode offline
+aucune dépendance externe visible pour l’utilisateur
+📱 Expérience utilisateur (UX de FinanceWise)
+
+👉 L’utilisateur fait seulement 3 actions :
+
+Installer FinanceWise 📲
+Se connecter 🔐
+Consulter son argent 💰
+
+👉 Tout le reste est automatique.
+
+🚀 Valeur unique de FinanceWise
+
+✔️ Ultra simple
+✔️ Automatique (zéro saisie)
+✔️ Adaptée Sénégal (FCFA + mobile money)
+✔️ Compréhension financière instantanée
+✔️ Compatible revenus irréguliers
+
+🧠 Résumé en une phrase
+
+FinanceWise est une application qui transforme automatiquement les transactions Wave et Orange Money en un tableau de bord simple permettant de comprendre et contrôler son argent sans effort.
+💡 Positionnement produit
+
+FinanceWise n’est pas :
+❌ une app compliquée de finance
+❌ un tableur déguisé
+❌ une app bancaire
+
+👉 C’est :
+✔️ un assistant financier automatique
+✔️ simple comme Wave
+✔️ intelligent en arrière-plan

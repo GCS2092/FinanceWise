@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Category extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'icon',
+        'color',
+        'type',
+        'is_system',
+        'user_id',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_system' => 'boolean',
+        ];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function budgets()
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    public function scopeDefaultCategories($query)
+    {
+        return $query->where('is_system', true);
+    }
+
+    public function scopeUserCategories($query, $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->where('is_system', true)
+              ->orWhere('user_id', $userId);
+        });
+    }
+}
