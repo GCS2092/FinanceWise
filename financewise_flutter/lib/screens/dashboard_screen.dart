@@ -3,6 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/sms_listener_service.dart';
+import '../services/pending_sms_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import 'transaction_form_screen.dart';
 import 'sms_parser_screen.dart';
@@ -20,11 +22,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? _data;
   String? _error;
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
+  SmsListenerService? _smsListener;
 
   @override
   void initState() {
     super.initState();
     _loadDashboard();
+    _initSmsListener();
+    _checkPendingSms();
+  }
+
+  void _initSmsListener() {
+    _smsListener = SmsListenerService.getInstance(
+      context: context,
+      onTransactionAdded: _loadDashboard,
+    );
+    _smsListener?.startListening();
+  }
+
+  Future<void> _checkPendingSms() async {
+    // Vérifier s'il y a un SMS en attente (quand l'app s'ouvre depuis une notification)
+    await PendingSmsService.showPendingSmsDialog(context);
+  }
+
+  @override
+  void dispose() {
+    _smsListener?.stopListening();
+    super.dispose();
   }
 
   Future<void> _loadDashboard() async {

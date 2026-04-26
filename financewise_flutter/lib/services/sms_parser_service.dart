@@ -40,12 +40,17 @@ class SmsParserService {
   // Mots-clés génériques pour la détection de type
   static const List<String> _creditKeywords = [
     'reçu', 'crédit', 'recu', 'credit', 'déposé', 'deposit', 'entré', 'entree',
-    'encaissement', 'reception', 'recu'
+    'encaissement', 'reception', 'recu', 'gagné', 'gagne', 'versement',
+    'ajouté', 'ajoute', 'crédité', 'credite', 'receptionné', 'recptionne'
   ];
   
   static const List<String> _debitKeywords = [
     'envoyé', 'envoye', 'payé', 'paye', 'débit', 'debit', 'sorti', 'sortie',
-    'transfert', 'paiement', 'achat', 'dépense', 'depense', 'retrait', 'cash'
+    'transfert', 'paiement', 'achat', 'dépense', 'depense', 'retrait', 'cash',
+    'déduit', 'deduit', 'prélevé', 'preleve', 'déboursé', 'debourse',
+    'versé', 'verse', 'retiré', 'retire', 'dépensé', 'depense', 'max', 'montant',
+    'sommes', 'somme', 'argent', 'argent', 'coût', 'cout', 'prix', 'reglement',
+    'reglement', 'facture', 'ticket', 'commande', 'commande'
   ];
 
   // Parser avec les catégories existantes
