@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../widgets/onboarding_tooltip.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +15,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _api = ApiService();
   Map<String, dynamic>? _stats;
   bool _loading = true;
+  final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
 
   @override
   void initState() {
@@ -36,45 +38,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadStats,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                    child: Icon(Icons.person, size: 48, color: Theme.of(context).colorScheme.primary),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      user?.name ?? 'Utilisateur',
-                      style: Theme.of(context).textTheme.headlineSmall,
+      appBar: AppBar(
+        title: const Text('Profil'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => _tooltipKey.currentState?.showTooltip(),
+            tooltip: 'Aide',
+          ),
+        ],
+      ),
+      body: OnboardingTooltip(
+        key: _tooltipKey,
+        screenName: 'profile',
+        title: 'Votre Profil',
+        description: 'Gérez vos informations personnelles et voyez vos statistiques.',
+        additionalTips: [
+          TooltipItem(
+            icon: Icons.person,
+            title: 'Informations',
+            description: 'Vos nom et email enregistrés',
+          ),
+          TooltipItem(
+            icon: Icons.account_balance_wallet,
+            title: 'Statistiques',
+            description: 'Vue d\'ensemble de vos finances',
+          ),
+          TooltipItem(
+            icon: Icons.settings,
+            title: 'Paramètres',
+            description: 'Accédez aux paramètres de l\'application',
+          ),
+          TooltipItem(
+            icon: Icons.logout,
+            title: 'Déconnexion',
+            description: 'Déconnectez-vous de votre compte',
+          ),
+        ],
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadStats,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Avatar
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      child: Icon(Icons.person, size: 48, color: Theme.of(context).colorScheme.primary),
                     ),
-                  ),
-                  Center(
-                    child: Text(
-                      user?.email ?? '',
-                      style: const TextStyle(color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Text(
+                        user?.name ?? 'Utilisateur',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        user?.email ?? '',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 8),
 
-                  // Statistiques
-                  ListTile(
-                    leading: const Icon(Icons.account_balance_wallet, color: Colors.green),
-                    title: const Text('Solde total'),
-                    trailing: Text(
-                      '${_stats?['balance'] ?? 0} XOF',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    // Statistiques
+                    ListTile(
+                      leading: const Icon(Icons.account_balance_wallet, color: Colors.green),
+                      title: const Text('Solde total'),
+                      trailing: Text(
+                        '${_stats?['balance'] ?? 0} XOF',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
                   ListTile(
                     leading: const Icon(Icons.trending_up, color: Colors.green),
                     title: const Text('Revenus (mois)'),
@@ -112,7 +151,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
-            ),
+          ),
+      ),
     );
   }
 }

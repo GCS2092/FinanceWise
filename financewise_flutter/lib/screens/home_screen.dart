@@ -16,6 +16,7 @@ import 'financial_goals_screen.dart';
 import 'payment_reminders_screen.dart';
 import 'recommendations_screen.dart';
 import 'profile_screen.dart';
+import 'alerts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -58,6 +59,17 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: const Icon(Icons.notifications),
+              title: const Text('Alertes'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AlertsScreen()),
+                );
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.lightbulb),
               title: const Text('Recommandations IA'),

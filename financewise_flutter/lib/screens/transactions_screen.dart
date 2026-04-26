@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/onboarding_tooltip.dart';
 import 'transaction_form_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   List<dynamic> _filteredTransactions = [];
   bool _loading = true;
   String? _error;
+  final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
   
   // Filtres
   String _searchQuery = '';
@@ -164,6 +166,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         title: const Text('Transactions'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => _tooltipKey.currentState?.showTooltip(),
+            tooltip: 'Aide',
+          ),
+          IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
           ),
@@ -175,52 +182,79 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          // Barre de recherche
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Rechercher...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() => _searchQuery = '');
+      body: OnboardingTooltip(
+        key: _tooltipKey,
+        screenName: 'transactions',
+        title: 'Vos Transactions',
+        description: 'Gérez toutes vos transactions ici : revenus, dépenses, et filtres.',
+        additionalTips: [
+          TooltipItem(
+            icon: Icons.search,
+            title: 'Recherche',
+            description: 'Tapez pour rechercher une transaction par description ou catégorie',
+          ),
+          TooltipItem(
+            icon: Icons.filter_list,
+            title: 'Filtres',
+            description: 'Filtrez par type, catégorie, date ou montant',
+          ),
+          TooltipItem(
+            icon: Icons.swipe,
+            title: 'Actions Rapides',
+            description: 'Swipe gauche pour modifier, swipe droit pour supprimer',
+          ),
+          TooltipItem(
+            icon: Icons.add,
+            title: 'Ajouter',
+            description: 'Utilisez le bouton + pour ajouter une nouvelle transaction',
+          ),
+        ],
+        child: Column(
+          children: [
+            // Barre de recherche
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Rechercher...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() => _searchQuery = '');
+                            _applyFilters();
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (value) {
+                  _searchQuery = value;
+                  _applyFilters();
+                },
+              ),
+            ),
+            // Chips de filtres actifs
+            if (_selectedType != null || _selectedCategory != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    if (_selectedType != null)
+                      Chip(
+                        label: Text(_selectedType == 'income' ? 'Revenus' : 'Dépenses'),
+                        onDeleted: () {
+                          setState(() => _selectedType = null);
                           _applyFilters();
                         },
-                      )
-                    : null,
-              ),
-              onChanged: (value) {
-                _searchQuery = value;
-                _applyFilters();
-              },
-            ),
-          ),
-          // Chips de filtres actifs
-          if (_selectedType != null || _selectedCategory != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Wrap(
-                spacing: 8,
-                children: [
-                  if (_selectedType != null)
-                    Chip(
-                      label: Text(_selectedType == 'income' ? 'Revenus' : 'Dépenses'),
-                      onDeleted: () {
-                        setState(() => _selectedType = null);
-                        _applyFilters();
-                      },
-                    ),
-                  if (_selectedCategory != null)
-                    Chip(
-                      label: Text(_selectedCategory!),
-                      onDeleted: () {
-                        setState(() => _selectedCategory = null);
+                      ),
+                    if (_selectedCategory != null)
+                      Chip(
+                        label: Text(_selectedCategory!),
+                        onDeleted: () {
+                          setState(() => _selectedCategory = null);
                         _applyFilters();
                       },
                     ),
@@ -326,6 +360,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             ),
                   ),
         ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {

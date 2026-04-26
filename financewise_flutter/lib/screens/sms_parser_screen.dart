@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/sms_parser_service.dart';
+import '../widgets/sms_confirmation_dialog.dart';
 
 class SmsParserScreen extends StatefulWidget {
   const SmsParserScreen({super.key});
@@ -21,31 +23,46 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
 
   Future<void> _parseSms() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    final message = _contentCtrl.text.trim();
+    final sender = _provider == 'wave' ? 'Wave' : 'Orange Money';
+    
     setState(() {
       _parsing = true;
       _error = null;
       _result = null;
     });
+    
     try {
-      final response = await _api.post('/sms/parse', {
-        'provider': _provider,
-        'raw_content': _contentCtrl.text.trim(),
-      });
+      // Utiliser le service de parsing avec catégories
+      final parserService = SmsParserService();
+      final transaction = await parserService.parseSmsWithCategories(message, sender);
+      
+      if (transaction == null) {
+        setState(() {
+          _error = 'Aucune transaction détectée dans ce SMS';
+          _parsing = false;
+        });
+        return;
+      }
+      
       setState(() {
-        _result = response['message'] ?? 'SMS traité';
         _parsing = false;
       });
       
-      // Notification de succès
-      await NotificationService().showNotification(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        title: 'SMS Parsé',
-        body: _result ?? 'SMS traité avec succès',
-      );
+      // Afficher le dialogue de confirmation
+      final confirmed = await showSmsConfirmationDialog(context, transaction);
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_result!)));
+      if (confirmed == true && mounted) {
+        setState(() {
+          _result = 'Transaction ajoutée avec succès';
+        });
+      } else if (confirmed == false && mounted) {
+        setState(() {
+          _result = 'Transaction ignorée';
+        });
       }
+      
     } catch (e) {
       setState(() {
         _error = e.toString();

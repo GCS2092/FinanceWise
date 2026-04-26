@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,54 +14,169 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  final ApiService _api = ApiService();
+  
+  // Données onboarding
+  final _incomeController = TextEditingController();
+  final List<Map<String, dynamic>> _wallets = [];
+  final List<Map<String, dynamic>> _budgets = [];
+  bool _loading = false;
+  List<dynamic> _categories = [];
+  bool _loadingCategories = true;
 
-  final List<OnboardingPage> _pages = [
-    OnboardingPage(
+  final List<OnboardingStep> _steps = [
+    OnboardingStep(
       title: 'Bienvenue sur FinanceWise',
-      description: 'Gérez vos finances facilement et automatiquement.',
+      description: 'Votre assistant financier personnel pour gérer vos finances au Sénégal.',
       icon: Icons.account_balance_wallet,
       color: Colors.blue,
+      isInteractive: false,
     ),
-    OnboardingPage(
-      title: 'Suivez vos transactions',
-      description: 'Ajoutez vos dépenses et revenus en quelques clics.',
-      icon: Icons.receipt_long,
+    OnboardingStep(
+      title: 'Définissez votre revenu mensuel',
+      description: 'Entrez votre revenu mensuel estimé pour suivre vos finances et recevoir des alertes intelligentes.',
+      icon: Icons.attach_money,
       color: Colors.green,
+      isInteractive: true,
     ),
-    OnboardingPage(
-      title: 'Analysez vos dépenses',
-      description: 'Visualisez vos finances avec des graphiques clairs.',
-      icon: Icons.bar_chart,
+    OnboardingStep(
+      title: 'Configurez vos portefeuilles',
+      description: 'Ajoutez vos comptes : Wave, Orange Money, Banque, Espèces, etc.',
+      icon: Icons.account_balance,
       color: Colors.orange,
+      isInteractive: true,
     ),
-    OnboardingPage(
-      title: 'Automatisez avec SMS',
-      description: 'Collez vos SMS Wave/Orange Money pour les parser automatiquement.',
-      icon: Icons.sms,
+    OnboardingStep(
+      title: 'Définissez vos budgets (optionnel)',
+      description: 'Créez des budgets par catégorie pour contrôler vos dépenses.',
+      icon: Icons.pie_chart,
       color: Colors.purple,
+      isInteractive: true,
     ),
   ];
 
   Future<void> _completeOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_completed', true);
+    setState(() => _loading = true);
     
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => HomeScreen()),
-      );
+    try {
+      // Sauvegarder les données onboarding
+      final response = await _api.post('/user/onboarding', {
+        'monthly_income_target': double.tryParse(_incomeController.text) ?? 0,
+        'wallets': _wallets,
+        'budgets': _budgets,
+      });
+      
+      if (mounted) {
+        final walletsCreated = response['wallets_created'] ?? 0;
+        final budgetsCreated = response['budgets_created'] ?? 0;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Onboarding terminé ! $walletsCreated portefeuilles créés, $budgetsCreated budgets créés'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _addWallet() {
+    setState(() {
+      _wallets.add({
+        'name': '',
+        'balance': 0,
+        'type': 'cash',
+      });
+    });
+  }
+
+  void _removeWallet(int index) {
+    setState(() {
+      _wallets.removeAt(index);
+    });
+  }
+
+  void _addBudget() {
+    setState(() {
+      _budgets.add({
+        'category_id': null,
+        'amount': 0,
+        'period': 'monthly',
+      });
+    });
+  }
+
+  void _removeBudget(int index) {
+    setState(() {
+      _budgets.removeAt(index);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final result = await _api.get('/categories');
+      if (result is Map && result['data'] is List) {
+        setState(() {
+          _categories = result['data'];
+          _loadingCategories = false;
+        });
+      } else if (result is List) {
+        setState(() {
+          _categories = result;
+          _loadingCategories = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _loadingCategories = false;
+      });
     }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _incomeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Configuration'),
+        actions: [
+          TextButton(
+            onPressed: _loading ? null : _completeOnboarding,
+            child: _loading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Terminer'),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -69,61 +186,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPageChanged: (index) {
                   setState(() => _currentPage = index);
                 },
-                itemCount: _pages.length,
+                itemCount: _steps.length,
                 itemBuilder: (context, index) {
-                  return OnboardingPageWidget(page: _pages[index]);
+                  return _buildStep(_steps[index]);
                 },
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 8,
-                        width: _currentPage == index ? 24 : 8,
-                        decoration: BoxDecoration(
-                          color: _currentPage == index 
-                              ? Theme.of(context).primaryColor 
-                              : Colors.grey,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _steps.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 8,
+                    width: _currentPage == index ? 24 : 8,
+                    decoration: BoxDecoration(
+                      color: _currentPage == index 
+                          ? Theme.of(context).primaryColor 
+                          : Colors.grey,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _currentPage == _pages.length - 1
-                          ? _completeOnboarding
-                          : () {
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            },
-                      child: Text(
-                        _currentPage == _pages.length - 1 
-                            ? 'Commencer' 
-                            : 'Suivant',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  if (_currentPage < _pages.length - 1)
-                    TextButton(
-                      onPressed: _completeOnboarding,
-                      child: const Text('Ignorer'),
-                    ),
-                ],
+                ),
               ),
             ),
           ],
@@ -131,65 +218,591 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
-}
 
-class OnboardingPage {
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
+  Widget _buildStep(OnboardingStep step) {
+    if (!step.isInteractive) {
+      return _buildInfoStep(step);
+    } else {
+      switch (step.title) {
+        case 'Définissez votre revenu mensuel':
+          return _buildIncomeStep(step);
+        case 'Configurez vos portefeuilles':
+          return _buildWalletsStep(step);
+        case 'Définissez vos budgets (optionnel)':
+          return _buildBudgetsStep(step);
+        default:
+          return _buildInfoStep(step);
+      }
+    }
+  }
 
-  OnboardingPage({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-  });
-}
+  Widget _buildInfoStep(OnboardingStep step) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: step.color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(60),
+              ),
+              child: Icon(step.icon, size: 60, color: step.color),
+            ),
+            const SizedBox(height: 48),
+            Text(
+              step.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              step.description,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (step.title == 'Découvrez les fonctionnalités') ...[
+              const SizedBox(height: 32),
+              _buildFeaturesGuide(),
+            ],
+            if (step.title == 'Votre Dashboard') ...[
+              const SizedBox(height: 32),
+              _buildDashboardGuide(),
+            ],
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_currentPage > 0)
+                  TextButton(
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: const Text('Précédent'),
+                  ),
+                if (_currentPage < _steps.length - 1)
+                  ElevatedButton(
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: const Text('Suivant'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-class OnboardingPageWidget extends StatelessWidget {
-  final OnboardingPage page;
-
-  const OnboardingPageWidget({super.key, required this.page});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildIncomeStep(OnboardingStep step) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: page.color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(60),
+              color: step.color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(40),
             ),
-            child: Icon(
-              page.icon,
-              size: 60,
-              color: page.color,
-            ),
+            child: Icon(step.icon, size: 40, color: step.color),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 32),
           Text(
-            page.title,
+            step.title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
-            page.description,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            step.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          TextField(
+            controller: _incomeController,
+            decoration: const InputDecoration(
+              labelText: 'Revenu mensuel (XOF)',
+              prefixIcon: Icon(Icons.money),
+              suffixText: 'XOF',
+              hintText: 'Ex: 300000',
+            ),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Cette information permet de comparer vos revenus réels avec vos objectifs.',
+                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Précédent'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Suivant'),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+  Widget _buildWalletsStep(OnboardingStep step) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: step.color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(step.icon, size: 30, color: step.color),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            step.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _wallets.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.account_balance_wallet_outlined, 
+                             size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucun portefeuille ajouté',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Cliquez sur + pour ajouter',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _wallets.length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.account_balance),
+                          title: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Nom',
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onChanged: (value) {
+                              _wallets[index]['name'] = value;
+                            },
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _removeWallet(index),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _addWallet,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Ajouter'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: const Text('Suivant'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              _pageController.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: const Text('Précédent'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetsStep(OnboardingStep step) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: step.color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(step.icon, size: 30, color: step.color),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            step.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '(Optionnel - Vous pourrez ajouter des budgets plus tard)',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.grey[500],
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _budgets.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.pie_chart_outline, 
+                             size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucun budget défini',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Cliquez sur + pour ajouter (optionnel)',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _budgets.length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_loadingCategories)
+                                const CircularProgressIndicator()
+                              else
+                                DropdownButtonFormField<int>(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Catégorie',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  value: _budgets[index]['category_id'],
+                                  hint: const Text('Sélectionner une catégorie'),
+                                  items: _categories.map((cat) {
+                                    return DropdownMenuItem<int>(
+                                      value: cat['id'],
+                                      child: Text(cat['name'] ?? ''),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _budgets[index]['category_id'] = value;
+                                    });
+                                  },
+                                ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Montant (XOF)',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  _budgets[index]['amount'] = double.tryParse(value) ?? 0;
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removeBudget(index),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _addBudget,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Ajouter'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: const Text('Suivant'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              _pageController.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: const Text('Précédent'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturesGuide() {
+    final features = [
+      {
+        'icon': Icons.receipt_long,
+        'title': 'Transactions',
+        'description': 'Ajoutez et gérez toutes vos dépenses et revenus. Swipe pour modifier ou supprimer.',
+      },
+      {
+        'icon': Icons.category,
+        'title': 'Catégories',
+        'description': 'Organisez vos dépenses par catégorie (Nourriture, Transport, Wave, Orange Money, etc.).',
+      },
+      {
+        'icon': Icons.pie_chart,
+        'title': 'Budgets',
+        'description': 'Définissez des limites par catégorie et recevez des alertes automatiques.',
+      },
+      {
+        'icon': Icons.notifications_active,
+        'title': 'Rappels',
+        'description': 'Créez des rappels pour vos factures (loyer, Sénélec, SDE, Canal+).',
+      },
+      {
+        'icon': Icons.bar_chart,
+        'title': 'Statistiques',
+        'description': 'Visualisez vos dépenses avec des graphiques détaillés par catégorie.',
+      },
+      {
+        'icon': Icons.sms,
+        'title': 'Parser SMS',
+        'description': 'Collez vos SMS Wave/Orange Money pour les ajouter automatiquement.',
+      },
+    ];
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: features.length,
+        itemBuilder: (context, index) {
+          final feature = features[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.teal.withValues(alpha: 0.1),
+                child: Icon(feature['icon'] as IconData, color: Colors.teal, size: 20),
+              ),
+              title: Text(feature['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(feature['description'] as String, style: const TextStyle(fontSize: 12)),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDashboardGuide() {
+    final sections = [
+      {
+        'icon': Icons.account_balance_wallet,
+        'title': 'Solde Total',
+        'description': 'Somme de tous vos portefeuilles (Wave, Orange Money, Banque, Espèces).',
+      },
+      {
+        'icon': Icons.trending_up,
+        'title': 'Revenus du Mois',
+        'description': 'Total des revenus enregistrés ce mois-ci.',
+      },
+      {
+        'icon': Icons.trending_down,
+        'title': 'Dépenses du Mois',
+        'description': 'Total des dépenses enregistrées ce mois-ci.',
+      },
+      {
+        'icon': Icons.pie_chart,
+        'title': 'Répartition',
+        'description': 'Graphique montrant la répartition de vos dépenses par catégorie.',
+      },
+      {
+        'icon': Icons.notifications,
+        'title': 'Alertes',
+        'description': 'Notifications si vous dépassez vos budgets.',
+      },
+      {
+        'icon': Icons.list,
+        'title': 'Transactions Récentes',
+        'description': 'Dernières transactions ajoutées.',
+      },
+    ];
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: sections.length,
+        itemBuilder: (context, index) {
+          final section = sections[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.indigo.withValues(alpha: 0.1),
+                child: Icon(section['icon'] as IconData, color: Colors.indigo, size: 20),
+              ),
+              title: Text(section['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(section['description'] as String, style: const TextStyle(fontSize: 12)),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class OnboardingStep {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final bool isInteractive;
+
+  OnboardingStep({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.isInteractive,
+  });
 }

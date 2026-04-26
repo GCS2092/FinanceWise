@@ -32,6 +32,9 @@ class DashboardController extends Controller
 
         $balance = $user->wallets()->sum('balance');
 
+        $monthlyIncomeTarget = $user->monthly_income_target ?? 0;
+        $incomeProgress = $monthlyIncomeTarget > 0 ? ($totalIncome / $monthlyIncomeTarget) * 100 : 0;
+
         $topCategories = $user->transactions()
             ->where('type', 'expense')
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
@@ -70,10 +73,27 @@ class DashboardController extends Controller
             }
         }
 
+        // Alertes de revenu
+        if ($monthlyIncomeTarget > 0) {
+            if ($incomeProgress >= 100) {
+                $alerts[] = [
+                    'type' => 'success',
+                    'message' => "Objectif de revenu atteint ! (" . number_format($incomeProgress, 0) . "%)",
+                ];
+            } elseif ($incomeProgress >= 80) {
+                $alerts[] = [
+                    'type' => 'info',
+                    'message' => "Vous êtes à " . number_format($incomeProgress, 0) . "% de votre objectif de revenu",
+                ];
+            }
+        }
+
         return response()->json([
             'balance' => (float) $balance,
             'monthly_income' => (float) $totalIncome,
             'monthly_expense' => (float) $totalExpense,
+            'monthly_income_target' => (float) $monthlyIncomeTarget,
+            'income_progress' => (float) $incomeProgress,
             'top_categories' => $topCategories->map(function ($item) {
                 return [
                     'category' => new CategoryResource($item->category),

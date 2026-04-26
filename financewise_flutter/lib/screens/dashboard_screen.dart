@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/onboarding_tooltip.dart';
 import 'transaction_form_screen.dart';
 import 'sms_parser_screen.dart';
 
@@ -18,6 +19,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loading = true;
   Map<String, dynamic>? _data;
   String? _error;
+  final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
 
   @override
   void initState() {
@@ -69,18 +71,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Dashboard'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => _tooltipKey.currentState?.showTooltip(),
+              tooltip: 'Aide',
+            ),
+          ],
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadDashboard, child: const Text('Réessayer')),
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Dashboard'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => _tooltipKey.currentState?.showTooltip(),
+              tooltip: 'Aide',
+            ),
           ],
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: _loadDashboard, child: const Text('Réessayer')),
+            ],
+          ),
         ),
       );
     }
@@ -88,52 +114,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final balance = _data?['balance'] ?? 0;
     final income = _data?['monthly_income'] ?? 0;
     final expense = _data?['monthly_expense'] ?? 0;
+    final incomeTarget = _data?['monthly_income_target'] ?? 0;
+    final incomeProgress = _data?['income_progress'] ?? 0;
     final alerts = (_data?['alerts'] as List<dynamic>?) ?? [];
 
-    return RefreshIndicator(
-      onRefresh: _loadDashboard,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Actions rapides ──
-            Row(
-              children: [
-                Expanded(
-                  child: _QuickActionButton(
-                    icon: Icons.add,
-                    label: 'Transaction',
-                    color: Colors.blue,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TransactionFormScreen(),
-                        ),
-                      );
-                    },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => _tooltipKey.currentState?.showTooltip(),
+            tooltip: 'Aide',
+          ),
+        ],
+      ),
+      body: OnboardingTooltip(
+        key: _tooltipKey,
+        screenName: 'dashboard',
+        title: 'Bienvenue sur votre Dashboard',
+        description: 'C\'est votre vue d\'ensemble de vos finances. Ici vous pouvez voir votre solde, vos revenus et dépenses du mois.',
+        additionalTips: [
+          TooltipItem(
+            icon: Icons.account_balance_wallet,
+            title: 'Solde Total',
+            description: 'La somme de tous vos portefeuilles (Wave, Orange Money, Banque, Espèces)',
+          ),
+          TooltipItem(
+            icon: Icons.trending_up,
+            title: 'Revenus',
+            description: 'Total des revenus enregistrés ce mois',
+          ),
+          TooltipItem(
+            icon: Icons.trending_down,
+            title: 'Dépenses',
+            description: 'Total des dépenses enregistrées ce mois',
+          ),
+          TooltipItem(
+            icon: Icons.add,
+            title: 'Ajouter Transaction',
+            description: 'Cliquez pour ajouter une nouvelle dépense ou revenu',
+          ),
+          TooltipItem(
+            icon: Icons.sms,
+            title: 'Parser SMS',
+            description: 'Collez vos SMS Wave/Orange Money pour les ajouter automatiquement',
+          ),
+        ],
+      child: RefreshIndicator(
+        onRefresh: _loadDashboard,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Actions rapides ──
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickActionButton(
+                      icon: Icons.add,
+                      label: 'Transaction',
+                      color: Colors.blue,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TransactionFormScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _QuickActionButton(
-                    icon: Icons.sms,
-                    label: 'Parser SMS',
-                    color: Colors.purple,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SmsParserScreen(),
-                        ),
-                      );
-                    },
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickActionButton(
+                      icon: Icons.sms,
+                      label: 'Parser SMS',
+                      color: Colors.purple,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SmsParserScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             const SizedBox(height: 24),
             // ── Solde ──
             _buildCard(
@@ -166,7 +237,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+
+            // ── Objectif de revenu ──
+            if (incomeTarget > 0) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Objectif de revenu',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            '${incomeProgress.toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              color: incomeProgress >= 100 ? Colors.green : Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(
+                        value: (incomeProgress / 100).clamp(0, 1),
+                        backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          incomeProgress >= 100 ? Colors.green : Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Réalisé: ${_formatAmount(income)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            'Objectif: ${_formatAmount(incomeTarget)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ── Graphique Revenus/Dépenses ──
             Card(
@@ -242,6 +366,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildRecentTransactions(),
           ],
         ),
+      ),
+      ),
       ),
     );
   }
