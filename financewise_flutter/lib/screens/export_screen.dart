@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class ExportScreen extends StatefulWidget {
   const ExportScreen({super.key});
@@ -80,18 +81,46 @@ class _ExportScreenState extends State<ExportScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                      const SizedBox(height: 12),
+                      Text(_error!, style: const TextStyle(color: AppTheme.error)),
+                    ],
+                  ),
+                )
               : Column(
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Card(
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Transactions à exporter: ${_transactions.length}'),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.file_download, color: AppTheme.primary),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Export CSV', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                      Text('${_transactions.length} transactions', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                    ],
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 16),
                               SizedBox(
                                 width: double.infinity,
@@ -104,15 +133,15 @@ class _ExportScreenState extends State<ExportScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              const Text('Le CSV sera copié dans le presse-papier', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text('Le CSV sera copié dans le presse-papier', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Aperçu des données:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text('Aperçu des données', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                     ),
                     Expanded(
                       child: ListView.builder(

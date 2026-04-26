@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class PaymentReminderFormScreen extends StatefulWidget {
   final Map<String, dynamic>? paymentReminder;
@@ -90,18 +91,21 @@ class _PaymentReminderFormScreenState extends State<PaymentReminderFormScreen> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nom du rappel *',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.alarm),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Description',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.notes),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                alignLabelWithHint: true,
               ),
               maxLines: 3,
             ),
@@ -109,38 +113,51 @@ class _PaymentReminderFormScreenState extends State<PaymentReminderFormScreen> {
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Montant (XOF) *',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.money),
+                suffixText: 'XOF',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
             ),
             const SizedBox(height: 16),
-            ListTile(
-              title: const Text('Date d\'échéance *'),
-              subtitle: Text(_dueDate != null 
-                  ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}' 
-                  : 'Sélectionner'),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _dueDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(DateTime.now().year + 5),
-                );
-                if (date != null) {
-                  setState(() => _dueDate = date);
-                }
-              },
+            Card(
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary, size: 20),
+                ),
+                title: const Text('Date d\'échéance *'),
+                subtitle: Text(_dueDate != null 
+                    ? DateFormat('dd MMMM yyyy', 'fr_FR').format(_dueDate!)
+                    : 'Sélectionner'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _dueDate ?? DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(DateTime.now().year + 5),
+                  );
+                  if (date != null) {
+                    setState(() => _dueDate = date);
+                  }
+                },
+              ),
             ),
             const SizedBox(height: 16),
-            const Text('Fréquence', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Fréquence', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _selectedFrequency,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.repeat),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               items: _frequencies.map<DropdownMenuItem<String>>((freq) {
                 return DropdownMenuItem<String>(

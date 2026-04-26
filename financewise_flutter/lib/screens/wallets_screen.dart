@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
+import '../theme.dart';
 import 'wallet_form_screen.dart';
 
 class WalletsScreen extends StatefulWidget {
@@ -51,7 +52,11 @@ class _WalletsScreenState extends State<WalletsScreen> {
         content: const Text('Le wallet et ses transactions seront supprimés.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            child: const Text('Supprimer'),
+          ),
         ],
       ),
     );
@@ -118,29 +123,75 @@ class _WalletsScreenState extends State<WalletsScreen> {
             : RefreshIndicator(
                 onRefresh: _load,
                 child: _error != null
-                    ? ListView(children: [SizedBox(height: 200), Center(child: Text(_error!, style: TextStyle(color: Colors.red)))])
+                    ? ListView(
+                        children: [
+                          const SizedBox(height: 100),
+                          Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                          const SizedBox(height: 12),
+                          Center(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                          const SizedBox(height: 16),
+                          Center(child: ElevatedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Réessayer'))),
+                        ],
+                      )
                     : _wallets.isEmpty
-                        ? ListView(children: const [SizedBox(height: 200), Center(child: Text('Aucun wallet', style: TextStyle(color: Colors.grey)))])
+                        ? ListView(
+                            children: [
+                              const SizedBox(height: 80),
+                              Icon(Icons.account_balance_wallet_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                              const SizedBox(height: 16),
+                              Center(child: Text('Aucun portefeuille', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
+                              const SizedBox(height: 8),
+                              Center(child: Text('Ajoutez Wave, Orange Money, Banque...', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                            ],
+                          )
                         : ListView.separated(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(16),
                             itemCount: _wallets.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
                             itemBuilder: (_, i) {
                               final w = _wallets[i];
                               final balance = (w['balance'] ?? 0).toDouble();
                               return Card(
                                 child: ListTile(
+                                  contentPadding: const EdgeInsets.all(16),
                                   leading: CircleAvatar(
-                                    backgroundColor: balance >= 0 ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
-                                    child: Icon(Icons.account_balance_wallet, color: balance >= 0 ? Colors.green : Colors.red, size: 20),
+                                    backgroundColor: balance >= 0 
+                                      ? AppTheme.primary.withValues(alpha: 0.1) 
+                                      : AppTheme.error.withValues(alpha: 0.1),
+                                    child: Icon(
+                                      Icons.account_balance_wallet, 
+                                      color: balance >= 0 ? AppTheme.primary : AppTheme.error, 
+                                      size: 24,
+                                    ),
                                   ),
-                                  title: Text(w['name'] ?? 'Wallet'),
-                                  subtitle: Text('${w['type']?.toString().replaceAll('_', ' ').toUpperCase()} • ${w['currency'] ?? 'XOF'}'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                  title: Text(
+                                    w['name'] ?? 'Wallet',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    w['type'] ?? 'Type inconnu',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  trailing: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      Text(_fmt(balance), style: TextStyle(fontWeight: FontWeight.bold, color: balance >= 0 ? Colors.green : Colors.red)),
-                                      IconButton(icon: const Icon(Icons.delete, color: Colors.grey, size: 20), onPressed: () => _delete(w['id'])),
+                                      Text(
+                                        _fmt(balance),
+                                        style: TextStyle(
+                                          color: balance >= 0 ? AppTheme.primary : AppTheme.error,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        w['currency'] ?? 'XOF',
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      ),
                                     ],
                                   ),
                                   onTap: () async {

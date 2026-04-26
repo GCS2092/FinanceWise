@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../theme.dart';
 
 class CategoryFormScreen extends StatefulWidget {
   final Map<String, dynamic>? category;
@@ -86,18 +87,32 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                decoration: BoxDecoration(color: AppTheme.errorContainer, borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                  ],
+                ),
               ),
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nom', prefixIcon: Icon(Icons.label)),
+              decoration: InputDecoration(
+                labelText: 'Nom',
+                prefixIcon: const Icon(Icons.label),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Nom requis' : null,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _type,
-              decoration: const InputDecoration(labelText: 'Type', prefixIcon: Icon(Icons.category)),
+              decoration: InputDecoration(
+                labelText: 'Type',
+                prefixIcon: const Icon(Icons.category),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               items: const [
                 DropdownMenuItem(value: 'income', child: Text('Revenu')),
                 DropdownMenuItem(value: 'expense', child: Text('Dépense')),
@@ -107,6 +122,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 child: _saving

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
+import '../theme.dart';
 import 'budget_form_screen.dart';
 
 class BudgetsScreen extends StatefulWidget {
@@ -51,7 +52,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         content: const Text('Ce budget sera supprimé.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            child: const Text('Supprimer'),
+          ),
         ],
       ),
     );
@@ -113,59 +118,101 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             : RefreshIndicator(
                 onRefresh: _load,
                 child: _budgets.isEmpty
-                    ? ListView(children: const [SizedBox(height: 200), Center(child: Text('Aucun budget', style: TextStyle(color: Colors.grey)))])
+                    ? ListView(
+                        children: [
+                          const SizedBox(height: 80),
+                          Icon(Icons.pie_chart_outline, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                          const SizedBox(height: 16),
+                          Center(child: Text('Aucun budget', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
+                          const SizedBox(height: 8),
+                          Center(child: Text('Créez un budget pour contrôler vos dépenses', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                        ],
+                      )
                     : ListView.separated(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         itemCount: _budgets.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (_, i) {
                           final b = _budgets[i];
                           final pct = (b['percentage'] ?? 0).toDouble();
-                          final color = pct >= 100 ? Colors.red : (pct >= 80 ? Colors.orange : Colors.green);
+                          final color = pct >= 100 ? AppTheme.error : (pct >= 80 ? Colors.orange : AppTheme.primary);
                           return Card(
                             child: Padding(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      Expanded(child: Text(b['category']?['name'] ?? 'Budget', style: Theme.of(context).textTheme.titleMedium)),
-                                      Text('${_fmt(b['spent']).replaceAll('XOF ', '')} / ${_fmt(b['amount']).replaceAll('XOF ', '')}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      Expanded(
+                                        child: Text(
+                                          b['category']?['name'] ?? 'Budget',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_fmt(b['spent']).replaceAll('XOF ', '')} / ${_fmt(b['amount']).replaceAll('XOF ', '')}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: color,
+                                        ),
+                                      ),
                                     ],
                                   ),
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: LinearProgressIndicator(
+                                      value: (pct / 100).clamp(0, 1),
+                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                                      minHeight: 8,
+                                    ),
+                                  ),
                                   const SizedBox(height: 8),
-                                  LinearProgressIndicator(
-                                    value: pct > 100 ? 1.0 : (pct / 100),
-                                    backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                                    color: color,
-                                  minHeight: 8,
-                                ),
-                                const SizedBox(height: 4),
-                                Text('${pct.toStringAsFixed(1)}% — Reste: ${_fmt(b['remaining']).replaceAll('XOF ', '')}',
-                                    style: TextStyle(fontSize: 12, color: color)),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () async {
-                                        await Navigator.push(context, MaterialPageRoute(builder: (_) => BudgetFormScreen(budget: b)));
-                                        _load();
-                                      },
-                                      child: const Text('Modifier'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => _delete(b['id']),
-                                      child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${pct.toStringAsFixed(0)}% dépensé',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Reste: ${_fmt(b['amount'] - b['spent'])}',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () async {
+                                          await Navigator.push(context, MaterialPageRoute(builder: (_) => BudgetFormScreen(budget: b)));
+                                          _load();
+                                        },
+                                        child: const Text('Modifier'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => _delete(b['id']),
+                                        child: Text(
+                                          'Supprimer',
+                                          style: TextStyle(color: AppTheme.error),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
                     ),
             ),
         ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/auto_transaction_service.dart';
 import '../services/biometric_service.dart';
+import '../theme.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -51,13 +52,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Apparence ──
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Apparence',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Consumer<ThemeProvider>(
@@ -81,13 +84,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Sécurité ──
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Sécurité',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         if (_biometricEnabled)
@@ -107,9 +112,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             },
                           )
                         else
-                          const ListTile(
-                            title: Text('Authentification biométrique'),
-                            subtitle: Text('Non disponible sur cet appareil'),
+                          ListTile(
+                            title: const Text('Authentification biométrique'),
+                            subtitle: Text(
+                              'Non disponible sur cet appareil',
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
                             enabled: false,
                           ),
                       ],
@@ -121,13 +129,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Automatisation des transactions ──
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Automatisation des transactions',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         SwitchListTile(
@@ -139,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setState(() => _isEnabled = value);
                           },
                         ),
-                        const Divider(),
+                        const Divider(height: 1),
                         SwitchListTile(
                           title: const Text('Confirmation automatique'),
                           subtitle: const Text('Ajoute les transactions sans confirmation'),
@@ -158,17 +168,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Onboarding ──
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Configuration',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         ListTile(
-                          leading: const Icon(Icons.school, color: Colors.blue),
+                          leading: Icon(Icons.school, color: Theme.of(context).colorScheme.primary),
                           title: const Text('Relancer l\'onboarding'),
                           subtitle: const Text('Refaire la configuration initiale'),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -188,23 +200,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Informations ──
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Fonctionnalités d\'automatisation',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        const Text('• Écoute des SMS en temps réel'),
-                        const Text('• Parsing automatique (Wave, Orange Money)'),
-                        const Text('• Catégorisation automatique des transactions'),
-                        const Text('• Dialog de confirmation avant ajout'),
+                        Text(
+                          '• Écoute des SMS en temps réel',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          '• Parsing automatique (Wave, Orange Money)',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          '• Catégorisation automatique des transactions',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          '• Dialog de confirmation avant ajout',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Note: Les SMS ne sont stockés que localement et ne sont pas envoyés à des serveurs externes.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),

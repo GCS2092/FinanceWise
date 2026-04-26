@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -29,28 +30,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Bienvenue sur FinanceWise',
       description: 'Votre assistant financier personnel pour gérer vos finances au Sénégal.',
       icon: Icons.account_balance_wallet,
-      color: Colors.blue,
+      color: AppTheme.primary,
       isInteractive: false,
     ),
     OnboardingStep(
       title: 'Définissez votre revenu mensuel',
       description: 'Entrez votre revenu mensuel estimé pour suivre vos finances et recevoir des alertes intelligentes.',
       icon: Icons.attach_money,
-      color: Colors.green,
+      color: AppTheme.primary,
       isInteractive: true,
     ),
     OnboardingStep(
       title: 'Configurez vos portefeuilles',
       description: 'Ajoutez vos comptes : Wave, Orange Money, Banque, Espèces, etc.',
       icon: Icons.account_balance,
-      color: Colors.orange,
+      color: AppTheme.tertiary,
       isInteractive: true,
     ),
     OnboardingStep(
       title: 'Définissez vos budgets (optionnel)',
       description: 'Créez des budgets par catégorie pour contrôler vos dépenses.',
       icon: Icons.pie_chart,
-      color: Colors.purple,
+      color: AppTheme.secondary,
       isInteractive: true,
     ),
   ];
@@ -73,7 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Onboarding terminé ! $walletsCreated portefeuilles créés, $budgetsCreated budgets créés'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.primary,
           ),
         );
         
@@ -86,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.error,
           ),
         );
       }
@@ -205,8 +206,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     width: _currentPage == index ? 24 : 8,
                     decoration: BoxDecoration(
                       color: _currentPage == index 
-                          ? Theme.of(context).primaryColor 
-                          : Colors.grey,
+                          ? AppTheme.primary 
+                          : AppTheme.outlineVariant,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -247,7 +248,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: step.color.withOpacity(0.2),
+                color: step.color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(60),
               ),
               child: Icon(step.icon, size: 60, color: step.color),
@@ -264,7 +265,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Text(
               step.description,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -318,10 +319,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: step.color.withOpacity(0.2),
+              color: AppTheme.primaryContainer,
               borderRadius: BorderRadius.circular(40),
             ),
-            child: Icon(step.icon, size: 40, color: step.color),
+            child: Icon(step.icon, size: 40, color: AppTheme.primary),
           ),
           const SizedBox(height: 32),
           Text(
@@ -335,18 +336,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             step.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           TextField(
             controller: _incomeController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Revenu mensuel (XOF)',
-              prefixIcon: Icon(Icons.money),
+              prefixIcon: const Icon(Icons.money),
               suffixText: 'XOF',
               hintText: 'Ex: 300000',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
             keyboardType: TextInputType.number,
           ),
@@ -354,17 +356,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.info_outline, color: AppTheme.primary, size: 20),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Cette information permet de comparer vos revenus réels avec vos objectifs.',
-                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.onPrimaryContainer),
                   ),
                 ),
               ],
@@ -408,7 +410,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: step.color.withOpacity(0.2),
+              color: step.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Icon(step.icon, size: 30, color: step.color),
@@ -425,7 +427,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             step.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -437,16 +439,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.account_balance_wallet_outlined, 
-                             size: 64, color: Colors.grey[400]),
+                             size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(height: 16),
                         Text(
                           'Aucun portefeuille ajouté',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Cliquez sur + pour ajouter',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -469,7 +471,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             },
                           ),
                           trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
+                            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
                             onPressed: () => _removeWallet(index),
                           ),
                         ),
@@ -525,7 +527,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: step.color.withOpacity(0.2),
+              color: step.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Icon(step.icon, size: 30, color: step.color),
@@ -542,7 +544,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             step.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -550,7 +552,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             '(Optionnel - Vous pourrez ajouter des budgets plus tard)',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
             textAlign: TextAlign.center,
@@ -563,16 +565,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.pie_chart_outline, 
-                             size: 64, color: Colors.grey[400]),
+                             size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(height: 16),
                         Text(
                           'Aucun budget défini',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Cliquez sur + pour ajouter (optionnel)',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -591,10 +593,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 const CircularProgressIndicator()
                               else
                                 DropdownButtonFormField<int>(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Catégorie',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   ),
                                   value: _budgets[index]['category_id'],
                                   hint: const Text('Sélectionner une catégorie'),
@@ -612,10 +614,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ),
                               const SizedBox(height: 8),
                               TextField(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Montant (XOF)',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),
                                 keyboardType: TextInputType.number,
                                 onChanged: (value) {
@@ -626,7 +628,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete_outline, color: AppTheme.error),
                                   onPressed: () => _removeBudget(index),
                                 ),
                               ),

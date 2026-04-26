@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../theme.dart';
 
 class WalletFormScreen extends StatefulWidget {
   final Map<String, dynamic>? wallet;
@@ -75,17 +76,40 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
           key: _formKey,
           child: Column(
             children: [
-              if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 8),
+              if (_error != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                    ],
+                  ),
+                ),
               TextFormField(
                 controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Nom du wallet', prefixIcon: Icon(Icons.label)),
+                decoration: InputDecoration(
+                  labelText: 'Nom du wallet',
+                  prefixIcon: const Icon(Icons.label),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 validator: (v) => v != null && v.isNotEmpty ? null : 'Nom requis',
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _balanceCtrl,
-                decoration: const InputDecoration(labelText: 'Solde initial', prefixIcon: Icon(Icons.money)),
+                decoration: InputDecoration(
+                  labelText: 'Solde initial',
+                  prefixIcon: const Icon(Icons.money),
+                  suffixText: _currency,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 keyboardType: TextInputType.number,
                 enabled: !_isEdit,
                 validator: (v) => v != null && v.isNotEmpty ? null : 'Solde requis',
@@ -93,7 +117,11 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _type,
-                decoration: const InputDecoration(labelText: 'Type', prefixIcon: Icon(Icons.category)),
+                decoration: InputDecoration(
+                  labelText: 'Type',
+                  prefixIcon: const Icon(Icons.category),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
                   DropdownMenuItem(value: 'bank', child: Text('Banque')),
@@ -104,7 +132,11 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _currency,
-                decoration: const InputDecoration(labelText: 'Devise', prefixIcon: Icon(Icons.currency_exchange)),
+                decoration: InputDecoration(
+                  labelText: 'Devise',
+                  prefixIcon: const Icon(Icons.currency_exchange),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'XOF', child: Text('XOF')),
                   DropdownMenuItem(value: 'EUR', child: Text('EUR')),
@@ -115,6 +147,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: _saving ? null : _save,
                   child: _saving

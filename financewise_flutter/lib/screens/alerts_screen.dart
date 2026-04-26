@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -81,15 +82,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Color _getAlertColor(String type) {
     switch (type) {
       case 'danger':
-        return Colors.red;
+        return AppTheme.error;
       case 'warning':
         return Colors.orange;
       case 'success':
-        return Colors.green;
+        return AppTheme.primary;
       case 'info':
-        return Colors.blue;
+        return AppTheme.tertiary;
       default:
-        return Colors.grey;
+        return AppTheme.onSurfaceVariant;
     }
   }
 
@@ -129,7 +130,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                      Text(_error!, style: const TextStyle(color: AppTheme.error)),
                       const SizedBox(height: 16),
                       ElevatedButton(onPressed: _loadAlerts, child: const Text('Réessayer')),
                     ],
@@ -140,16 +141,16 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.notifications_none, size: 64, color: Colors.grey[400]),
+                          Icon(Icons.notifications_none, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                           const SizedBox(height: 16),
                           Text(
                             'Aucune alerte',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Vous serez noté ici des alertes budget et de revenu',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             textAlign: TextAlign.center,
                           ),
                         ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../theme.dart';
 import 'category_form_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -51,7 +52,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         content: const Text('Supprimer cette catégorie ?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer', style: TextStyle(color: AppTheme.error))),
         ],
       ),
     );
@@ -92,9 +93,27 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                      const SizedBox(height: 12),
+                      Text(_error!, style: const TextStyle(color: AppTheme.error)),
+                    ],
+                  ),
+                )
               : _categories.isEmpty
-                  ? const Center(child: Text('Aucune catégorie', style: TextStyle(color: Colors.grey)))
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.category_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                          const SizedBox(height: 16),
+                          Text('Aucune catégorie', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: _categories.length,
@@ -105,8 +124,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         return Card(
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: isSystem ? Colors.grey.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.2),
-                              child: Icon(Icons.category, color: isSystem ? Colors.grey : Colors.blue, size: 20),
+                              backgroundColor: isSystem
+                                  ? Theme.of(context).colorScheme.surfaceContainerHighest
+                                  : AppTheme.primary.withValues(alpha: 0.12),
+                              child: Icon(Icons.category, color: isSystem ? Theme.of(context).colorScheme.onSurfaceVariant : AppTheme.primary, size: 20),
                             ),
                             title: Text(c['name'] ?? ''),
                             subtitle: Text('${c['type']?.toString().toUpperCase() ?? ''} ${isSystem ? '• Système' : '• Personnalisée'}'),
@@ -126,7 +147,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   ),
                                 if (!isSystem)
                                   IconButton(
-                                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                    icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.error),
                                     onPressed: () => _deleteCategory(c['id']),
                                   ),
                               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class RecommendationsScreen extends StatefulWidget {
   const RecommendationsScreen({super.key});
@@ -40,15 +41,15 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   Color _getTypeColor(String? type) {
     switch (type) {
       case 'alert':
-        return Colors.red;
+        return AppTheme.error;
       case 'warning':
         return Colors.orange;
       case 'suggestion':
-        return Colors.blue;
+        return AppTheme.tertiary;
       case 'info':
-        return Colors.grey;
+        return AppTheme.onSurfaceVariant;
       default:
-        return Colors.blue;
+        return AppTheme.tertiary;
     }
   }
 
@@ -79,11 +80,23 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
               onRefresh: _load,
               child: _error != null
                   ? ListView(
-                      children: [SizedBox(height: 200), Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))],
+                      children: [
+                        const SizedBox(height: 100),
+                        const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                        const SizedBox(height: 12),
+                        Center(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                      ],
                     )
                   : _recommendations.isEmpty
                       ? ListView(
-                          children: const [SizedBox(height: 200), Center(child: Text('Aucune recommandation pour le moment', style: TextStyle(color: Colors.grey)))],
+                          children: [
+                            const SizedBox(height: 100),
+                            Icon(Icons.lightbulb_outline, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                            const SizedBox(height: 16),
+                            Center(child: Text('Aucune recommandation pour le moment', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                            const SizedBox(height: 8),
+                            Center(child: Text('Continuez à utiliser l\'app pour recevoir des conseils', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          ],
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),

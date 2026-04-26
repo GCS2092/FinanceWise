@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/sms_parser_service.dart';
+import '../theme.dart';
 import '../widgets/sms_confirmation_dialog.dart';
 
 class SmsParserScreen extends StatefulWidget {
@@ -108,11 +109,30 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Exemples de SMS', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Wave: "Vous avez reçu 50000 FCFA de ..."', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.info_outline, color: AppTheme.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('Exemples de SMS', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Wave: "Vous avez reçu 50000 FCFA de ..."',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
                     const SizedBox(height: 4),
-                    const Text('Orange Money: "Transfert effectué: 25000 FCFA à ..."', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(
+                      'Orange Money: "Transfert effectué: 25000 FCFA à ..."',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
                   ],
                 ),
               ),
@@ -120,7 +140,11 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _provider,
-              decoration: const InputDecoration(labelText: 'Fournisseur', prefixIcon: Icon(Icons.phone_android)),
+              decoration: InputDecoration(
+                labelText: 'Fournisseur',
+                prefixIcon: const Icon(Icons.phone_android),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               items: const [
                 DropdownMenuItem(value: 'wave', child: Text('Wave')),
                 DropdownMenuItem(value: 'orange_money', child: Text('Orange Money')),
@@ -130,10 +154,12 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _contentCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Contenu du SMS',
-                prefixIcon: Icon(Icons.sms),
+                prefixIcon: const Icon(Icons.sms),
                 hintText: 'Collez ou entrez le contenu du SMS ici...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                alignLabelWithHint: true,
               ),
               maxLines: 6,
               validator: (v) => v == null || v.trim().isEmpty ? 'Contenu requis' : null,
@@ -151,18 +177,24 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
             if (_error != null)
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                decoration: BoxDecoration(color: AppTheme.errorContainer, borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                  ],
+                ),
               ),
             if (_result != null)
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppTheme.primaryContainer, borderRadius: BorderRadius.circular(12)),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green),
+                    const Icon(Icons.check_circle, color: AppTheme.primary),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_result!, style: const TextStyle(color: Colors.green))),
+                    Expanded(child: Text(_result!, style: const TextStyle(color: AppTheme.primary))),
                   ],
                 ),
               ),

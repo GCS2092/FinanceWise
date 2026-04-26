@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
+import '../theme.dart';
 import 'transaction_form_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -136,7 +137,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         content: const Text('Cette transaction sera définitivement supprimée.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: AppTheme.error), child: const Text('Supprimer')),
         ],
       ),
     );
@@ -213,12 +214,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           children: [
             // Barre de recherche
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(16),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Rechercher...',
                   prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
@@ -238,7 +239,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             // Chips de filtres actifs
             if (_selectedType != null || _selectedCategory != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Wrap(
                   spacing: 8,
                   children: [
@@ -255,12 +256,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         label: Text(_selectedCategory!),
                         onDeleted: () {
                           setState(() => _selectedCategory = null);
-                        _applyFilters();
-                      },
-                    ),
-                ],
+                          _applyFilters();
+                        },
+                      ),
+                  ],
+                ),
               ),
-            ),
           // Liste des transactions
           Expanded(
             child: _loading
@@ -269,11 +270,25 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     onRefresh: _load,
                     child: _error != null
                         ? ListView(
-                            children: [SizedBox(height: 200), Center(child: Text(_error!, style: TextStyle(color: Colors.red)))],
+                            children: [
+                              const SizedBox(height: 100),
+                              Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                              const SizedBox(height: 12),
+                              Center(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                              const SizedBox(height: 16),
+                              Center(child: ElevatedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Réessayer'))),
+                            ],
                           )
                         : _filteredTransactions.isEmpty
                             ? ListView(
-                                children: const [SizedBox(height: 200), Center(child: Text('Aucune transaction trouvée', style: TextStyle(color: Colors.grey)))],
+                                children: [
+                                  const SizedBox(height: 80),
+                                  Icon(Icons.receipt_long_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                                  const SizedBox(height: 16),
+                                  Center(child: Text('Aucune transaction trouvée', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                                  const SizedBox(height: 8),
+                                  Center(child: Text('Ajoutez votre première transaction avec le bouton +', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                                ],
                               )
                             : ListView.separated(
                                 itemCount: _filteredTransactions.length,
@@ -284,16 +299,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                   return Dismissible(
                                     key: Key(t['id'].toString()),
                                     background: Container(
-                                      color: Colors.red,
+                                      color: AppTheme.error,
                                       alignment: Alignment.centerRight,
                                       padding: const EdgeInsets.only(right: 20),
-                                      child: const Icon(Icons.delete, color: Colors.white),
+                                      child: const Icon(Icons.delete, color: AppTheme.onError),
                                     ),
                                     secondaryBackground: Container(
-                                      color: Colors.blue,
+                                      color: AppTheme.primary,
                                       alignment: Alignment.centerLeft,
                                       padding: const EdgeInsets.only(left: 20),
-                                      child: const Icon(Icons.edit, color: Colors.white),
+                                      child: const Icon(Icons.edit, color: AppTheme.onPrimary),
                                     ),
                                     confirmDismiss: (direction) async {
                                       if (direction == DismissDirection.endToStart) {
@@ -305,7 +320,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                             content: const Text('Cette transaction sera définitivement supprimée.'),
                                             actions: [
                                               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-                                              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer')),
+                                              TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: AppTheme.error), child: const Text('Supprimer')),
                                             ],
                                           ),
                                         );
@@ -327,9 +342,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                     },
                                     child: ListTile(
                                       leading: CircleAvatar(
-                                        backgroundColor: income ? Colors.green.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
+                                        backgroundColor: income ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.error.withValues(alpha: 0.12),
                                         child: Icon(income ? Icons.arrow_upward : Icons.arrow_downward,
-                                            color: income ? Colors.green : Colors.red, size: 18),
+                                            color: income ? AppTheme.primary : AppTheme.error, size: 18),
                                       ),
                                       title: Text(t['description'] ?? 'Transaction'),
                                       subtitle: Text('${t['category']?['name'] ?? 'Sans catégorie'}  •  ${t['transaction_date'] ?? 'Sans date'}'),
@@ -339,7 +354,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                           Text(
                                             '${income ? '+' : '-'}${_fmt(t['amount']).replaceAll('XOF ', '')}',
                                             style: TextStyle(
-                                              color: income ? Colors.green : Colors.red,
+                                              color: income ? AppTheme.primary : AppTheme.error,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -382,7 +397,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Type', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               Row(
                 children: [
                   Expanded(
@@ -421,8 +436,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text('Date de début', style: TextStyle(fontWeight: FontWeight.bold)),
-              ElevatedButton(
+              Text('Date de début', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.calendar_today, size: 18),
                 onPressed: () async {
                   final date = await showDatePicker(
                     context: context,
@@ -435,13 +452,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     _applyFilters();
                   }
                 },
-                child: Text(_startDate != null 
+                label: Text(_startDate != null 
                     ? DateFormat('dd/MM/yyyy').format(_startDate!) 
                     : 'Sélectionner'),
               ),
               const SizedBox(height: 16),
-              const Text('Date de fin', style: TextStyle(fontWeight: FontWeight.bold)),
-              ElevatedButton(
+              Text('Date de fin', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.calendar_today, size: 18),
                 onPressed: () async {
                   final date = await showDatePicker(
                     context: context,
@@ -454,7 +473,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     _applyFilters();
                   }
                 },
-                child: Text(_endDate != null 
+                label: Text(_endDate != null 
                     ? DateFormat('dd/MM/yyyy').format(_endDate!) 
                     : 'Sélectionner'),
               ),

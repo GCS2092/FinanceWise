@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/onboarding_tips_service.dart';
+import '../theme.dart';
 
 class TooltipItem {
   final IconData icon;
@@ -122,7 +123,7 @@ class OnboardingTooltipState extends State<OnboardingTooltip> {
                                         Icon(
                                           tip.icon,
                                           size: 20,
-                                          color: Colors.blue,
+                                          color: AppTheme.primary,
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
@@ -135,7 +136,7 @@ class OnboardingTooltipState extends State<OnboardingTooltip> {
                                               ),
                                               Text(
                                                 tip.description,
-                                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                               ),
                                             ],
                                           ),

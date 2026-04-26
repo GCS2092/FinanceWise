@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 import 'financial_goal_form_screen.dart';
 
 class FinancialGoalsScreen extends StatefulWidget {
@@ -74,11 +75,23 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
               onRefresh: _load,
               child: _error != null
                   ? ListView(
-                      children: [SizedBox(height: 200), Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))],
+                      children: [
+                        const SizedBox(height: 100),
+                        const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                        const SizedBox(height: 12),
+                        Center(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                      ],
                     )
                   : _goals.isEmpty
                       ? ListView(
-                          children: const [SizedBox(height: 200), Center(child: Text('Aucun objectif', style: TextStyle(color: Colors.grey)))],
+                          children: [
+                            const SizedBox(height: 80),
+                            Icon(Icons.flag_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                            const SizedBox(height: 16),
+                            Center(child: Text('Aucun objectif', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
+                            const SizedBox(height: 8),
+                            Center(child: Text('Définissez un objectif d\'\u00e9pargne avec le bouton +', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          ],
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
@@ -116,14 +129,13 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                           Expanded(
                                             child: Text(
                                               goal['name'] ?? 'Objectif',
-                                              style: const TextStyle(
-                                                fontSize: 18,
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.grey),
+                                            icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                             onPressed: () => _delete(goal['id']),
                                           ),
                                         ],
@@ -133,7 +145,9 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                           padding: const EdgeInsets.only(bottom: 12),
                                           child: Text(
                                             goal['description'],
-                                            style: TextStyle(color: Colors.grey[600]),
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
                                           ),
                                         ),
                                       const SizedBox(height: 12),
@@ -141,8 +155,8 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                         child: LinearProgressIndicator(
                                           value: progress / 100,
-                                          backgroundColor: Colors.grey[300],
-                                          color: _getStatusColor(goal['status']),
+                                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          valueColor: AlwaysStoppedAnimation<Color>(_getStatusColor(goal['status'])),
                                           minHeight: 8,
                                         ),
                                       ),
@@ -158,7 +172,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                       Text(
                                         'Reste: ${_formatAmount(remaining)}',
                                         style: TextStyle(
-                                          color: remaining <= 0 ? Colors.green : Colors.orange,
+                                          color: remaining <= 0 ? AppTheme.primary : Colors.orange,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -167,7 +181,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                           padding: const EdgeInsets.only(top: 8),
                                           child: Text(
                                             'Date cible: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(goal['target_date']))}',
-                                            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                           ),
                                         ),
                                       const SizedBox(height: 12),
@@ -197,9 +211,9 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
   Color _getStatusColor(String? status) {
     switch (status) {
       case 'completed':
-        return Colors.green;
+        return AppTheme.primary;
       case 'in_progress':
-        return Colors.blue;
+        return AppTheme.tertiary;
       default:
         return Colors.orange;
     }
@@ -215,9 +229,10 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Montant (XOF)',
-            border: OutlineInputBorder(),
+            suffixText: 'XOF',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         actions: [

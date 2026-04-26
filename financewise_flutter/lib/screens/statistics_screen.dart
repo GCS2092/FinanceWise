@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -68,7 +69,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                      const SizedBox(height: 12),
+                      Text(_error!, style: const TextStyle(color: AppTheme.error)),
+                    ],
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: _loadData,
                   child: SingleChildScrollView(
@@ -83,7 +93,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Résumé', style: Theme.of(context).textTheme.titleMedium),
+                                Text('Résumé', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 16),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -91,17 +101,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                     _StatItem(
                                       label: 'Balance',
                                       value: _formatAmount(_data?['balance']),
-                                      color: Colors.blue,
+                                      color: AppTheme.secondary,
                                     ),
                                     _StatItem(
                                       label: 'Revenus',
                                       value: _formatAmount(_data?['monthly_income']),
-                                      color: Colors.green,
+                                      color: AppTheme.primary,
                                     ),
                                     _StatItem(
                                       label: 'Dépenses',
                                       value: _formatAmount(_data?['monthly_expense']),
-                                      color: Colors.red,
+                                      color: AppTheme.error,
                                     ),
                                   ],
                                 ),
@@ -118,7 +128,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Dépenses par catégorie', style: Theme.of(context).textTheme.titleMedium),
+                                Text('Dépenses par catégorie', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 16),
                                 SizedBox(
                                   height: 250,
@@ -137,7 +147,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Dépenses par catégorie (barres)', style: Theme.of(context).textTheme.titleMedium),
+                                Text('Dépenses par catégorie (barres)', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 16),
                                 SizedBox(
                                   height: 250,
@@ -156,7 +166,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Top dépenses', style: Theme.of(context).textTheme.titleMedium),
+                                Text('Top dépenses', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 16),
                                 ...(_transactions
                                     .where((t) => t['type'] == 'expense')
@@ -166,7 +176,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                       dense: true,
                                       title: Text(t['description'] ?? ''),
                                       subtitle: Text(t['category'] is Map ? t['category']['name'] : ''),
-                                      trailing: Text(_formatAmount(t['amount']), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                      trailing: Text(_formatAmount(t['amount']), style: const TextStyle(color: AppTheme.error, fontWeight: FontWeight.bold)),
                                     )),
                               ],
                             ),
@@ -186,7 +196,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
 
     final colors = [
-      Colors.blue, Colors.red, Colors.green, Colors.orange, Colors.purple,
+      AppTheme.primary, AppTheme.error, Colors.green, Colors.orange, AppTheme.tertiary,
       Colors.pink, Colors.teal, Colors.amber, Colors.cyan, Colors.indigo,
     ];
 
@@ -206,10 +216,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 final percentage = (value / total * 100).toStringAsFixed(1);
                 return PieChartSectionData(
                   value: value,
-                  title: percentage + '%',
+                  title: '$percentage%',
                   color: colors[index % colors.length],
-                  radius: 50,
-                  titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  radius: 55,
+                  titleStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                 );
               }).toList(),
               sectionsSpace: 2,
@@ -227,9 +237,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 12, height: 12, color: colors[index % colors.length]),
-                const SizedBox(width: 4),
-                Text(category.key),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: colors[index % colors.length],
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(category.key, style: Theme.of(context).textTheme.bodySmall),
               ],
             );
           }).toList(),
@@ -245,7 +262,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
 
     final colors = [
-      Colors.blue, Colors.red, Colors.green, Colors.orange, Colors.purple,
+      AppTheme.primary, AppTheme.error, Colors.green, Colors.orange, AppTheme.tertiary,
       Colors.pink, Colors.teal, Colors.amber, Colors.cyan, Colors.indigo,
     ];
 
@@ -323,8 +340,16 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }

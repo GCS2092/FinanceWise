@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/sms_parser_service.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class SmsConfirmationDialog extends StatefulWidget {
   final SmsTransaction transaction;
@@ -69,7 +70,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
         children: [
           Icon(
             widget.transaction.type == 'income' ? Icons.arrow_downward : Icons.arrow_upward,
-            color: widget.transaction.type == 'income' ? Colors.green : Colors.red,
+            color: widget.transaction.type == 'income' ? AppTheme.primary : AppTheme.error,
           ),
           const SizedBox(width: 8),
           const Text('Transaction détectée'),
@@ -85,7 +86,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
                   Text(
                     widget.transaction.type == 'income' ? 'Revenu détecté' : 'Dépense détectée',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: widget.transaction.type == 'income' ? Colors.green : Colors.red,
+                      color: widget.transaction.type == 'income' ? AppTheme.primary : AppTheme.error,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -104,9 +105,9 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _selectedCategoryId,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     items: _categories.map((cat) {
                       return DropdownMenuItem(
@@ -148,7 +149,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
         ElevatedButton(
           onPressed: _selectedCategoryId != null ? () => _handleConfirm(context) : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: widget.transaction.type == 'income' ? Colors.green : Colors.blue,
+            backgroundColor: widget.transaction.type == 'income' ? AppTheme.primary : AppTheme.tertiary,
           ),
           child: const Text('Oui, ajouter'),
         ),
@@ -166,7 +167,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Transaction ajoutée avec succès'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.primary,
           ),
         );
       }
@@ -176,7 +177,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.error,
           ),
         );
       }
@@ -193,7 +194,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
             width: 100,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           Expanded(

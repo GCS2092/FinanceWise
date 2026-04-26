@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 import 'payment_reminder_form_screen.dart';
 
 class PaymentRemindersScreen extends StatefulWidget {
@@ -79,11 +80,23 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
               onRefresh: _load,
               child: _error != null
                   ? ListView(
-                      children: [SizedBox(height: 200), Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))],
+                      children: [
+                        const SizedBox(height: 100),
+                        const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                        const SizedBox(height: 12),
+                        Center(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                      ],
                     )
                   : _reminders.isEmpty
                       ? ListView(
-                          children: const [SizedBox(height: 200), Center(child: Text('Aucun rappel', style: TextStyle(color: Colors.grey)))],
+                          children: [
+                            const SizedBox(height: 80),
+                            Icon(Icons.alarm_off, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                            const SizedBox(height: 16),
+                            Center(child: Text('Aucun rappel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
+                            const SizedBox(height: 8),
+                            Center(child: Text('Créez un rappel pour ne manquer aucun paiement', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          ],
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
@@ -96,7 +109,6 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                             final isCompleted = reminder['status'] == 'completed';
 
                             return Card(
-                              elevation: 2,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -115,13 +127,13 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                   leading: CircleAvatar(
                                     radius: 24,
                                     backgroundColor: isCompleted 
-                                        ? Colors.green.withValues(alpha: 0.15)
+                                        ? AppTheme.primary.withValues(alpha: 0.12)
                                         : isOverdue
-                                            ? Colors.red.withValues(alpha: 0.15)
-                                            : Colors.orange.withValues(alpha: 0.15),
+                                            ? AppTheme.error.withValues(alpha: 0.12)
+                                            : Colors.orange.withValues(alpha: 0.12),
                                     child: Icon(
                                       isCompleted ? Icons.check : isOverdue ? Icons.warning : Icons.notification_important,
-                                      color: isCompleted ? Colors.green : isOverdue ? Colors.red : Colors.orange,
+                                      color: isCompleted ? AppTheme.primary : isOverdue ? AppTheme.error : Colors.orange,
                                       size: 24,
                                     ),
                                   ),
@@ -149,7 +161,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                                     ? 'Aujourd\'hui'
                                                     : 'Dans $daysUntilDue jours',
                                             style: TextStyle(
-                                              color: isOverdue ? Colors.red : Colors.orange,
+                                              color: isOverdue ? AppTheme.error : Colors.orange,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -161,11 +173,11 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                     children: [
                                       if (!isCompleted)
                                         IconButton(
-                                          icon: const Icon(Icons.check_circle, color: Colors.green),
+                                          icon: Icon(Icons.check_circle, color: AppTheme.primary),
                                           onPressed: () => _markCompleted(reminder),
                                         ),
                                       IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.grey),
+                                        icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                         onPressed: () => _delete(reminder['id']),
                                       ),
                                     ],

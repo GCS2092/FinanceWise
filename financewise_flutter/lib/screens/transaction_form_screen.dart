@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../theme.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final Map<String, dynamic>? transaction;
@@ -33,6 +35,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('fr_FR');
     _loadData();
   }
 
@@ -115,8 +118,22 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 8),
+                    if (_error != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
                     SegmentedButton<String>(
                       segments: const [
                         ButtonSegment(value: 'income', label: Text('Revenu'), icon: Icon(Icons.arrow_upward)),
@@ -128,41 +145,68 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _amountCtrl,
-                      decoration: const InputDecoration(labelText: 'Montant', prefixIcon: Icon(Icons.money)),
+                      decoration: InputDecoration(
+                        labelText: 'Montant',
+                        prefixIcon: const Icon(Icons.money),
+                        suffixText: 'XOF',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (v) => v != null && v.isNotEmpty ? null : 'Montant requis',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _descCtrl,
-                      decoration: const InputDecoration(labelText: 'Description', prefixIcon: Icon(Icons.notes)),
+                      decoration: InputDecoration(
+                        labelText: 'Description',
+                        prefixIcon: const Icon(Icons.notes),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       validator: (v) => v != null && v.isNotEmpty ? null : 'Description requise',
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
                       value: _walletId,
-                      decoration: const InputDecoration(labelText: 'Wallet', prefixIcon: Icon(Icons.account_balance_wallet)),
+                      decoration: InputDecoration(
+                        labelText: 'Wallet',
+                        prefixIcon: const Icon(Icons.account_balance_wallet),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       items: _wallets.map<DropdownMenuItem<int>>((w) => DropdownMenuItem(value: w['id'] as int, child: Text('${w['name']} (${w['balance']} ${w['currency'] ?? 'XOF'})'))).toList(),
                       onChanged: (v) => setState(() => _walletId = v),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
                       value: _categoryId,
-                      decoration: const InputDecoration(labelText: 'Catégorie', prefixIcon: Icon(Icons.category)),
+                      decoration: InputDecoration(
+                        labelText: 'Catégorie',
+                        prefixIcon: const Icon(Icons.category),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       items: _categories.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(value: c['id'] as int, child: Text(c['name']))).toList(),
                       onChanged: (v) => setState(() => _categoryId = v),
                     ),
                     const SizedBox(height: 16),
-                    ListTile(
-                      leading: const Icon(Icons.calendar_today),
-                      title: const Text('Date'),
-                      subtitle: Text('${_date.day}/${_date.month}/${_date.year}'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: _pickDate,
+                    Card(
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary, size: 20),
+                        ),
+                        title: const Text('Date'),
+                        subtitle: Text(DateFormat('dd MMMM yyyy', 'fr_FR').format(_date)),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _pickDate,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: _saving ? null : _save,
                         child: _saving

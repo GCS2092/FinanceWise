@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class FinancialGoalFormScreen extends StatefulWidget {
   final Map<String, dynamic>? financialGoal;
@@ -109,18 +111,21 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nom de l\'objectif *',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.flag),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Description',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.notes),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                alignLabelWithHint: true,
               ),
               maxLines: 3,
             ),
@@ -128,9 +133,11 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
             TextFormField(
               controller: _targetAmountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Montant cible (XOF) *',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.money),
+                suffixText: 'XOF',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
             ),
@@ -138,32 +145,44 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
             TextFormField(
               controller: _currentAmountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Montant actuel (XOF)',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.account_balance_wallet),
+                suffixText: 'XOF',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              title: const Text('Date cible'),
-              subtitle: Text(_targetDate != null 
-                  ? '${_targetDate!.day}/${_targetDate!.month}/${_targetDate!.year}' 
-                  : 'Sélectionner'),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _targetDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(DateTime.now().year + 10),
-                );
-                if (date != null) {
-                  setState(() => _targetDate = date);
-                }
-              },
+            Card(
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary, size: 20),
+                ),
+                title: const Text('Date cible'),
+                subtitle: Text(_targetDate != null 
+                    ? DateFormat('dd MMMM yyyy', 'fr_FR').format(_targetDate!)
+                    : 'Sélectionner'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _targetDate ?? DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(DateTime.now().year + 10),
+                  );
+                  if (date != null) {
+                    setState(() => _targetDate = date);
+                  }
+                },
+              ),
             ),
             const SizedBox(height: 16),
-            const Text('Icône', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Icône', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -176,12 +195,12 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
                       setState(() => _selectedIcon = iconData['name']);
                     }
                   },
-                  selectedColor: Colors.blue.withValues(alpha: 0.2),
+                  selectedColor: AppTheme.primary.withValues(alpha: 0.15),
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
-            const Text('Couleur', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Couleur', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

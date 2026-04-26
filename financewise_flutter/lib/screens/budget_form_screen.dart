@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../theme.dart';
 
 class BudgetFormScreen extends StatefulWidget {
   final Map<String, dynamic>? budget;
@@ -96,11 +97,29 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 8),
+                    if (_error != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
+                          ],
+                        ),
+                      ),
                     DropdownButtonFormField<int>(
                       value: _categoryId,
-                      decoration: const InputDecoration(labelText: 'Catégorie', prefixIcon: Icon(Icons.category)),
+                      decoration: InputDecoration(
+                        labelText: 'Catégorie',
+                        prefixIcon: const Icon(Icons.category),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       items: _categories
                           .where((c) => c['type'] == 'expense')
                           .map<DropdownMenuItem<int>>((c) => DropdownMenuItem(value: c['id'] as int, child: Text(c['name'])))
@@ -110,14 +129,23 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _amountCtrl,
-                      decoration: const InputDecoration(labelText: 'Montant budget', prefixIcon: Icon(Icons.money)),
+                      decoration: InputDecoration(
+                        labelText: 'Montant budget',
+                        prefixIcon: const Icon(Icons.money),
+                        suffixText: 'XOF',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (v) => v != null && v.isNotEmpty ? null : 'Montant requis',
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: _period,
-                      decoration: const InputDecoration(labelText: 'Période', prefixIcon: Icon(Icons.calendar_view_month)),
+                      decoration: InputDecoration(
+                        labelText: 'Période',
+                        prefixIcon: const Icon(Icons.calendar_view_month),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       items: const [
                         DropdownMenuItem(value: 'weekly', child: Text('Hebdomadaire')),
                         DropdownMenuItem(value: 'monthly', child: Text('Mensuel')),
@@ -128,6 +156,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: _saving ? null : _save,
                         child: _saving

@@ -6,6 +6,7 @@ import '../services/notification_service.dart';
 import '../services/sms_listener_service.dart';
 import '../services/pending_sms_service.dart';
 import '../widgets/onboarding_tooltip.dart';
+import '../theme.dart';
 import 'transaction_form_screen.dart';
 import 'sms_parser_screen.dart';
 
@@ -126,9 +127,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+              Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+              const SizedBox(height: 12),
+              Text(_error!, style: const TextStyle(color: AppTheme.error)),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _loadDashboard, child: const Text('Réessayer')),
+              ElevatedButton.icon(
+                onPressed: _loadDashboard,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Réessayer'),
+              ),
             ],
           ),
         ),
@@ -200,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _QuickActionButton(
                       icon: Icons.add,
                       label: 'Transaction',
-                      color: Colors.blue,
+                      color: Theme.of(context).colorScheme.primary,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -216,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _QuickActionButton(
                       icon: Icons.sms,
                       label: 'Parser SMS',
-                      color: Colors.purple,
+                      color: Theme.of(context).colorScheme.tertiary,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -234,7 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildCard(
               title: 'Solde total',
               value: _formatAmount(balance),
-              color: balance >= 0 ? Colors.green : Colors.red,
+              color: balance >= 0 ? AppTheme.primary : AppTheme.error,
               icon: Icons.account_balance_wallet,
             ),
             const SizedBox(height: 16),
@@ -246,7 +253,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: _buildCard(
                     title: 'Revenus (mois)',
                     value: _formatAmount(income),
-                    color: Colors.green,
+                    color: AppTheme.primary,
                     icon: Icons.trending_up,
                   ),
                 ),
@@ -255,7 +262,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: _buildCard(
                     title: 'Dépenses (mois)',
                     value: _formatAmount(expense),
-                    color: Colors.red,
+                    color: AppTheme.error,
                     icon: Icons.trending_down,
                   ),
                 ),
@@ -267,7 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (incomeTarget > 0) ...[
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -276,36 +283,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Text(
                             'Objectif de revenu',
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          Text(
-                            '${incomeProgress.toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              color: incomeProgress >= 100 ? Colors.green : Colors.blue,
-                              fontWeight: FontWeight.bold,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: incomeProgress >= 100 
+                                ? AppTheme.primaryContainer 
+                                : Theme.of(context).colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${incomeProgress.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                color: incomeProgress >= 100 
+                                  ? AppTheme.onPrimaryContainer 
+                                  : Theme.of(context).colorScheme.onSecondaryContainer,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      LinearProgressIndicator(
-                        value: (incomeProgress / 100).clamp(0, 1),
-                        backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          incomeProgress >= 100 ? Colors.green : Colors.blue,
+                      const SizedBox(height: 16),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: (incomeProgress / 100).clamp(0, 1),
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            incomeProgress >= 100 ? AppTheme.primary : Theme.of(context).colorScheme.secondary,
+                          ),
+                          minHeight: 8,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Réalisé: ${_formatAmount(income)}',
-                            style: const TextStyle(fontSize: 12),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           Text(
                             'Objectif: ${_formatAmount(incomeTarget)}',
-                            style: const TextStyle(fontSize: 12),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -318,14 +347,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // ── Graphique Revenus/Dépenses ──
             Card(
-              elevation: 2,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Répartition du mois', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 16),
+                    Text(
+                      'Répartition du mois',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     SizedBox(
                       height: 200,
                       child: PieChart(
@@ -334,14 +367,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             PieChartSectionData(
                               value: income.toDouble(),
                               title: '${((income / (income + expense)) * 100).toStringAsFixed(0)}%',
-                              color: Colors.green,
+                              color: AppTheme.primary,
                               radius: 50,
                               titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                             PieChartSectionData(
                               value: expense.toDouble(),
                               title: '${((expense / (income + expense)) * 100).toStringAsFixed(0)}%',
-                              color: Colors.red,
+                              color: AppTheme.error,
                               radius: 50,
                               titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
@@ -351,42 +384,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(width: 12, height: 12, color: Colors.green),
-                        const SizedBox(width: 4),
-                        const Text('Revenus'),
-                        const SizedBox(width: 16),
-                        Container(width: 12, height: 12, color: Colors.red),
-                        const SizedBox(width: 4),
-                        const Text('Dépenses'),
+                        _buildLegend(AppTheme.primary, 'Revenus'),
+                        const SizedBox(width: 20),
+                        _buildLegend(AppTheme.error, 'Dépenses'),
                       ],
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // ── Budgets actifs ──
-            Text('Budgets actifs', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            Text(
+              'Budgets actifs',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
             _buildActiveBudgets(),
             const SizedBox(height: 24),
 
             // ── Alertes ──
             if (alerts.isNotEmpty) ...[
-              Text('Alertes', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
+              Text(
+                'Alertes',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
               ...alerts.map((a) => _buildAlert(a)),
               const SizedBox(height: 24),
             ],
 
             // ── Transactions récentes ──
-            Text('Transactions récentes', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            Text(
+              'Transactions récentes',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
             _buildRecentTransactions(),
           ],
         ),
@@ -398,25 +442,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildCard({required String title, required String value, required Color color, required IconData icon}) {
     return Card(
-      elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(20),
+        child: Row(
           children: [
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              children: [
-                Icon(icon, color: color, size: 20),
-                Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
-            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLegend(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 
@@ -438,7 +523,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -457,13 +542,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildAlert(dynamic alert) {
     final type = alert['type'] ?? 'warning';
-    final color = type == 'danger' ? Colors.red : Colors.orange;
+    final color = type == 'danger' ? AppTheme.error : Colors.orange;
+    final icon = type == 'danger' ? Icons.error : Icons.warning_amber_rounded;
     return Card(
-      color: color.withValues(alpha: 0.1),
+      color: color.withValues(alpha: 0.08),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(Icons.warning, color: color),
-        title: Text(alert['message'] ?? '', style: TextStyle(color: color)),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          alert['message'] ?? '',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w500),
+        ),
       ),
     );
   }
@@ -478,7 +574,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       budgetList = (budgets['data'] as List<dynamic>?) ?? [];
     }
     if (budgetList.isEmpty) {
-      return const Text('Aucun budget actif', style: TextStyle(color: Colors.grey));
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Icon(Icons.pie_chart_outline, size: 40, color: Theme.of(context).colorScheme.outlineVariant),
+              const SizedBox(height: 8),
+              Text('Aucun budget actif', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+      );
     }
     return Column(
       children: budgetList.map((b) {
@@ -490,8 +597,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final percentage = amount > 0 ? (spent / amount * 100).clamp(0, 100) : 0.0;
         final remaining = amount - spent;
         
-        Color progressColor = Colors.green;
-        if (percentage >= 90) progressColor = Colors.red;
+        Color progressColor = AppTheme.primary;
+        if (percentage >= 90) progressColor = AppTheme.error;
         else if (percentage >= 70) progressColor = Colors.orange;
 
         return Card(
@@ -504,22 +611,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(categoryName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('${percentage.toStringAsFixed(0)}%', style: TextStyle(color: progressColor, fontWeight: FontWeight.bold)),
+                    Text(categoryName, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: progressColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text('${percentage.toStringAsFixed(0)}%', style: TextStyle(color: progressColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: percentage / 100,
-                  backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: percentage / 100,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                    minHeight: 6,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Dépensé: ${_formatAmount(spent)}', style: const TextStyle(fontSize: 12)),
-                    Text('Reste: ${_formatAmount(remaining)}', style: const TextStyle(fontSize: 12)),
+                    Text('Dépensé: ${_formatAmount(spent)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text('Reste: ${_formatAmount(remaining)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: remaining >= 0 ? AppTheme.primary : AppTheme.error)),
                   ],
                 ),
               ],
@@ -540,23 +658,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       transactions = (recent['data'] as List<dynamic>?) ?? [];
     }
     if (transactions.isEmpty) {
-      return const Text('Aucune transaction', style: TextStyle(color: Colors.grey));
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Icon(Icons.receipt_long_outlined, size: 40, color: Theme.of(context).colorScheme.outlineVariant),
+              const SizedBox(height: 8),
+              Text('Aucune transaction', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+      );
     }
     return Column(
       children: transactions.take(5).map((t) {
         if (t is! Map) return const SizedBox.shrink();
         final isIncome = t['type'] == 'income';
         final category = t['category'];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: isIncome ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
-            child: Icon(isIncome ? Icons.arrow_upward : Icons.arrow_downward, color: isIncome ? Colors.green : Colors.red),
-          ),
-          title: Text(t['description']?.toString() ?? 'Transaction'),
-          subtitle: Text(category is Map ? (category['name']?.toString() ?? '') : ''),
-          trailing: Text(
-            '${isIncome ? '+' : '-'}${_formatAmount(t['amount']).replaceAll('XOF ', '')}',
-            style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+        return Card(
+          margin: const EdgeInsets.only(bottom: 6),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: isIncome ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.error.withValues(alpha: 0.12),
+              child: Icon(isIncome ? Icons.arrow_upward : Icons.arrow_downward, color: isIncome ? AppTheme.primary : AppTheme.error, size: 20),
+            ),
+            title: Text(t['description']?.toString() ?? 'Transaction', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+            subtitle: Text(category is Map ? (category['name']?.toString() ?? '') : '', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            trailing: Text(
+              '${isIncome ? '+' : '-'}${_formatAmount(t['amount']).replaceAll('XOF ', '')}',
+              style: TextStyle(color: isIncome ? AppTheme.primary : AppTheme.error, fontWeight: FontWeight.bold),
+            ),
           ),
         );
       }).toList(),

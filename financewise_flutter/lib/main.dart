@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
@@ -8,6 +9,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'theme.dart';
 
 class FadePageRoute extends PageRouteBuilder {
   final Widget child;
@@ -37,6 +39,9 @@ class FadePageRoute extends PageRouteBuilder {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialiser les locales pour DateFormat (fr_FR)
+  await initializeDateFormatting('fr_FR', null);
   
   // Initialiser le service de notifications
   await NotificationService().initialize();
@@ -77,22 +82,8 @@ class _AppInitializerState extends State<AppInitializer> {
         return MaterialApp(
           title: 'FinanceWise',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: Brightness.light,
-            ),
-          ),
-          darkTheme: ThemeData(
-            primarySwatch: Colors.blue,
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: Brightness.dark,
-            ),
-          ),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
           home: Consumer<AuthProvider>(
             builder: (context, auth, _) {

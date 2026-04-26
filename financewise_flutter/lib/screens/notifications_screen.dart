@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -49,9 +50,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                      const SizedBox(height: 12),
+                      Text(_error!, style: const TextStyle(color: AppTheme.error)),
+                    ],
+                  ),
+                )
               : _notifications.isEmpty
-                  ? const Center(child: Text('Aucune notification', style: TextStyle(color: Colors.grey)))
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.notifications_off_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                          const SizedBox(height: 16),
+                          Text('Aucune notification', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: _notifications.length,
@@ -59,13 +78,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       itemBuilder: (ctx, i) {
                         final alert = _notifications[i];
                         final type = alert['type'] ?? 'warning';
-                        final color = type == 'warning' ? Colors.orange : Colors.red;
+                        final color = type == 'warning' ? Colors.orange : AppTheme.error;
                         return Card(
                           color: color.withValues(alpha: 0.1),
                           child: ListTile(
                             leading: Icon(Icons.warning, color: color),
                             title: Text(alert['message'] ?? '', style: TextStyle(color: color)),
-                            subtitle: Text(alert['created_at'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            subtitle: Text(alert['created_at'] ?? '', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                           ),
                         );
                       },

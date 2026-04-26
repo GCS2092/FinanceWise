@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../theme.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -44,42 +45,96 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.account_balance_wallet, size: 64, color: Colors.deepPurple),
-                const SizedBox(height: 16),
-                Text('FinanceWise', style: Theme.of(context).textTheme.headlineMedium),
+                Icon(
+                  Icons.account_balance_wallet, 
+                  size: 80, 
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'FinanceWise',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gérez vos finances intelligemment',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _emailCtrl,
-                  decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email)),
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: const Icon(Icons.email),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) => v != null && v.contains('@') ? null : 'Email invalide',
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordCtrl,
-                  decoration: const InputDecoration(labelText: 'Mot de passe', prefixIcon: Icon(Icons.lock)),
+                  decoration: InputDecoration(
+                    labelText: 'Mot de passe',
+                    prefixIcon: const Icon(Icons.lock),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   obscureText: true,
-                  validator: (v) => v != null && v.length >= 6 ? null : '6 caractères minimum',
+                  validator: (v) => v != null && v.length >= 6 ? null : 'Mot de passe trop court',
                 ),
                 const SizedBox(height: 24),
-                if (auth.error != null)
-                  Text(auth.error!, style: const TextStyle(color: Colors.red)),
                 SizedBox(
                   width: double.infinity,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: auth.isLoading ? null : _submit,
-                    child: auth.isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Se connecter'),
+                    child: auth.isLoading 
+                        ? const SizedBox(
+                            width: 20, 
+                            height: 20, 
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Connexion'),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => Navigator.of(context).push(
+                  onPressed: () => Navigator.push(
+                    context,
                     MaterialPageRoute(builder: (_) => const RegisterScreen()),
                   ),
-                  child: const Text("Pas de compte ? S'inscrire"),
+                  child: Text(
+                    'Pas de compte ? S\'inscrire',
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                  ),
                 ),
+                if (auth.error != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            auth.error!,
+                            style: const TextStyle(color: AppTheme.error),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
