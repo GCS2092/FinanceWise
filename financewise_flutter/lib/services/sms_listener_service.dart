@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'sms_parser_service.dart';
-import '../widgets/sms_confirmation_dialog.dart';
+import 'auto_transaction_service.dart';
 
 class SmsListenerService {
   static const _channel = MethodChannel('com.example.financewise_flutter/sms');
@@ -9,6 +8,7 @@ class SmsListenerService {
   
   final BuildContext context;
   final VoidCallback? onTransactionAdded;
+  final AutoTransactionService _autoService = AutoTransactionService();
   
   SmsListenerService._({
     required this.context,
@@ -40,19 +40,24 @@ class SmsListenerService {
       final sender = smsData['sender'] as String;
       final body = smsData['body'] as String;
       
-      // Parser le SMS
-      final parserService = SmsParserService();
-      final transaction = await parserService.parseSmsWithCategories(body, sender);
-      
-      if (transaction != null) {
-        // Afficher le popup de confirmation
-        if (context.mounted) {
-          final confirmed = await showSmsConfirmationDialog(context, transaction);
-          
-          if (confirmed == true && onTransactionAdded != null) {
-            onTransactionAdded?.call();
-          }
-        }
+      // Vérifier si c'est un SMS financier (Wave / Orange Money avec montant)
+      final provider = _autoService.detectProvider(sender);
+      if (provider == null || !_autoService.hasAmount(body)) return;
+
+      // Envoyer au backend pour parsing async
+      final result = await _autoService.sendToBackend(body, sender);
+
+      if (result != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('SMS financier détecté et envoyé pour traitement'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        // Rafraîchir le dashboard après un délai (le job aura eu le temps de traiter)
+        Future.delayed(const Duration(seconds: 4), () {
+          onTransactionAdded?.call();
+        });
       }
     }
   }

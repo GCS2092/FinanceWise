@@ -18,12 +18,16 @@ class StoreBudgetRequest extends FormRequest
                 'required',
                 'exists:categories,id',
                 function ($attribute, $value, $fail) {
-                    if (\App\Models\Category::where('id', $value)
+                    $category = \App\Models\Category::where('id', $value)
                         ->where(function ($query) {
                             $query->where('is_system', true)
                                   ->orWhere('user_id', auth()->id());
-                        })->doesntExist()) {
+                        })->first();
+
+                    if (!$category) {
                         $fail('La catégorie sélectionnée n\'est pas valide.');
+                    } elseif ($category->type === 'income') {
+                        $fail('Impossible de créer un budget pour une catégorie de revenu.');
                     }
                 },
             ],

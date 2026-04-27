@@ -7,6 +7,7 @@ use App\Http\Resources\CategoryResource;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
@@ -57,6 +58,8 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
+        CategoryService::clearCache(auth()->id());
+
         return response()->json([
             'message' => 'Catégorie mise à jour',
             'data' => new CategoryResource($category),
@@ -78,6 +81,8 @@ class CategoryController extends Controller
         }
 
         $category->delete();
+
+        CategoryService::clearCache(auth()->id());
 
         return response()->json(['message' => 'Catégorie supprimée']);
     }

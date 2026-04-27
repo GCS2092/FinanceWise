@@ -2,16 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ParseSmsJob;
 use App\Models\Category;
 use App\Models\ParsedSms;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\SmsParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class SmsParserTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected User $user;
+    protected Wallet $wallet;
 
     protected function setUp(): void
     {
@@ -22,23 +28,56 @@ class SmsParserTest extends TestCase
         Category::factory()->create(['name' => 'nourriture', 'type' => 'expense', 'is_system' => true]);
     }
 
-    public function test_user_can_parse_wave_sms()
+    public function test_sms_parse_returns_202_and_dispatches_job()
     {
-        $smsContent = 'Vous avez reçu 50000 FCFA de Jean Dupont le 25/04/2026 14:30';
+        Queue::fake();
 
         $response = $this->postJson('/api/sms/parse', [
             'provider' => 'wave',
-            'raw_content' => $smsContent,
+            'raw_content' => 'Vous avez reçu 50000 FCFA de Jean Dupont le 25/04/2026 14:30',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonFragment(['status' => 'processed']);
+        $response->assertStatus(202)
+            ->assertJsonStructure(['message', 'sms' => ['id', 'status']])
+            ->assertJsonPath('sms.status', 'pending');
 
         $this->assertDatabaseHas('parsed_sms', [
             'user_id' => $this->user->id,
             'provider' => 'wave',
-            'status' => 'processed',
+            'status' => 'pending',
         ]);
+
+        Queue::assertPushed(ParseSmsJob::class);
+    }
+
+    public function test_sms_batch_returns_202_and_dispatches_multiple_jobs()
+    {
+        Queue::fake();
+
+        $messages = [
+            ['provider' => 'wave', 'raw_content' => 'Vous avez reçu 10000 FCFA'],
+            ['provider' => 'orange_money', 'raw_content' => 'Paiement effectué: 5000 FCFA'],
+        ];
+
+        $response = $this->postJson('/api/sms/batch', ['messages' => $messages]);
+
+        $response->assertStatus(202)
+            ->assertJsonCount(2, 'results');
+
+        $this->assertDatabaseCount('parsed_sms', 2);
+        Queue::assertPushed(ParseSmsJob::class, 2);
+    }
+
+    public function test_sms_service_processes_wave_income()
+    {
+        $service = app(SmsParserService::class);
+
+        $sms = $service->parse([
+            'provider' => 'wave',
+            'raw_content' => 'Vous avez reçu 50000 FCFA de Jean Dupont le 25/04/2026 14:30',
+        ], $this->user->id);
+
+        $this->assertEquals('processed', $sms->status);
 
         $this->assertDatabaseHas('transactions', [
             'user_id' => $this->user->id,
@@ -48,16 +87,16 @@ class SmsParserTest extends TestCase
         ]);
     }
 
-    public function test_user_can_parse_orange_money_sms()
+    public function test_sms_service_processes_orange_money_expense()
     {
-        $smsContent = 'Transfert effectué: 25000 FCFA à Marie le 25/04/2026 10:15';
+        $service = app(SmsParserService::class);
 
-        $response = $this->postJson('/api/sms/parse', [
+        $sms = $service->parse([
             'provider' => 'orange_money',
-            'raw_content' => $smsContent,
-        ]);
+            'raw_content' => 'Transfert effectué: 25000 FCFA à Marie le 25/04/2026 10:15',
+        ], $this->user->id);
 
-        $response->assertStatus(200);
+        $this->assertEquals('processed', $sms->status);
 
         $this->assertDatabaseHas('transactions', [
             'user_id' => $this->user->id,
@@ -67,31 +106,16 @@ class SmsParserTest extends TestCase
         ]);
     }
 
-    public function test_user_can_parse_batch_sms()
-    {
-        $messages = [
-            ['provider' => 'wave', 'raw_content' => 'Vous avez reçu 10000 FCFA'],
-            ['provider' => 'orange_money', 'raw_content' => 'Paiement effectué: 5000 FCFA'],
-        ];
-
-        $response = $this->postJson('/api/sms/batch', ['messages' => $messages]);
-
-        $response->assertStatus(200)
-            ->assertJsonFragment(['message' => '2 SMS traités']);
-
-        $this->assertDatabaseCount('parsed_sms', 2);
-    }
-
     public function test_unparseable_sms_is_stored_as_failed()
     {
-        $invalidSms = 'Random text without amount';
+        $service = app(SmsParserService::class);
 
-        $response = $this->postJson('/api/sms/parse', [
+        $sms = $service->parse([
             'provider' => 'wave',
-            'raw_content' => $invalidSms,
-        ]);
+            'raw_content' => 'Random text without amount',
+        ], $this->user->id);
 
-        $response->assertStatus(200);
+        $this->assertEquals('failed', $sms->status);
 
         $this->assertDatabaseHas('parsed_sms', [
             'user_id' => $this->user->id,
@@ -101,16 +125,15 @@ class SmsParserTest extends TestCase
 
     public function test_parser_detects_category_from_keywords()
     {
-        $smsContent = 'Paiement restaurant nourriture: 5000 FCFA';
+        $service = app(SmsParserService::class);
 
-        $response = $this->postJson('/api/sms/parse', [
+        $sms = $service->parse([
             'provider' => 'wave',
-            'raw_content' => $smsContent,
-        ]);
-
-        $response->assertStatus(200);
+            'raw_content' => 'Paiement restaurant nourriture: 5000 FCFA',
+        ], $this->user->id);
 
         $transaction = \App\Models\Transaction::where('user_id', $this->user->id)->first();
+        $this->assertNotNull($transaction);
         $this->assertNotNull($transaction->category_id);
         $category = Category::find($transaction->category_id);
         $this->assertEquals('nourriture', $category->name);

@@ -42,19 +42,8 @@ class SmsNativeService {
     final sender = smsData['sender'] ?? '';
     final body = smsData['body'] ?? '';
 
-    // Parser le SMS
-    final parsedData = await _autoService.parseSms(body, sender);
-    if (parsedData == null) return;
-
-    // Si auto-confirmation est activé, ajouter directement
-    if (_autoService.autoConfirm) {
-      await _autoService.addTransaction(parsedData, context);
-    } else {
-      // Sinon, afficher la dialog de confirmation
-      if (context.mounted) {
-        _autoService.showConfirmDialog(context, parsedData);
-      }
-    }
+    // Envoyer au backend pour traitement async
+    await _autoService.handleAutoSms(body, sender, context);
   }
 
   void stopListening() {

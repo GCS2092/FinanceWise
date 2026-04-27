@@ -10,31 +10,47 @@ use App\Models\Budget;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
+        $cacheKey = "dashboard:{$user->id}";
+
+        $data = Cache::remember($cacheKey, 300, function () use ($user) {
+            return $this->buildDashboard($user);
+        });
+
+        return response()->json($data);
+    }
+
+    protected function buildDashboard($user): array
+    {
         $now = now();
         $startOfMonth = $now->copy()->startOfMonth();
         $endOfMonth = $now->copy()->endOfMonth();
 
-        $totalIncome = $user->transactions()
-            ->where('type', 'income')
+        // Une seule requête pour revenus + dépenses du mois (PostgreSQL)
+        $monthlyTotals = $user->transactions()
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-            ->sum('amount');
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+                COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
+            ")
+            ->first();
 
-        $totalExpense = $user->transactions()
-            ->where('type', 'expense')
-            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-            ->sum('amount');
+        $totalIncome = (float) $monthlyTotals->total_income;
+        $totalExpense = (float) $monthlyTotals->total_expense;
 
-        $balance = $user->wallets()->sum('balance');
+        $balance = (float) $user->wallets()->sum('balance');
 
         $monthlyIncomeTarget = $user->monthly_income_target ?? 0;
         $incomeProgress = $monthlyIncomeTarget > 0 ? ($totalIncome / $monthlyIncomeTarget) * 100 : 0;
 
+        // Top catégories avec window function pour pourcentage
         $topCategories = $user->transactions()
             ->where('type', 'expense')
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
@@ -73,7 +89,6 @@ class DashboardController extends Controller
             }
         }
 
-        // Alertes de revenu
         if ($monthlyIncomeTarget > 0) {
             if ($incomeProgress >= 100) {
                 $alerts[] = [
@@ -88,10 +103,10 @@ class DashboardController extends Controller
             }
         }
 
-        return response()->json([
-            'balance' => (float) $balance,
-            'monthly_income' => (float) $totalIncome,
-            'monthly_expense' => (float) $totalExpense,
+        return [
+            'balance' => $balance,
+            'monthly_income' => $totalIncome,
+            'monthly_expense' => $totalExpense,
             'monthly_income_target' => (float) $monthlyIncomeTarget,
             'income_progress' => (float) $incomeProgress,
             'top_categories' => $topCategories->map(function ($item) {
@@ -103,6 +118,6 @@ class DashboardController extends Controller
             'recent_transactions' => TransactionResource::collection($recentTransactions),
             'budgets' => BudgetResource::collection($budgets),
             'alerts' => $alerts,
-        ]);
+        ];
     }
 }

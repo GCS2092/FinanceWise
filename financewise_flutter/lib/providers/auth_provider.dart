@@ -11,27 +11,46 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   bool _isAuthenticated = false;
 
+  AuthProvider() {
+    _api.onSessionExpired = _handleSessionExpired;
+  }
+
   bool get isLoading => _isLoading;
   String? get error => _error;
   User? get user => _user;
   bool get isAuthenticated => _isAuthenticated;
+
+  void _handleSessionExpired() {
+    _isAuthenticated = false;
+    _user = null;
+    _error = 'Session expirée. Veuillez vous reconnecter.';
+    _clearUserData();
+    notifyListeners();
+  }
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    final result = await _api.login(email, password);
-    _isLoading = false;
+    try {
+      final result = await _api.login(email, password);
+      _isLoading = false;
 
-    if (result != null && result['token'] != null) {
-      _isAuthenticated = true;
-      _user = User.fromJson(result['user'] ?? {});
-      await _saveUserData(result);
-      notifyListeners();
-      return true;
-    } else {
-      _error = result?['message'] ?? 'Échec de la connexion';
+      if (result != null && result['token'] != null) {
+        _isAuthenticated = true;
+        _user = User.fromJson(result['user'] ?? {});
+        await _saveUserData(result);
+        notifyListeners();
+        return true;
+      } else {
+        _error = result?['message'] ?? 'Identifiants incorrects';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Erreur de connexion au serveur';
       notifyListeners();
       return false;
     }
@@ -42,17 +61,24 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final result = await _api.register(name, email, password);
-    _isLoading = false;
+    try {
+      final result = await _api.register(name, email, password);
+      _isLoading = false;
 
-    if (result != null && result['token'] != null) {
-      _isAuthenticated = true;
-      _user = User.fromJson(result['user'] ?? {});
-      await _saveUserData(result);
-      notifyListeners();
-      return true;
-    } else {
-      _error = result?['message'] ?? 'Échec de l\'inscription';
+      if (result != null && result['token'] != null) {
+        _isAuthenticated = true;
+        _user = User.fromJson(result['user'] ?? {});
+        await _saveUserData(result);
+        notifyListeners();
+        return true;
+      } else {
+        _error = result?['message'] ?? 'Échec de l\'inscription';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Erreur de connexion au serveur';
       notifyListeners();
       return false;
     }

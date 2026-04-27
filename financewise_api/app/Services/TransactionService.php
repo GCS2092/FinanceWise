@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\Api\WalletController;
+use App\Jobs\BudgetAlertJob;
 use App\Models\Transaction;
 use App\Models\Wallet;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class TransactionService
@@ -16,6 +19,10 @@ class TransactionService
 
             $this->updateWalletBalance($transaction);
             $this->updateBudgetSpent($transaction);
+
+            $this->invalidateCache($userId);
+
+            BudgetAlertJob::dispatch($transaction->id);
 
             return $transaction;
         });
@@ -33,9 +40,9 @@ class TransactionService
             $transaction->update($data);
             $transaction->refresh();
 
-            // Revert old wallet
+            // Revert old wallet avec lockForUpdate (PostgreSQL)
             if ($oldWalletId) {
-                $oldWallet = Wallet::find($oldWalletId);
+                $oldWallet = Wallet::lockForUpdate()->find($oldWalletId);
                 if ($oldWallet) {
                     if ($oldType === 'income') {
                         $oldWallet->balance -= $oldAmount;
@@ -63,22 +70,29 @@ class TransactionService
             $this->updateWalletBalance($transaction);
             $this->updateBudgetSpent($transaction);
 
+            $this->invalidateCache($transaction->user_id);
+
             return $transaction;
         });
     }
 
     public function delete(Transaction $transaction): void
     {
+        $userId = $transaction->user_id;
+
         DB::transaction(function () use ($transaction) {
             $this->revertWalletBalance($transaction);
             $this->revertBudgetSpent($transaction);
             $transaction->delete();
         });
+
+        $this->invalidateCache($userId);
     }
 
     protected function updateWalletBalance(Transaction $transaction): void
     {
-        $wallet = Wallet::find($transaction->wallet_id);
+        // lockForUpdate pour éviter les race conditions (PostgreSQL)
+        $wallet = Wallet::lockForUpdate()->find($transaction->wallet_id);
         if (!$wallet) return;
 
         if ($transaction->type === 'income') {
@@ -92,7 +106,7 @@ class TransactionService
 
     protected function revertWalletBalance(Transaction $transaction): void
     {
-        $wallet = Wallet::find($transaction->wallet_id);
+        $wallet = Wallet::lockForUpdate()->find($transaction->wallet_id);
         if (!$wallet) return;
 
         if ($transaction->type === 'income') {
@@ -135,5 +149,11 @@ class TransactionService
             $budget->spent = max(0, $budget->spent - $transaction->amount);
             $budget->save();
         }
+    }
+
+    protected function invalidateCache(int $userId): void
+    {
+        Cache::forget("dashboard:{$userId}");
+        Cache::forget("wallets:user:{$userId}");
     }
 }

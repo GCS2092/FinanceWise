@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WalletResource;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class WalletController extends Controller
 {
     public function index()
     {
-        return WalletResource::collection(auth()->user()->wallets);
+        $userId = auth()->id();
+        $wallets = Cache::remember("wallets:user:{$userId}", 30, function () {
+            return auth()->user()->wallets;
+        });
+        return WalletResource::collection($wallets);
     }
 
     public function store(Request $request)
@@ -25,6 +30,8 @@ class WalletController extends Controller
 
         $validated['user_id'] = auth()->id();
         $wallet = Wallet::create($validated);
+
+        self::clearCache(auth()->id());
 
         return new WalletResource($wallet);
     }
@@ -45,6 +52,8 @@ class WalletController extends Controller
 
         $wallet->update($validated);
 
+        self::clearCache(auth()->id());
+
         return new WalletResource($wallet);
     }
 
@@ -58,6 +67,13 @@ class WalletController extends Controller
 
         $wallet->delete();
 
-        return response()->json(['message' => 'Wallet deleted']);
+        self::clearCache(auth()->id());
+
+        return response()->json(['message' => 'Portefeuille supprimé']);
+    }
+
+    public static function clearCache(int $userId): void
+    {
+        Cache::forget("wallets:user:{$userId}");
     }
 }

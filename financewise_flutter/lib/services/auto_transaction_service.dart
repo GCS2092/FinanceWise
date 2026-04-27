@@ -33,177 +33,72 @@ class AutoTransactionService {
   bool get isEnabled => _isEnabled;
   bool get autoConfirm => _autoConfirm;
 
-  Future<Map<String, dynamic>?> parseSms(String smsBody, String sender) async {
-    // Détection du fournisseur
-    String provider = 'unknown';
-    if (sender.contains('Wave') || sender.toLowerCase().contains('wave')) {
-      provider = 'wave';
-    } else if (sender.contains('Orange') || sender.toLowerCase().contains('orange')) {
-      provider = 'orange_money';
-    }
-
-    if (provider == 'unknown') return null;
-
-    // Parsing du montant
-    final amountRegex = RegExp(r'(\d+[.,]?\d*)\s*(?:FCFA|XOF|F|CFA)');
-    final amountMatch = amountRegex.firstMatch(smsBody);
-    if (amountMatch == null) return null;
-
-    final amount = double.tryParse(amountMatch.group(1)!.replaceAll(',', '.')) ?? 0;
-    if (amount == 0) return null;
-
-    // Détection du type (revenu/dépense)
-    final type = smsBody.toLowerCase().contains('reçu') || 
-                 smsBody.toLowerCase().contains('dépot') ||
-                 smsBody.toLowerCase().contains('crédit') ? 'income' : 'expense';
-
-    // Détection de la catégorie automatique
-    final category = _detectCategory(smsBody);
-
-    return {
-      'provider': provider,
-      'amount': amount,
-      'type': type,
-      'category': category,
-      'description': _generateDescription(smsBody, provider),
-      'raw_sms': smsBody,
-      'sender': sender,
-    };
+  /// Détecte le fournisseur depuis le sender du SMS
+  String? detectProvider(String sender) {
+    if (sender.toLowerCase().contains('wave')) return 'wave';
+    if (sender.toLowerCase().contains('orange')) return 'orange_money';
+    return null;
   }
 
-  String _detectCategory(String smsBody) {
-    final lowerBody = smsBody.toLowerCase();
-    
-    // Mots-clés par catégorie
-    final categoryKeywords = {
-      'nourriture': ['restaurant', 'nourriture', 'food', 'manger', 'café', 'bar'],
-      'transport': ['taxi', 'bus', 'transport', 'car', 'essence', 'station'],
-      'shopping': ['achat', 'shopping', 'magasin', 'boutique', 'supermarché'],
-      'facture': ['facture', 'eau', 'électricité', 'internet', 'sénélec', 'sde'],
-      'santé': ['pharmacie', 'hôpital', 'santé', 'médicament', 'clinique'],
-      'éducation': ['école', 'cours', 'formation', 'livre', 'éducation'],
-      'communication': ['airtel', 'orange', 'expresso', 'credit', 'appel', 'internet'],
-    };
-
-    for (final entry in categoryKeywords.entries) {
-      for (final keyword in entry.value) {
-        if (lowerBody.contains(keyword)) {
-          return entry.key;
-        }
-      }
-    }
-
-    // Catégorie par défaut selon le type
-    return 'divers';
+  /// Vérifie si le SMS contient un montant (filtre rapide avant d'envoyer au backend)
+  bool hasAmount(String smsBody) {
+    final amountRegex = RegExp(r'(\d+[.,]?\d*)\s*(?:FCFA|XOF|F|CFA)', caseSensitive: false);
+    return amountRegex.hasMatch(smsBody);
   }
 
-  String _generateDescription(String smsBody, String provider) {
-    // Extraire une description pertinente du SMS
-    final words = smsBody.split(' ');
-    final filtered = words.where((w) => w.length > 3).toList();
-    if (filtered.length >= 2) {
-      return '${provider} - ${filtered.sublist(0, 3).join(' ')}';
-    }
-    return 'Transaction $provider';
-  }
+  /// Envoie le SMS au backend pour parsing async via la queue
+  Future<Map<String, dynamic>?> sendToBackend(String smsBody, String sender) async {
+    final provider = detectProvider(sender);
+    if (provider == null) return null;
+    if (!hasAmount(smsBody)) return null;
 
-  Future<void> addTransaction(Map<String, dynamic> parsedData, BuildContext? context) async {
     try {
-      // Récupérer le wallet par défaut
-      final wallets = await _api.get('/wallets');
-      final walletList = wallets is Map ? (wallets['data'] ?? []) : wallets;
-      if (walletList == null || walletList.isEmpty) {
-        if (context != null) {
+      final response = await _api.post('/sms/parse', {
+        'provider': provider,
+        'raw_content': smsBody,
+      });
+
+      if (response is Map<String, dynamic> && response['sms'] != null) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Gestion automatique : envoie au backend + notifie l'utilisateur
+  Future<void> handleAutoSms(String smsBody, String sender, BuildContext? context) async {
+    if (!_isEnabled) return;
+
+    final provider = detectProvider(sender);
+    if (provider == null) return;
+    if (!hasAmount(smsBody)) return;
+
+    try {
+      final result = await sendToBackend(smsBody, sender);
+
+      if (result != null) {
+        // SMS accepté par le backend (202)
+        await NotificationService().showNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: 'SMS détecté',
+          body: 'Transaction en cours de traitement depuis $sender',
+        );
+
+        if (context != null && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aucun wallet disponible')),
+            const SnackBar(content: Text('SMS envoyé au serveur pour traitement')),
           );
         }
-        return;
-      }
-
-      final defaultWallet = walletList[0];
-      final walletId = defaultWallet['id'];
-
-      // Récupérer ou créer la catégorie
-      final categories = await _api.get('/categories');
-      final categoryList = categories is Map ? (categories['data'] ?? []) : categories;
-      
-      String? categoryId;
-      if (categoryList != null && categoryList.isNotEmpty) {
-        final existingCategory = categoryList.firstWhere(
-          (c) => c['name'] == parsedData['category'],
-          orElse: () => null,
-        );
-        if (existingCategory != null) {
-          categoryId = existingCategory['id'];
-        }
-      }
-
-      // Créer la transaction
-      final transactionData = {
-        'wallet_id': walletId,
-        'category_id': categoryId,
-        'type': parsedData['type'],
-        'amount': parsedData['amount'],
-        'description': parsedData['description'],
-        'transaction_date': DateTime.now().toIso8601String().split('T').first,
-        'source': 'auto_${parsedData['provider']}',
-      };
-
-      await _api.post('/transactions', transactionData);
-
-      // Notification de succès
-      await NotificationService().showNotification(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        title: 'Transaction ajoutée automatiquement',
-        body: '${parsedData['type'] == 'income' ? 'Revenu' : 'Dépense'} de ${parsedData['amount']} FCFA',
-      );
-
-      if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Transaction ajoutée: ${parsedData['amount']} FCFA')),
-        );
       }
     } catch (e) {
-      if (context != null) {
+      if (context != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
+          SnackBar(content: Text('Erreur d\'envoi SMS : $e')),
         );
       }
     }
   }
 
-  void showConfirmDialog(BuildContext context, Map<String, dynamic> parsedData) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nouvelle transaction détectée'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Montant: ${parsedData['amount']} FCFA'),
-            Text('Type: ${parsedData['type'] == 'income' ? 'Revenu' : 'Dépense'}'),
-            Text('Catégorie: ${parsedData['category']}'),
-            Text('Description: ${parsedData['description']}'),
-            const SizedBox(height: 16),
-            const Text('Souhaitez-vous ajouter cette transaction ?'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Ignorer'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              addTransaction(parsedData, context);
-            },
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
-    );
-  }
 }

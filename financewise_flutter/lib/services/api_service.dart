@@ -4,12 +4,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/user.dart';
 
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  ApiException(this.statusCode, this.message);
+
+  @override
+  String toString() => message;
+}
+
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
 
   String? _token;
+
+  // Callback déclenché quand le token est expiré (401)
+  void Function()? onSessionExpired;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -135,17 +147,50 @@ class ApiService {
   // ─── HELPERS ──────────────────────────────────
 
   dynamic _parse(http.Response response) {
+    // Succès (200, 201, 202, etc.)
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return response.body.isNotEmpty ? jsonDecode(response.body) : null;
     }
+
+    // Token expiré ou invalide → déconnexion automatique
+    if (response.statusCode == 401) {
+      _handleSessionExpired();
+      return {'message': 'Session expirée. Veuillez vous reconnecter.', '_expired': true};
+    }
+
+    // Rate limit dépassé
+    if (response.statusCode == 429) {
+      final body = _tryDecode(response.body);
+      final message = body?['message'] ?? 'Trop de requêtes. Réessayez dans quelques instants.';
+      return {'message': message, '_rate_limited': true};
+    }
+
+    // Conflit (ex: suppression wallet avec transactions)
+    if (response.statusCode == 409) {
+      final body = _tryDecode(response.body);
+      final message = body?['message'] ?? 'Action impossible : ressource en cours d\'utilisation.';
+      return {'message': message, '_conflict': true};
+    }
+
     return _handleError(response);
   }
 
   Map<String, dynamic>? _handleError(http.Response response) {
+    final body = _tryDecode(response.body);
+    if (body != null) return body;
+    return {'message': 'Erreur serveur (${response.statusCode})'};
+  }
+
+  Map<String, dynamic>? _tryDecode(String body) {
     try {
-      return jsonDecode(response.body);
+      return jsonDecode(body) as Map<String, dynamic>;
     } catch (_) {
-      return {'message': 'Erreur ${response.statusCode}'};
+      return null;
     }
+  }
+
+  void _handleSessionExpired() {
+    clearToken();
+    onSessionExpired?.call();
   }
 }

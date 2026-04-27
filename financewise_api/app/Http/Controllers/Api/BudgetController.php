@@ -25,7 +25,7 @@ class BudgetController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        return BudgetResource::collection($query->get());
+        return BudgetResource::collection($query->paginate(20));
     }
 
     public function store(StoreBudgetRequest $request): JsonResponse

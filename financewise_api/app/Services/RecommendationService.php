@@ -74,7 +74,7 @@ class RecommendationService
     {
         return Transaction::where('user_id', $userId)
             ->where('type', 'expense')
-            ->selectRaw('DATE_FORMAT(transaction_date, "%Y-%m") as month, SUM(amount) as total')
+            ->selectRaw('TO_CHAR(transaction_date, \'YYYY-MM\') as month, SUM(amount) as total')
             ->groupBy('month')
             ->orderBy('month', 'desc')
             ->limit(6)
@@ -90,7 +90,7 @@ class RecommendationService
         }
 
         $currentMonth = $monthlyTrends->first();
-        $previousMonth = $monthlyTrending[1];
+        $previousMonth = $monthlyTrends[1];
 
         // Comparaison avec le mois précédent
         if ($currentMonth->total > $previousMonth->total) {
@@ -163,7 +163,7 @@ class RecommendationService
             ->get();
 
         // Fréquentation de restaurants
-        $restaurantCount = $transactions->where('description', 'like', '%restaurant%')->count();
+        $restaurantCount = $transactions->filter(fn($t) => str_contains(strtolower($t->description ?? ''), 'restaurant'))->count();
         if ($restaurantCount > 10) {
             $recommendations[] = [
                 'type' => 'suggestion',
@@ -172,8 +172,7 @@ class RecommendationService
         }
 
         // Dépenses de transport
-        $transportTotal = $transactions->where('description', 'like', '%taxi%')
-            ->orWhere('description', 'like', '%bus%')
+        $transportTotal = $transactions->filter(fn($t) => str_contains(strtolower($t->description ?? ''), 'taxi') || str_contains(strtolower($t->description ?? ''), 'bus'))
             ->sum('amount');
         if ($transportTotal > 50000) {
             $recommendations[] = [

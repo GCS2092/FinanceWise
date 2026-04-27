@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AlertController;
-use App\Http\Controllers\Api\AutoTransactionController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
@@ -15,10 +14,12 @@ use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Routes publiques avec throttle spécifique
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
-Route::middleware('auth:sanctum')->group(function () {
+// Routes protégées avec throttle global API (60/min par user)
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/user', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -46,11 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/recommendations', [RecommendationController::class, 'index']);
 
-    Route::post('/sms/parse', [SmsParserController::class, 'store']);
-    Route::post('/sms/batch', [SmsParserController::class, 'batch']);
-    
-    // Auto-transaction endpoints
-    Route::post('/auto/sms', [AutoTransactionController::class, 'receiveSms']);
-    Route::get('/auto/suggestions/categories', [AutoTransactionController::class, 'getCategorySuggestions']);
-    Route::get('/auto/suggestions/descriptions', [AutoTransactionController::class, 'getDescriptionSuggestions']);
+    // SMS avec throttle spécifique (30/min par user)
+    Route::middleware('throttle:sms')->group(function () {
+        Route::post('/sms/parse', [SmsParserController::class, 'store']);
+        Route::post('/sms/batch', [SmsParserController::class, 'batch']);
+        Route::get('/sms/parse/{parsedSms}', [SmsParserController::class, 'show']);
+    });
 });

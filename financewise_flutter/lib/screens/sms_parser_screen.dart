@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
-import '../services/sms_parser_service.dart';
 import '../theme.dart';
-import '../widgets/sms_confirmation_dialog.dart';
 
 class SmsParserScreen extends StatefulWidget {
   const SmsParserScreen({super.key});
@@ -23,51 +21,129 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
 
   Future<void> _parseSms() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    final message = _contentCtrl.text.trim();
-    final sender = _provider == 'wave' ? 'Wave' : 'Orange Money';
-    
+
     setState(() {
       _parsing = true;
       _error = null;
       _result = null;
     });
-    
+
     try {
-      // Utiliser le service de parsing avec catégories
-      final parserService = SmsParserService();
-      final transaction = await parserService.parseSmsWithCategories(message, sender);
-      
-      if (transaction == null) {
+      final response = await _api.post('/sms/parse', {
+        'provider': _provider,
+        'raw_content': _contentCtrl.text.trim(),
+      });
+
+      if (!mounted) return;
+
+      if (response is Map<String, dynamic>) {
+        if (response['_rate_limited'] == true) {
+          setState(() {
+            _error = response['message'];
+            _parsing = false;
+          });
+          return;
+        }
+
+        // 202 Accepted → SMS en cours de traitement
+        final smsData = response['sms'];
+        if (smsData != null) {
+          setState(() {
+            _result = 'SMS envoyé au serveur (traitement en cours)';
+            _parsing = false;
+          });
+
+          // Polling pour connaître le statut final
+          _pollSmsStatus(smsData['id']);
+        } else {
+          setState(() {
+            _result = response['message'] ?? 'SMS envoyé';
+            _parsing = false;
+          });
+        }
+      } else {
         setState(() {
-          _error = 'Aucune transaction détectée dans ce SMS';
+          _error = 'Réponse inattendue du serveur';
           _parsing = false;
         });
-        return;
       }
-      
-      setState(() {
-        _parsing = false;
-      });
-      
-      // Afficher le dialogue de confirmation
-      final confirmed = await showSmsConfirmationDialog(context, transaction);
-      
-      if (confirmed == true && mounted) {
-        setState(() {
-          _result = 'Transaction ajoutée avec succès';
-        });
-      } else if (confirmed == false && mounted) {
-        setState(() {
-          _result = 'Transaction ignorée';
-        });
-      }
-      
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _parsing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Erreur de connexion au serveur';
+          _parsing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pollSmsStatus(dynamic smsId) async {
+    // Attendre un peu puis vérifier le statut
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    try {
+      final result = await _api.get('/sms/parse/$smsId');
+      if (!mounted) return;
+
+      if (result is Map<String, dynamic>) {
+        final status = result['data']?['status'] ?? result['status'];
+        if (status == 'processed') {
+          setState(() => _result = 'Transaction créée avec succès depuis le SMS');
+        } else if (status == 'failed') {
+          final errorMsg = result['data']?['error_message'] ?? result['error_message'] ?? '';
+          setState(() => _error = 'Échec du traitement : $errorMsg');
+          setState(() => _result = null);
+        } else if (status == 'pending') {
+          setState(() => _result = 'Traitement en cours...');
+          // Retry une fois de plus
+          await Future.delayed(const Duration(seconds: 3));
+          if (mounted) _pollSmsStatus(smsId);
+        }
+      }
+    } catch (_) {
+      // Le polling est best-effort, pas critique
+    }
+  }
+
+  Future<void> _parseBatch() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final lines = _contentCtrl.text.trim().split('\n---\n');
+    if (lines.length <= 1) {
+      setState(() => _error = 'Séparez les SMS par ---');
+      return;
+    }
+
+    setState(() {
+      _parsing = true;
+      _error = null;
+      _result = null;
+    });
+
+    try {
+      final messages = lines
+          .where((l) => l.trim().isNotEmpty)
+          .map((l) => {'provider': _provider, 'raw_content': l.trim()})
+          .toList();
+
+      final response = await _api.post('/sms/batch', {'messages': messages});
+
+      if (!mounted) return;
+
+      if (response is Map<String, dynamic>) {
+        setState(() {
+          _result = response['message'] ?? '${messages.length} SMS envoyés';
+          _parsing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Erreur de connexion au serveur';
+          _parsing = false;
+        });
+      }
     }
   }
 
@@ -119,18 +195,18 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
                           child: const Icon(Icons.info_outline, color: AppTheme.primary, size: 20),
                         ),
                         const SizedBox(width: 12),
-                        Text('Exemples de SMS', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                        Text('Comment ça marche', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Wave: "Vous avez reçu 50000 FCFA de ..."',
+                      'Collez votre SMS Wave ou Orange Money. Le serveur détectera automatiquement le montant, le type et la catégorie.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
-                      'Orange Money: "Transfert effectué: 25000 FCFA à ..."',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      'Pour envoyer plusieurs SMS, séparez-les par ---',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
                     ),
                   ],
                 ),
@@ -164,13 +240,26 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
               validator: (v) => v == null || v.trim().isEmpty ? 'Contenu requis' : null,
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _parsing ? null : _parseSms,
-                icon: _parsing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow),
-                label: Text(_parsing ? 'Analyse en cours...' : 'Analyser le SMS'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _parsing ? null : _parseSms,
+                    icon: _parsing
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.play_arrow),
+                    label: Text(_parsing ? 'Envoi...' : 'Analyser'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _parsing ? null : _parseBatch,
+                    icon: const Icon(Icons.playlist_add),
+                    label: const Text('Batch'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             if (_error != null)

@@ -44,8 +44,8 @@ class Budget extends Model
     public function transactions()
     {
         return $this->hasManyThrough(Transaction::class, Category::class, 'id', 'category_id')
-            ->where('type', 'expense')
-            ->whereBetween('transaction_date', [$this->start_date, $this->end_date]);
+            ->where('transactions.type', 'expense')
+            ->whereBetween('transactions.transaction_date', [$this->start_date, $this->end_date]);
     }
 
     public function scopeActive($query)

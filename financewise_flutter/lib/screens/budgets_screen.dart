@@ -60,7 +60,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       ),
     );
     if (confirm != true) return;
-    await _api.delete('/budgets/$id');
+    final result = await _api.delete('/budgets/$id');
+
+    if (result is Map && result['message'] != null && (result['_conflict'] == true || result['_rate_limited'] == true)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message']), backgroundColor: AppTheme.error),
+        );
+      }
+      return;
+    }
     
     // Notification de suppression
     await NotificationService().showNotification(

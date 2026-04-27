@@ -12,15 +12,18 @@ class SmsParserService
     {
     }
 
-    public function parse(array $data, int $userId): ParsedSms
+    public function createPending(array $data, int $userId): ParsedSms
     {
-        $sms = ParsedSms::create([
+        return ParsedSms::create([
             'user_id' => $userId,
             'provider' => $data['provider'],
             'raw_content' => $data['raw_content'],
             'status' => 'pending',
         ]);
+    }
 
+    public function processExistingSms(ParsedSms $sms, array $data, int $userId): ParsedSms
+    {
         try {
             $parsed = $this->extractData($data['raw_content'], $data['provider']);
 
@@ -48,14 +51,20 @@ class SmsParserService
 
                 $sms->update(['transaction_id' => $transaction->id, 'status' => 'processed']);
             } else {
-                $sms->update(['status' => 'failed', 'error_message' => 'Unable to parse SMS']);
+                $sms->update(['status' => 'failed', 'error_message' => 'Impossible de parser le SMS']);
             }
         } catch (\Exception $e) {
             $sms->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
-            Log::error('SMS parse error', ['error' => $e->getMessage(), 'sms' => $data['raw_content']]);
+            Log::error('SMS parse error', ['error' => $e->getMessage(), 'sms_id' => $sms->id]);
         }
 
-        return $sms;
+        return $sms->refresh();
+    }
+
+    public function parse(array $data, int $userId): ParsedSms
+    {
+        $sms = $this->createPending($data, $userId);
+        return $this->processExistingSms($sms, $data, $userId);
     }
 
     protected function extractData(string $content, string $provider): array
@@ -64,15 +73,15 @@ class SmsParserService
         $result = [];
 
         if ($provider === 'wave') {
-            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert envoye')) {
+            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert envoye') || str_contains($content, 'transfert envoyé')) {
                 $result['type'] = 'expense';
-            } elseif (str_contains($content, 'depot') || str_contains($content, 'transfert recu')) {
+            } elseif (str_contains($content, 'depot') || str_contains($content, 'dépôt') || str_contains($content, 'transfert recu') || str_contains($content, 'transfert reçu') || str_contains($content, 'vous avez recu') || str_contains($content, 'vous avez reçu')) {
                 $result['type'] = 'income';
             }
         } elseif ($provider === 'orange_money') {
-            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert effectue')) {
+            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert effectue') || str_contains($content, 'transfert effectué')) {
                 $result['type'] = 'expense';
-            } elseif (str_contains($content, 'depot') || str_contains($content, 'transfert recu')) {
+            } elseif (str_contains($content, 'depot') || str_contains($content, 'dépôt') || str_contains($content, 'transfert recu') || str_contains($content, 'transfert reçu') || str_contains($content, 'vous avez recu') || str_contains($content, 'vous avez reçu')) {
                 $result['type'] = 'income';
             }
         }

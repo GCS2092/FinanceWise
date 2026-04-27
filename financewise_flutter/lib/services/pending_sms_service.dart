@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'sms_parser_service.dart';
-import '../widgets/sms_confirmation_dialog.dart';
+import 'auto_transaction_service.dart';
 
 class PendingSmsService {
   static const _prefsKey = 'pending_sms';
@@ -37,21 +36,12 @@ class PendingSmsService {
       final sender = pendingSms['sender'] as String;
       final body = pendingSms['body'] as String;
       
-      // Parser le SMS
-      final parserService = SmsParserService();
-      final transaction = await parserService.parseSmsWithCategories(body, sender);
+      // Envoyer au backend pour traitement async
+      final autoService = AutoTransactionService();
+      await autoService.handleAutoSms(body, sender, context);
       
-      if (transaction != null) {
-        // Afficher le popup de confirmation
-        if (context.mounted) {
-          await showSmsConfirmationDialog(context, transaction);
-          // Effacer les données après affichage
-          await clearPendingSms();
-        }
-      } else {
-        // Si le parsing échoue, effacer quand même
-        await clearPendingSms();
-      }
+      // Effacer les données après envoi
+      await clearPendingSms();
     }
   }
 }
