@@ -80,6 +80,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [

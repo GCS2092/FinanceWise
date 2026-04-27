@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 import 'budget_form_screen.dart';
 
 class BudgetsScreen extends StatefulWidget {
@@ -73,16 +72,145 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     _load();
   }
 
-  String _fmt(dynamic v) {
-    final n = (v ?? 0).toDouble();
-    return NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0).format(n);
+  String _fmt(dynamic v) => AppTheme.formatCurrency(v);
+
+  // Icône selon catégorie
+  IconData _categoryIcon(String? name) {
+    final n = name?.toLowerCase() ?? '';
+    if (n.contains('aliment') || n.contains('food') || n.contains('nourriture')) return Icons.restaurant;
+    if (n.contains('transport') || n.contains('voiture') || n.contains('car')) return Icons.directions_car;
+    if (n.contains('logement') || n.contains('maison') || n.contains('house')) return Icons.home;
+    if (n.contains('santé') || n.contains('health') || n.contains('medical')) return Icons.medical_services;
+    if (n.contains('éducation') || n.contains('school') || n.contains('études')) return Icons.school;
+    if (n.contains('shopping') || n.contains('achats') || n.contains('magasin')) return Icons.shopping_bag;
+    if (n.contains('loisir') || n.contains('fun') || n.contains('divertissement')) return Icons.movie;
+    if (n.contains('facture') || n.contains('utilities') || n.contains('eau') || n.contains('électricité')) return Icons.receipt_long;
+    return Icons.category;
+  }
+
+  double get _totalBudget {
+    double total = 0;
+    for (final b in _budgets) {
+      total += (b['amount'] ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  void _showBudgetDetail(Map<dynamic, dynamic> b) {
+    final pct = (b['percentage'] ?? 0).toDouble();
+    final spent = (b['spent'] ?? 0).toDouble();
+    final amount = (b['amount'] ?? 0).toDouble();
+    final remaining = amount - spent;
+    final catName = b['category']?['name'] ?? 'Budget';
+    final color = pct >= 100 ? AppTheme.error : (pct >= 80 ? Colors.orange : AppTheme.primary);
+    final icon = _categoryIcon(catName);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            // Progress circulaire
+            SizedBox(
+              width: 120, height: 120,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    value: (pct / 100).clamp(0, 1),
+                    strokeWidth: 8,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+                      Text('dépensé', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _detailRow(Icons.category_outlined, 'Catégorie', catName),
+            _detailRow(Icons.trending_up, 'Dépensé', _fmt(spent)),
+            _detailRow(Icons.account_balance_wallet, 'Budget', _fmt(amount)),
+            _detailRow(
+              Icons.trending_down,
+              'Reste',
+              _fmt(remaining),
+              valueColor: remaining >= 0 ? AppTheme.primary : AppTheme.error,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => BudgetFormScreen(budget: Map<String, dynamic>.from(b)))).then((_) => _load());
+                    },
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Modifier'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _delete(b['id']);
+                    },
+                    style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Supprimer'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          const Spacer(),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Budgets'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Budgets'),
+            if (!_loading && _budgets.isNotEmpty)
+              Text(
+                '${_budgets.length} budget${_budgets.length > 1 ? 's' : ''} • ${_fmt(_totalBudget)} total',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -99,7 +227,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         additionalTips: [
           TooltipItem(
             icon: Icons.pie_chart,
-            title: 'Barre de progression',
+            title: 'Progression',
             description: 'Vert = OK, Orange = Attention (80%), Rouge = Dépassé (100%)',
           ),
           TooltipItem(
@@ -108,13 +236,13 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             description: 'Définissez un budget par catégorie et un montant mensuel',
           ),
           TooltipItem(
-            icon: Icons.edit,
-            title: 'Modifier',
-            description: 'Tap pour modifier le montant ou la période',
+            icon: Icons.swipe,
+            title: 'Détails',
+            description: 'Tapez sur un budget pour voir les détails',
           ),
         ],
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const ListSkeleton(itemCount: 3)
             : RefreshIndicator(
                 onRefresh: _load,
                 child: _budgets.isEmpty
@@ -128,87 +256,121 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           Center(child: Text('Créez un budget pour contrôler vos dépenses', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
                         ],
                       )
-                    : ListView.separated(
+                    : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: _budgets.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (_, i) {
                           final b = _budgets[i];
                           final pct = (b['percentage'] ?? 0).toDouble();
+                          final spent = (b['spent'] ?? 0).toDouble();
+                          final amount = (b['amount'] ?? 0).toDouble();
+                          final remaining = amount - spent;
+                          final catName = b['category']?['name'] ?? 'Budget';
                           final color = pct >= 100 ? AppTheme.error : (pct >= 80 ? Colors.orange : AppTheme.primary);
-                          return Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          b['category']?['name'] ?? 'Budget',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
+                          final icon = _categoryIcon(catName);
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Dismissible(
+                              key: Key(b['id'].toString()),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 24),
+                                margin: const EdgeInsets.only(bottom: 14),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.error,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
+                              ),
+                              confirmDismiss: (_) async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Supprimer ?'),
+                                    content: const Text('Ce budget sera supprimé.'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+                                      TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: AppTheme.error), child: const Text('Supprimer')),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) await _delete(b['id']);
+                                return false;
+                              },
+                              child: Card(
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () => _showBudgetDetail(b),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        // Progress circulaire gauche
+                                        SizedBox(
+                                          width: 56, height: 56,
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              CircularProgressIndicator(
+                                                value: (pct / 100).clamp(0, 1),
+                                                strokeWidth: 6,
+                                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                valueColor: AlwaysStoppedAnimation<Color>(color),
+                                              ),
+                                              Text('${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                      Text(
-                                        '${_fmt(b['spent']).replaceAll('XOF ', '')} / ${_fmt(b['amount']).replaceAll('XOF ', '')}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: color,
+                                        const SizedBox(width: 16),
+                                        // Info centrale
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(icon, size: 16, color: color),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    catName,
+                                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Wrap(
+                                                spacing: 8,
+                                                crossAxisAlignment: WrapCrossAlignment.center,
+                                                children: [
+                                                  Text('${_fmt(spent)}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+                                                  const Text(' / ', style: TextStyle(fontSize: 12)),
+                                                  Text(_fmt(amount), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: remaining >= 0 ? AppTheme.primary.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      remaining >= 0 ? '+${_fmt(remaining)}' : _fmt(remaining),
+                                                      style: TextStyle(fontSize: 10, color: remaining >= 0 ? AppTheme.primary : AppTheme.error, fontWeight: FontWeight.w600),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: LinearProgressIndicator(
-                                      value: (pct / 100).clamp(0, 1),
-                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                                      minHeight: 8,
+                                        const SizedBox(width: 12),
+                                        Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant, size: 18),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${pct.toStringAsFixed(0)}% dépensé',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Reste: ${_fmt(b['amount'] - b['spent'])}',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () async {
-                                          await Navigator.push(context, MaterialPageRoute(builder: (_) => BudgetFormScreen(budget: b)));
-                                          _load();
-                                        },
-                                        child: const Text('Modifier'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => _delete(b['id']),
-                                        child: Text(
-                                          'Supprimer',
-                                          style: TextStyle(color: AppTheme.error),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           );
@@ -216,12 +378,13 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     ),
             ),
         ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetFormScreen()));
           _load();
         },
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Budget'),
       ),
     );
   }

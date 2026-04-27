@@ -156,12 +156,12 @@ class AutoTransactionService {
       await NotificationService().showNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: 'Transaction ajoutée automatiquement',
-        body: '${parsedData['type'] == 'income' ? 'Revenu' : 'Dépense'} de ${parsedData['amount']} XOF',
+        body: '${parsedData['type'] == 'income' ? 'Revenu' : 'Dépense'} de ${parsedData['amount']} FCFA',
       );
 
       if (context != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Transaction ajoutée: ${parsedData['amount']} XOF')),
+          SnackBar(content: Text('Transaction ajoutée: ${parsedData['amount']} FCFA')),
         );
       }
     } catch (e) {
@@ -182,7 +182,7 @@ class AutoTransactionService {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Montant: ${parsedData['amount']} XOF'),
+            Text('Montant: ${parsedData['amount']} FCFA'),
             Text('Type: ${parsedData['type'] == 'income' ? 'Revenu' : 'Dépense'}'),
             Text('Catégorie: ${parsedData['category']}'),
             Text('Description: ${parsedData['description']}'),

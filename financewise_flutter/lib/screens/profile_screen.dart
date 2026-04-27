@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 import 'settings_screen.dart';
 import 'export_screen.dart';
 import 'statistics_screen.dart';
@@ -44,7 +44,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Mon compte', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal)),
+            const SizedBox(height: 2),
+            Text(user?.name ?? 'Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -81,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const ListSkeleton(itemCount: 4)
             : RefreshIndicator(
                 onRefresh: _loadStats,
                 child: ListView(
@@ -260,10 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return name.isNotEmpty ? name[0].toUpperCase() : 'U';
   }
 
-  String _formatAmount(dynamic value) {
-    final amount = (value ?? 0).toDouble();
-    return NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0).format(amount);
-  }
+  String _formatAmount(dynamic value) => AppTheme.formatCurrency(value);
 
   Widget _buildStatRow({
     required IconData icon,

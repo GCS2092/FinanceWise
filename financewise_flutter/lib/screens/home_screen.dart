@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../services/sms_native_service.dart';
 import '../theme.dart';
 import 'dashboard_screen.dart';
@@ -59,19 +57,19 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => DraggableScrollableSheet(
+      builder: (sheetCtx) => DraggableScrollableSheet(
         initialChildSize: 0.6,
         minChildSize: 0.3,
         maxChildSize: 0.85,
         expand: false,
-        builder: (_, scrollController) => Column(
+        builder: (innerCtx, scrollController) => Column(
           children: [
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant,
+                color: Theme.of(innerCtx).colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -79,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Text(
                 'Plus d\'options',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: Theme.of(innerCtx).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -96,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Statistiques',
                     subtitle: 'Graphiques et analyses financières',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const StatisticsScreen()));
                     },
                   ),
@@ -106,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Alertes',
                     subtitle: 'Alertes budget et revenus',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsScreen()));
                     },
                   ),
@@ -116,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Recommandations IA',
                     subtitle: 'Conseils financiers personnalisés',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const RecommendationsScreen()));
                     },
                   ),
@@ -126,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Objectifs financiers',
                     subtitle: 'Suivez vos objectifs d\'épargne',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialGoalsScreen()));
                     },
                   ),
@@ -136,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Rappels de paiement',
                     subtitle: 'Ne manquez aucun paiement',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentRemindersScreen()));
                     },
                   ),
@@ -146,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Catégories',
                     subtitle: 'Gérer vos catégories',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesScreen()));
                     },
                   ),
@@ -156,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Budgets',
                     subtitle: 'Contrôlez vos dépenses',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen()));
                     },
                   ),
@@ -166,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Notifications',
                     subtitle: 'Historique des notifications',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
                     },
                   ),
@@ -176,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Exporter',
                     subtitle: 'Exporter vos données financières',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const ExportScreen()));
                     },
                   ),
@@ -186,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Parser SMS',
                     subtitle: 'Détecter les transactions depuis SMS',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SmsParserScreen()));
                     },
                   ),
@@ -196,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Paramètres',
                     subtitle: 'Configuration de l\'app',
                     onTap: () {
-                      Navigator.pop(ctx);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                     },
                   ),
@@ -216,128 +214,27 @@ class _HomeScreenState extends State<HomeScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+    return Builder(
+      builder: (tileCtx) => ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 22),
         ),
-        child: Icon(icon, color: color, size: 22),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Theme.of(tileCtx).colorScheme.onSurfaceVariant)),
+        trailing: Icon(Icons.chevron_right, color: Theme.of(tileCtx).colorScheme.outlineVariant),
+        onTap: onTap,
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
-      onTap: onTap,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FinanceWise'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await context.read<AuthProvider>().logout();
-            },
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppTheme.primary, Color(0xFF004D3E)],
-                ),
-              ),
-              accountName: Text(user?.name ?? 'Utilisateur'),
-              accountEmail: Text(user?.email ?? ''),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                child: Text(
-                  (user?.name ?? 'U')[0].toUpperCase(),
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
-              selected: _selectedIndex == 0,
-              onTap: () {
-                Navigator.pop(context);
-                _onItemTapped(0);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: const Text('Transactions'),
-              selected: _selectedIndex == 1,
-              onTap: () {
-                Navigator.pop(context);
-                _onItemTapped(1);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet),
-              title: const Text('Wallets'),
-              selected: _selectedIndex == 2,
-              onTap: () {
-                Navigator.pop(context);
-                _onItemTapped(2);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profil'),
-              selected: _selectedIndex == 3,
-              onTap: () {
-                Navigator.pop(context);
-                _onItemTapped(3);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Paramètres'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.more_horiz),
-              title: const Text('Plus d\'options'),
-              onTap: () {
-                Navigator.pop(context);
-                _showMoreOptions(context);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.logout, color: AppTheme.error),
-              title: Text('Déconnexion', style: TextStyle(color: AppTheme.error)),
-              onTap: () async {
-                Navigator.pop(context);
-                await context.read<AuthProvider>().logout();
-              },
-            ),
-          ],
-        ),
-      ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -363,12 +260,21 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.person),
             label: 'Profil',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view),
+            label: 'Plus',
+          ),
         ],
       ),
     );
   }
 
   void _onItemTapped(int index) {
+    if (index == 4) {
+      _showMoreOptions(context);
+      return;
+    }
     setState(() => _selectedIndex = index);
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
-import '../theme.dart';
 
 class PaymentReminderFormScreen extends StatefulWidget {
   final Map<String, dynamic>? paymentReminder;
@@ -86,6 +85,7 @@ class _PaymentReminderFormScreenState extends State<PaymentReminderFormScreen> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -114,9 +114,9 @@ class _PaymentReminderFormScreenState extends State<PaymentReminderFormScreen> {
               controller: _amountController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Montant (XOF) *',
+                labelText: 'Montant (FCFA) *',
                 prefixIcon: const Icon(Icons.money),
-                suffixText: 'XOF',
+                suffixText: 'FCFA',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,

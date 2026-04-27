@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../services/sms_parser_service.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -63,7 +62,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0);
+    String formatAmount(dynamic v) => AppTheme.formatCurrency(v);
     
     return AlertDialog(
       title: Row(
@@ -83,6 +82,26 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // SMS original
+                  if (widget.transaction.originalSms != null) ...[
+                    const Text('SMS original', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        widget.transaction.originalSms!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                  ],
                   Text(
                     widget.transaction.type == 'income' ? 'Revenu détecté' : 'Dépense détectée',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -91,10 +110,10 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoRow('Montant', formatter.format(widget.transaction.amount)),
+                  _buildInfoRow('Montant', formatAmount(widget.transaction.amount)),
                   _buildInfoRow('Description', widget.transaction.description),
                   if (widget.transaction.sender != null) _buildInfoRow('Source', widget.transaction.sender!),
-                  if (widget.transaction.balance != null) _buildInfoRow('Solde', formatter.format(widget.transaction.balance!)),
+                  if (widget.transaction.balance != null) _buildInfoRow('Solde', formatAmount(widget.transaction.balance!)),
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 8),

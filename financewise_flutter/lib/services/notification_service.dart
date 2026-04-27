@@ -76,7 +76,7 @@ class NotificationService {
     await showNotification(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: 'Alerte Budget',
-      body: 'Catégorie $categoryName: ${spent.toStringAsFixed(0)} / ${limit.toStringAsFixed(0)} XOF',
+      body: 'Catégorie $categoryName: ${spent.toStringAsFixed(0)} / ${limit.toStringAsFixed(0)} FCFA',
     );
   }
 

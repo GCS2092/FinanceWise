@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/sms_listener_service.dart';
 import '../services/pending_sms_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 import 'transaction_form_screen.dart';
+import 'transactions_screen.dart';
+import 'budgets_screen.dart';
 import 'sms_parser_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,8 +21,10 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final _api = ApiService();
   bool _loading = true;
+  bool _balanceHidden = false;
   Map<String, dynamic>? _data;
   String? _error;
+  final Set<int> _dismissedAlerts = {};
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
   SmsListenerService? _smsListener;
 
@@ -88,10 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  String _formatAmount(dynamic value) {
-    final amount = (value ?? 0).toDouble();
-    return NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0).format(amount);
-  }
+  String _formatAmount(dynamic value) => AppTheme.formatCurrency(value);
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const DashboardSkeleton(),
       );
     }
 
@@ -151,7 +151,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Bonjour 👋', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal)),
+            const SizedBox(height: 2),
+            const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -200,279 +207,240 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Actions rapides ──
+              // ── Carte bancaire (héro) ──
+              _buildBankCard(balance, income, expense),
+              const SizedBox(height: 16),
+
+              // ── Actions rapides (compactes) ──
               Row(
                 children: [
-                  Expanded(
-                    child: _QuickActionButton(
-                      icon: Icons.add,
-                      label: 'Transaction',
-                      color: Theme.of(context).colorScheme.primary,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TransactionFormScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickActionButton(
-                      icon: Icons.sms,
-                      label: 'Parser SMS',
-                      color: Theme.of(context).colorScheme.tertiary,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SmsParserScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                  _buildQuickChip(Icons.add, 'Transaction', () async {
+                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionFormScreen()));
+                    _loadDashboard();
+                  }),
+                  const SizedBox(width: 8),
+                  _buildQuickChip(Icons.sms_outlined, 'Importer SMS', () async {
+                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const SmsParserScreen()));
+                    _loadDashboard();
+                  }),
                 ],
               ),
-            const SizedBox(height: 24),
-            // ── Solde ──
-            _buildCard(
-              title: 'Solde total',
-              value: _formatAmount(balance),
-              color: balance >= 0 ? AppTheme.primary : AppTheme.error,
-              icon: Icons.account_balance_wallet,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-            // ── Revenus / Dépenses ──
-            Row(
+              // ── Alertes ──
+              ...alerts.asMap().entries
+                  .where((e) => !_dismissedAlerts.contains(e.key))
+                  .take(3)
+                  .map((e) => _buildAlert(e.value, e.key)),
+              if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).isNotEmpty)
+                const SizedBox(height: 12),
+
+              // ── Objectif de revenu (compact) ──
+              if (incomeTarget > 0) ...[
+                _buildIncomeGoal(income, incomeTarget, incomeProgress),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Budgets actifs (max 2) ──
+              _buildSectionHeader('Budgets actifs', onSeeAll: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen()));
+              }),
+              const SizedBox(height: 8),
+              _buildActiveBudgets(),
+              const SizedBox(height: 20),
+
+              // ── Transactions récentes (max 3) ──
+              _buildSectionHeader('Transactions récentes', onSeeAll: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen()));
+              }),
+              const SizedBox(height: 8),
+              _buildRecentTransactions(),
+              const SizedBox(height: 80),
+            ],
+        ),
+      ),
+      ),
+      ),
+    );
+  }
+
+  // ── Carte bancaire style ──
+  Widget _buildBankCard(dynamic balance, dynamic income, dynamic expense) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF43A047)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF1B5E20).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.account_balance_wallet, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('FinanceWise', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 1)),
+                ],
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _balanceHidden = !_balanceHidden),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                  child: Icon(_balanceHidden ? Icons.visibility_off : Icons.visibility, color: Colors.white70, size: 18),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Solde
+          const Text('Solde total', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(
+            _balanceHidden ? '••••••••' : _formatAmount(balance),
+            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 20),
+          // Revenus / Dépenses
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+            child: Row(
               children: [
                 Expanded(
-                  child: _buildCard(
-                    title: 'Revenus (mois)',
-                    value: _formatAmount(income),
-                    color: AppTheme.primary,
-                    icon: Icons.trending_up,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildCard(
-                    title: 'Dépenses (mois)',
-                    value: _formatAmount(expense),
-                    color: AppTheme.error,
-                    icon: Icons.trending_down,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ── Objectif de revenu ──
-            if (incomeTarget > 0) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Objectif de revenu',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: incomeProgress >= 100 
-                                ? AppTheme.primaryContainer 
-                                : Theme.of(context).colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${incomeProgress.toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                color: incomeProgress >= 100 
-                                  ? AppTheme.onPrimaryContainer 
-                                  : Theme.of(context).colorScheme.onSecondaryContainer,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(Icons.arrow_upward, color: Colors.greenAccent, size: 14),
                       ),
-                      const SizedBox(height: 16),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: (incomeProgress / 100).clamp(0, 1),
-                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            incomeProgress >= 100 ? AppTheme.primary : Theme.of(context).colorScheme.secondary,
-                          ),
-                          minHeight: 8,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Revenus', style: TextStyle(color: Colors.white60, fontSize: 10)),
+                            Text(
+                              _balanceHidden ? '••••' : _formatAmount(income),
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Réalisé: ${_formatAmount(income)}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            'Objectif: ${_formatAmount(incomeTarget)}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // ── Graphique Revenus/Dépenses ──
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Répartition du mois',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 200,
-                      child: PieChart(
-                        PieChartData(
-                          sections: [
-                            PieChartSectionData(
-                              value: income.toDouble(),
-                              title: '${((income / (income + expense)) * 100).toStringAsFixed(0)}%',
-                              color: AppTheme.primary,
-                              radius: 50,
-                              titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                            PieChartSectionData(
-                              value: expense.toDouble(),
-                              title: '${((expense / (income + expense)) * 100).toStringAsFixed(0)}%',
-                              color: AppTheme.error,
-                              radius: 50,
-                              titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 40,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                Container(width: 1, height: 30, color: Colors.white24),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Row(
                       children: [
-                        _buildLegend(AppTheme.primary, 'Revenus'),
-                        const SizedBox(width: 20),
-                        _buildLegend(AppTheme.error, 'Dépenses'),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
+                          child: const Icon(Icons.arrow_downward, color: Colors.redAccent, size: 14),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Dépenses', style: TextStyle(color: Colors.white60, fontSize: 10)),
+                              Text(
+                                _balanceHidden ? '••••' : _formatAmount(expense),
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // ── Budgets actifs ──
-            Text(
-              'Budgets actifs',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildActiveBudgets(),
-            const SizedBox(height: 24),
-
-            // ── Alertes ──
-            if (alerts.isNotEmpty) ...[
-              Text(
-                'Alertes',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...alerts.map((a) => _buildAlert(a)),
-              const SizedBox(height: 24),
-            ],
-
-            // ── Transactions récentes ──
-            Text(
-              'Transactions récentes',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildRecentTransactions(),
-          ],
-        ),
-      ),
-      ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCard({required String title, required String value, required Color color, required IconData icon}) {
+  // ── Chip action rapide ──
+  Widget _buildQuickChip(IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: Material(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                const SizedBox(width: 8),
+                Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSecondaryContainer)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Objectif revenu compact ──
+  Widget _buildIncomeGoal(dynamic income, dynamic target, dynamic progress) {
+    final pct = (progress is num ? progress : 0).toDouble();
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: pct >= 100 ? AppTheme.primaryContainer : Theme.of(context).colorScheme.secondaryContainer,
+              child: Text('${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: pct >= 100 ? AppTheme.onPrimaryContainer : Theme.of(context).colorScheme.onSecondaryContainer)),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  Text('Objectif de revenu', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (pct / 100).clamp(0, 1).toDouble(),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      valueColor: AlwaysStoppedAnimation<Color>(pct >= 100 ? AppTheme.primary : Theme.of(context).colorScheme.secondary),
+                      minHeight: 5,
                     ),
                   ),
+                  const SizedBox(height: 3),
+                  Text('${_formatAmount(income)} sur ${_formatAmount(target)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -482,83 +450,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildLegend(Color color, String label) {
+  Widget _buildSectionHeader(String title, {VoidCallback? onSeeAll}) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
+        Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        if (onSeeAll != null)
+          TextButton.icon(
+            onPressed: onSeeAll,
+            icon: const Text('Voir tout', style: TextStyle(fontSize: 13)),
+            label: const Icon(Icons.chevron_right, size: 18),
           ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
       ],
     );
   }
 
-  Widget _QuickActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAlert(dynamic alert) {
+  Widget _buildAlert(dynamic alert, int index) {
     final type = alert['type'] ?? 'warning';
     final color = type == 'danger' ? AppTheme.error : Colors.orange;
-    final icon = type == 'danger' ? Icons.error : Icons.warning_amber_rounded;
+    final iconData = type == 'danger' ? Icons.error : Icons.warning_amber_rounded;
     return Card(
       color: color.withValues(alpha: 0.08),
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        title: Text(
-          alert['message'] ?? '',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w500),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(iconData, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                alert['message'] ?? '',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w500),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _dismissedAlerts.add(index)),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 16, color: color.withValues(alpha: 0.6)),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -588,7 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
     return Column(
-      children: budgetList.map((b) {
+      children: budgetList.take(2).map((b) {
         if (b is! Map) return const SizedBox.shrink();
         final category = b['category'];
         final categoryName = category is Map ? (category['name']?.toString() ?? 'Sans catégorie') : 'Sans catégorie';
@@ -640,6 +580,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text('Reste: ${_formatAmount(remaining)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: remaining >= 0 ? AppTheme.primary : AppTheme.error)),
                   ],
                 ),
+                if (percentage >= 80 && percentage < 100) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.lightbulb_outline, size: 14, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Attention : ${percentage.toStringAsFixed(0)}% du budget $categoryName utilisé. Ralentissez vos dépenses.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.orange, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (percentage >= 100) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.warning_amber, size: 14, color: AppTheme.error),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Budget $categoryName dépassé de ${_formatAmount(spent - amount)}.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.error, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -666,32 +636,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Icon(Icons.receipt_long_outlined, size: 40, color: Theme.of(context).colorScheme.outlineVariant),
               const SizedBox(height: 8),
               Text('Aucune transaction', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 4),
+              Text('Ajoutez-en une avec le bouton ci-dessus', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
         ),
       );
     }
-    return Column(
-      children: transactions.take(5).map((t) {
-        if (t is! Map) return const SizedBox.shrink();
-        final isIncome = t['type'] == 'income';
-        final category = t['category'];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 6),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: isIncome ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.error.withValues(alpha: 0.12),
-              child: Icon(isIncome ? Icons.arrow_upward : Icons.arrow_downward, color: isIncome ? AppTheme.primary : AppTheme.error, size: 20),
-            ),
-            title: Text(t['description']?.toString() ?? 'Transaction', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-            subtitle: Text(category is Map ? (category['name']?.toString() ?? '') : '', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            trailing: Text(
-              '${isIncome ? '+' : '-'}${_formatAmount(t['amount']).replaceAll('XOF ', '')}',
-              style: TextStyle(color: isIncome ? AppTheme.primary : AppTheme.error, fontWeight: FontWeight.bold),
-            ),
-          ),
-        );
-      }).toList(),
+    return Card(
+      child: Column(
+        children: transactions.take(3).toList().asMap().entries.map((entry) {
+          final i = entry.key;
+          final t = entry.value;
+          if (t is! Map) return const SizedBox.shrink();
+          final isIncome = t['type'] == 'income';
+          final category = t['category'];
+          final catName = category is Map ? (category['name']?.toString() ?? '') : '';
+          final date = t['transaction_date']?.toString() ?? '';
+          final shortDate = date.length >= 10 ? '${date.substring(8, 10)}/${date.substring(5, 7)}' : '';
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: isIncome ? AppTheme.primary.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(isIncome ? Icons.south_west : Icons.north_east, color: isIncome ? AppTheme.primary : AppTheme.error, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t['description']?.toString() ?? 'Transaction',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$catName${catName.isNotEmpty && shortDate.isNotEmpty ? '  •  ' : ''}$shortDate',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${isIncome ? '+' : '-'}${_formatAmount(t['amount'])}',
+                      style: TextStyle(color: isIncome ? AppTheme.primary : AppTheme.error, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < 2 && i < transactions.length - 1)
+                Divider(height: 1, indent: 64, color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 }

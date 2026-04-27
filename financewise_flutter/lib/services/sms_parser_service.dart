@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../services/api_service.dart';
 
 class SmsTransaction {
@@ -9,6 +8,7 @@ class SmsTransaction {
   final DateTime date;
   final String? sender;
   final double? balance;
+  final String? originalSms;
   final List<String> matchedCategories; // list of matched category IDs
 
   SmsTransaction({
@@ -19,6 +19,7 @@ class SmsTransaction {
     required this.date,
     this.sender,
     this.balance,
+    this.originalSms,
     this.matchedCategories = const [],
   });
 
@@ -103,6 +104,7 @@ class SmsParserService {
       date: DateTime.now(),
       sender: sender,
       balance: balance,
+      originalSms: message,
       matchedCategories: matchedCategories.map((c) => c['id'].toString()).toList(),
     );
   }
@@ -138,6 +140,7 @@ class SmsParserService {
       date: DateTime.now(),
       sender: sender,
       balance: balance,
+      originalSms: message,
     );
   }
 

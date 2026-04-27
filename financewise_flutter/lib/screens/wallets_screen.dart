@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 import 'wallet_form_screen.dart';
 
 class WalletsScreen extends StatefulWidget {
@@ -73,16 +72,173 @@ class _WalletsScreenState extends State<WalletsScreen> {
     _load();
   }
 
-  String _fmt(dynamic v) {
-    final n = (v ?? 0).toDouble();
-    return NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0).format(n);
+  String _fmt(dynamic v) => AppTheme.formatCurrency(v);
+
+  // Gradient et icône selon le type de wallet
+  List<Color> _walletGradient(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'wave':
+        return [const Color(0xFF1A237E), const Color(0xFF283593), const Color(0xFF3949AB)];
+      case 'orange money':
+        return [const Color(0xFFE65100), const Color(0xFFF57C00), const Color(0xFFFF9800)];
+      case 'banque':
+      case 'bank':
+        return [const Color(0xFF004D40), const Color(0xFF00695C), const Color(0xFF00897B)];
+      case 'espèces':
+      case 'cash':
+        return [const Color(0xFF33691E), const Color(0xFF558B2F), const Color(0xFF689F38)];
+      default:
+        return [const Color(0xFF37474F), const Color(0xFF546E7A), const Color(0xFF78909C)];
+    }
+  }
+
+  IconData _walletIcon(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'wave':
+        return Icons.waves;
+      case 'orange money':
+        return Icons.phone_android;
+      case 'banque':
+      case 'bank':
+        return Icons.account_balance;
+      case 'espèces':
+      case 'cash':
+        return Icons.payments;
+      default:
+        return Icons.account_balance_wallet;
+    }
+  }
+
+  double get _totalBalance {
+    double total = 0;
+    for (final w in _wallets) {
+      total += (w['balance'] ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  void _showWalletDetail(Map<dynamic, dynamic> w) {
+    final balance = (w['balance'] ?? 0).toDouble();
+    final type = w['type']?.toString() ?? 'Autre';
+    final name = w['name']?.toString() ?? 'Portefeuille';
+    final gradient = _walletGradient(type);
+    final icon = _walletIcon(type);
+    final createdAt = w['created_at']?.toString() ?? '';
+    final formattedDate = createdAt.length >= 10
+        ? '${createdAt.substring(8, 10)}/${createdAt.substring(5, 7)}/${createdAt.substring(0, 4)}'
+        : '—';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            // Mini carte
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, color: Colors.white70, size: 20),
+                      const SizedBox(width: 8),
+                      Text(name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _fmt(balance),
+                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(type, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _walletDetailRow(Icons.category_outlined, 'Type', type),
+            _walletDetailRow(Icons.calendar_today_outlined, 'Créé le', formattedDate),
+            _walletDetailRow(
+              Icons.trending_up,
+              'Solde',
+              _fmt(balance),
+              valueColor: balance >= 0 ? AppTheme.primary : AppTheme.error,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => WalletFormScreen(wallet: Map<String, dynamic>.from(w)))).then((_) => _load());
+                    },
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Modifier'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _delete(w['id']);
+                    },
+                    style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Supprimer'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _walletDetailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          const Spacer(),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wallets'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Portefeuilles'),
+            if (!_loading && _wallets.isNotEmpty)
+              Text(
+                '${_wallets.length} compte${_wallets.length > 1 ? 's' : ''} • ${_fmt(_totalBalance)}',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -108,18 +264,13 @@ class _WalletsScreenState extends State<WalletsScreen> {
             description: 'Créez un nouveau portefeuille avec le bouton +',
           ),
           TooltipItem(
-            icon: Icons.edit,
-            title: 'Modifier',
-            description: 'Tap sur un wallet pour modifier ses informations',
-          ),
-          TooltipItem(
-            icon: Icons.delete,
-            title: 'Supprimer',
-            description: 'Supprimez un wallet avec l\'icône poubelle',
+            icon: Icons.swipe,
+            title: 'Détails',
+            description: 'Tapez sur un portefeuille pour voir les détails',
           ),
         ],
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const ListSkeleton(itemCount: 3)
             : RefreshIndicator(
                 onRefresh: _load,
                 child: _error != null
@@ -144,72 +295,123 @@ class _WalletsScreenState extends State<WalletsScreen> {
                               Center(child: Text('Ajoutez Wave, Orange Money, Banque...', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
                             ],
                           )
-                        : ListView.separated(
+                        : ListView.builder(
                             padding: const EdgeInsets.all(16),
                             itemCount: _wallets.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
                             itemBuilder: (_, i) {
                               final w = _wallets[i];
                               final balance = (w['balance'] ?? 0).toDouble();
-                              return Card(
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.all(16),
-                                  leading: CircleAvatar(
-                                    backgroundColor: balance >= 0 
-                                      ? AppTheme.primary.withValues(alpha: 0.1) 
-                                      : AppTheme.error.withValues(alpha: 0.1),
-                                    child: Icon(
-                                      Icons.account_balance_wallet, 
-                                      color: balance >= 0 ? AppTheme.primary : AppTheme.error, 
-                                      size: 24,
+                              final type = w['type']?.toString() ?? 'Autre';
+                              final name = w['name']?.toString() ?? 'Portefeuille';
+                              final gradient = _walletGradient(type);
+                              final icon = _walletIcon(type);
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: GestureDetector(
+                                  onTap: () => _showWalletDetail(w),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(18),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: gradient,
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: [
+                                        BoxShadow(color: gradient[0].withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 6)),
+                                      ],
                                     ),
-                                  ),
-                                  title: Text(
-                                    w['name'] ?? 'Wallet',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    w['type'] ?? 'Type inconnu',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        _fmt(balance),
-                                        style: TextStyle(
-                                          color: balance >= 0 ? AppTheme.primary : AppTheme.error,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Header : icône + nom + type
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(6),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withValues(alpha: 0.2),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(icon, color: Colors.white, size: 18),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  name,
+                                                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                                                ),
+                                              ],
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                type,
+                                                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      Text(
-                                        w['currency'] ?? 'XOF',
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                      ),
-                                    ],
+                                        const SizedBox(height: 18),
+                                        // Solde
+                                        const Text('Solde', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _fmt(balance),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // Indicateur bas
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  balance >= 0 ? Icons.check_circle_outline : Icons.warning_amber_rounded,
+                                                  color: Colors.white60,
+                                                  size: 14,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  balance >= 0 ? 'Solde positif' : 'Solde négatif',
+                                                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                                ),
+                                              ],
+                                            ),
+                                            const Icon(Icons.chevron_right, color: Colors.white38, size: 18),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  onTap: () async {
-                                    await Navigator.push(context, MaterialPageRoute(builder: (_) => WalletFormScreen(wallet: w)));
-                                    _load();
-                                  },
                                 ),
                               );
                             },
                           ),
               ),
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletFormScreen()));
           _load();
         },
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Portefeuille'),
       ),
     );
   }

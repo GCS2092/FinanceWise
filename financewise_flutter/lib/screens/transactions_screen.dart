@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 import 'transaction_form_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -19,8 +19,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   List<dynamic> _transactions = [];
   List<dynamic> _filteredTransactions = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  String? _nextCursor;
   String? _error;
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
+  final ScrollController _scrollController = ScrollController();
   
   // Filtres
   String _searchQuery = '';
@@ -34,32 +38,82 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    
-    // Construire les paramètres de filtre
-    Map<String, dynamic> params = {};
-    if (_selectedType != null) params['type'] = _selectedType;
-    if (_selectedCategory != null) params['category'] = _selectedCategory;
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  String _buildQueryString() {
+    Map<String, String> params = {};
+    if (_selectedType != null) params['type'] = _selectedType!;
+    if (_selectedCategory != null) params['category'] = _selectedCategory!;
     if (_startDate != null) params['start_date'] = _startDate!.toIso8601String().split('T').first;
     if (_endDate != null) params['end_date'] = _endDate!.toIso8601String().split('T').first;
-    if (_minAmount != null) params['min_amount'] = _minAmount;
-    if (_maxAmount != null) params['max_amount'] = _maxAmount;
+    if (_minAmount != null) params['min_amount'] = _minAmount.toString();
+    if (_maxAmount != null) params['max_amount'] = _maxAmount.toString();
+    return params.isNotEmpty ? '?${Uri(queryParameters: params).query}' : '';
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _nextCursor = null;
+      _hasMore = true;
+      _transactions = [];
+    });
     
-    final result = await _api.get('/transactions${params.isNotEmpty ? '?${Uri(queryParameters: params).query}' : ''}');
+    final result = await _api.get('/transactions${_buildQueryString()}');
     
     if (mounted) {
       setState(() {
         _loading = false;
         if (result is Map && result.containsKey('data')) {
           _transactions = result['data'] as List;
+          _nextCursor = result['next_cursor']?.toString();
+          _hasMore = _nextCursor != null;
         } else if (result is List) {
           _transactions = result;
+          _hasMore = false;
         } else {
           _error = result?['message'] ?? 'Erreur';
+        }
+        _applyFilters();
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _nextCursor == null) return;
+    
+    setState(() => _loadingMore = true);
+    
+    final separator = _buildQueryString().isEmpty ? '?' : '&';
+    final base = '/transactions${_buildQueryString()}';
+    final url = '$base${separator}cursor=$_nextCursor';
+    
+    final result = await _api.get(url);
+    
+    if (mounted) {
+      setState(() {
+        _loadingMore = false;
+        if (result is Map && result.containsKey('data')) {
+          _transactions.addAll(result['data'] as List);
+          _nextCursor = result['next_cursor']?.toString();
+          _hasMore = _nextCursor != null;
+        } else {
+          _hasMore = false;
         }
         _applyFilters();
       });
@@ -155,32 +209,46 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     _load();
   }
 
-  String _fmt(dynamic v) {
-    final n = (v ?? 0).toDouble();
-    return NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0).format(n);
-  }
+  String _fmt(dynamic v) => AppTheme.formatCurrency(v);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Transactions'),
+            if (!_loading)
+              Text(
+                '${_filteredTransactions.length} transaction${_filteredTransactions.length > 1 ? 's' : ''}',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => _tooltipKey.currentState?.showTooltip(),
             tooltip: 'Aide',
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.tune),
+                onPressed: _showFilterDialog,
+                tooltip: 'Filtres',
+              ),
+              if (_selectedType != null || _selectedCategory != null || _startDate != null || _endDate != null)
+                Positioned(
+                  right: 8, top: 8,
+                  child: Container(
+                    width: 8, height: 8,
+                    decoration: const BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
+                  ),
+                ),
+            ],
           ),
-          if (_searchQuery.isNotEmpty || _selectedType != null || _selectedCategory != null)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: _resetFilters,
-              tooltip: 'Réinitialiser les filtres',
-            ),
         ],
       ),
       body: OnboardingTooltip(
@@ -265,7 +333,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           // Liste des transactions
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const ListSkeleton()
                 : RefreshIndicator(
                     onRefresh: _load,
                     child: _error != null
@@ -290,84 +358,121 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                   Center(child: Text('Ajoutez votre première transaction avec le bouton +', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
                                 ],
                               )
-                            : ListView.separated(
-                                itemCount: _filteredTransactions.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1),
+                            : ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                itemCount: _filteredTransactions.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (_, i) {
+                                  if (i >= _filteredTransactions.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Center(
+                                        child: _loadingMore
+                                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                                            : const SizedBox.shrink(),
+                                      ),
+                                    );
+                                  }
                                   final t = _filteredTransactions[i];
                                   final income = t['type'] == 'income';
+                                  final catName = t['category']?['name'] ?? 'Sans catégorie';
+                                  final walletName = t['wallet']?['name'] ?? '';
+                                  final date = t['transaction_date']?.toString() ?? '';
+                                  final shortDate = date.length >= 10 ? '${date.substring(8, 10)}/${date.substring(5, 7)}/${date.substring(0, 4)}' : date;
+
                                   return Dismissible(
                                     key: Key(t['id'].toString()),
+                                    direction: DismissDirection.endToStart,
                                     background: Container(
-                                      color: AppTheme.error,
                                       alignment: Alignment.centerRight,
-                                      padding: const EdgeInsets.only(right: 20),
-                                      child: const Icon(Icons.delete, color: AppTheme.onError),
+                                      padding: const EdgeInsets.only(right: 24),
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.error,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
                                     ),
-                                    secondaryBackground: Container(
-                                      color: AppTheme.primary,
-                                      alignment: Alignment.centerLeft,
-                                      padding: const EdgeInsets.only(left: 20),
-                                      child: const Icon(Icons.edit, color: AppTheme.onPrimary),
-                                    ),
-                                    confirmDismiss: (direction) async {
-                                      if (direction == DismissDirection.endToStart) {
-                                        // Swipe to delete
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (ctx) => AlertDialog(
-                                            title: const Text('Supprimer ?'),
-                                            content: const Text('Cette transaction sera définitivement supprimée.'),
-                                            actions: [
-                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-                                              TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: AppTheme.error), child: const Text('Supprimer')),
-                                            ],
-                                          ),
-                                        );
-                                        return confirm ?? false;
-                                      }
+                                    confirmDismiss: (_) async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Supprimer ?'),
+                                          content: const Text('Cette transaction sera définitivement supprimée.'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+                                            TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: AppTheme.error), child: const Text('Supprimer')),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) await _delete(t['id']);
                                       return false;
                                     },
-                                    onDismissed: (direction) async {
-                                      if (direction == DismissDirection.endToStart) {
-                                        await _delete(t['id']);
-                                      } else if (direction == DismissDirection.startToEnd) {
-                                        // Swipe to edit
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (_) => TransactionFormScreen(transaction: t)),
-                                        );
-                                        _load();
-                                      }
-                                    },
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: income ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.error.withValues(alpha: 0.12),
-                                        child: Icon(income ? Icons.arrow_upward : Icons.arrow_downward,
-                                            color: income ? AppTheme.primary : AppTheme.error, size: 18),
-                                      ),
-                                      title: Text(t['description'] ?? 'Transaction'),
-                                      subtitle: Text('${t['category']?['name'] ?? 'Sans catégorie'}  •  ${t['transaction_date'] ?? 'Sans date'}'),
-                                      trailing: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            '${income ? '+' : '-'}${_fmt(t['amount']).replaceAll('XOF ', '')}',
-                                            style: TextStyle(
-                                              color: income ? AppTheme.primary : AppTheme.error,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                    child: Card(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(14),
+                                        onTap: () => _showTransactionDetail(t),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(14),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 44, height: 44,
+                                                decoration: BoxDecoration(
+                                                  color: income ? AppTheme.primary.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(income ? Icons.south_west : Icons.north_east, color: income ? AppTheme.primary : AppTheme.error, size: 20),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      t['description'] ?? 'Transaction',
+                                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 3),
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                          decoration: BoxDecoration(
+                                                            color: Theme.of(context).colorScheme.secondaryContainer,
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: Text(catName, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                                                        ),
+                                                        if (walletName.isNotEmpty) ...[
+                                                          const SizedBox(width: 6),
+                                                          Text('•', style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant, fontSize: 10)),
+                                                          const SizedBox(width: 6),
+                                                          Text(walletName, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    '${income ? '+' : '-'}${_fmt(t['amount'])}',
+                                                    style: TextStyle(color: income ? AppTheme.primary : AppTheme.error, fontWeight: FontWeight.bold, fontSize: 14),
+                                                  ),
+                                                  const SizedBox(height: 3),
+                                                  Text(shortDate, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                                ],
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 4),
-                                        ],
+                                        ),
                                       ),
-                                      onTap: () async {
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (_) => TransactionFormScreen(transaction: t)),
-                                        );
-                                        _load();
-                                      },
                                     ),
                                   );
                                 },
@@ -387,112 +492,224 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  void _showFilterDialog() {
-    showDialog(
+  void _showTransactionDetail(Map<dynamic, dynamic> t) {
+    final income = t['type'] == 'income';
+    final catName = t['category']?['name'] ?? 'Sans catégorie';
+    final walletName = t['wallet']?['name'] ?? '';
+    final date = t['transaction_date']?.toString() ?? '';
+    final formattedDate = date.length >= 10 ? '${date.substring(8, 10)}/${date.substring(5, 7)}/${date.substring(0, 4)}' : date;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Filtres avancés'),
-        content: SingleChildScrollView(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                color: income ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(income ? Icons.south_west : Icons.north_east, color: income ? AppTheme.primary : AppTheme.error, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${income ? '+' : '-'}${_fmt(t['amount'])}',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: income ? AppTheme.primary : AppTheme.error),
+            ),
+            const SizedBox(height: 4),
+            Text(income ? 'Revenu' : 'Dépense', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+            const SizedBox(height: 20),
+            _detailRow(Icons.description_outlined, 'Description', t['description'] ?? '—'),
+            _detailRow(Icons.category_outlined, 'Catégorie', catName),
+            if (walletName.isNotEmpty) _detailRow(Icons.account_balance_wallet_outlined, 'Portefeuille', walletName),
+            _detailRow(Icons.calendar_today_outlined, 'Date', formattedDate),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionFormScreen(transaction: Map<String, dynamic>.from(t))));
+                    },
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Modifier'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _delete(t['id']);
+                    },
+                    style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Supprimer'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          const Spacer(),
+          Flexible(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13), textAlign: TextAlign.end, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
+    );
+  }
+
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Type', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Filtres', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  TextButton(
+                    onPressed: () {
+                      _resetFilters();
+                      setSheetState(() {});
+                    },
+                    child: const Text('Réinitialiser'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text('Type', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _filterChip('Tous', _selectedType == null, () {
+                    setState(() => _selectedType = null);
+                    setSheetState(() {});
+                    _applyFilters();
+                  }),
+                  const SizedBox(width: 8),
+                  _filterChip('Revenus', _selectedType == 'income', () {
+                    setState(() => _selectedType = 'income');
+                    setSheetState(() {});
+                    _applyFilters();
+                  }),
+                  const SizedBox(width: 8),
+                  _filterChip('Dépenses', _selectedType == 'expense', () {
+                    setState(() => _selectedType = 'expense');
+                    setSheetState(() {});
+                    _applyFilters();
+                  }),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('Période', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                    child: RadioListTile<String?>(
-                      title: const Text('Tous'),
-                      value: null,
-                      groupValue: _selectedType,
-                      onChanged: (value) {
-                        setState(() => _selectedType = value);
-                        _applyFilters();
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _startDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setState(() => _startDate = date);
+                          setSheetState(() {});
+                          _applyFilters();
+                        }
                       },
+                      label: Text(_startDate != null ? DateFormat('dd/MM/yy').format(_startDate!) : 'Début', style: const TextStyle(fontSize: 12)),
                     ),
                   ),
-                  Expanded(
-                    child: RadioListTile<String?>(
-                      title: const Text('Revenus'),
-                      value: 'income',
-                      groupValue: _selectedType,
-                      onChanged: (value) {
-                        setState(() => _selectedType = value);
-                        _applyFilters();
-                      },
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(Icons.arrow_forward, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   Expanded(
-                    child: RadioListTile<String?>(
-                      title: const Text('Dépenses'),
-                      value: 'expense',
-                      groupValue: _selectedType,
-                      onChanged: (value) {
-                        setState(() => _selectedType = value);
-                        _applyFilters();
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _endDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setState(() => _endDate = date);
+                          setSheetState(() {});
+                          _applyFilters();
+                        }
                       },
+                      label: Text(_endDate != null ? DateFormat('dd/MM/yy').format(_endDate!) : 'Fin', style: const TextStyle(fontSize: 12)),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text('Date de début', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.calendar_today, size: 18),
-                onPressed: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _startDate ?? DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (date != null) {
-                    setState(() => _startDate = date);
-                    _applyFilters();
-                  }
-                },
-                label: Text(_startDate != null 
-                    ? DateFormat('dd/MM/yyyy').format(_startDate!) 
-                    : 'Sélectionner'),
-              ),
-              const SizedBox(height: 16),
-              Text('Date de fin', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.calendar_today, size: 18),
-                onPressed: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _endDate ?? DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (date != null) {
-                    setState(() => _endDate = date);
-                    _applyFilters();
-                  }
-                },
-                label: Text(_endDate != null 
-                    ? DateFormat('dd/MM/yyyy').format(_endDate!) 
-                    : 'Sélectionner'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Voir ${_filteredTransactions.length} résultat${_filteredTransactions.length > 1 ? 's' : ''}'),
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _resetFilters();
-            },
-            child: const Text('Réinitialiser'),
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Fermer'),
-          ),
-        ],
+        ),
       ),
     );
   }

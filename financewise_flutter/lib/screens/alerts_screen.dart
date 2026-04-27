@@ -109,13 +109,126 @@ class _AlertsScreenState extends State<AlertsScreen> {
     }
   }
 
+  int get _unreadCount => _alerts.where((a) => !(a['is_read'] ?? false)).length;
+
+  void _showAlertDetail(Map<dynamic, dynamic> alert) {
+    final type = alert['type'] ?? 'info';
+    final title = alert['title'] ?? 'Alerte';
+    final message = alert['message'] ?? '';
+    final isRead = alert['is_read'] ?? false;
+    final color = _getAlertColor(type);
+    final icon = _getAlertIcon(type);
+    final createdAt = alert['created_at'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color, color.withValues(alpha: 0.7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, color: Colors.white70, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(message, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                  if (createdAt != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatDate(createdAt),
+                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _detailRow(Icons.info_outline, 'Type', type.toUpperCase(), valueColor: color),
+            _detailRow(Icons.visibility, 'Statut', isRead ? 'Lu' : 'Non lu', valueColor: isRead ? null : AppTheme.primary),
+            if (!isRead) ...[
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _markAsRead(alert['id']);
+                },
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Marquer comme lu'),
+                style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final dt = DateTime.parse(dateStr);
+      return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          const Spacer(),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Alertes'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Alertes'),
+            if (!_loading && _alerts.isNotEmpty && _unreadCount > 0)
+              Text(
+                '$_unreadCount non lue${_unreadCount > 1 ? 's' : ''}',
+                style: TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         actions: [
-          if (_alerts.isNotEmpty)
+          if (_unreadCount > 0)
             TextButton.icon(
               onPressed: _markAllAsRead,
               icon: const Icon(Icons.done_all, size: 20),
@@ -130,6 +243,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                      const SizedBox(height: 12),
                       Text(_error!, style: const TextStyle(color: AppTheme.error)),
                       const SizedBox(height: 16),
                       ElevatedButton(onPressed: _loadAlerts, child: const Text('Réessayer')),
@@ -145,11 +260,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           const SizedBox(height: 16),
                           Text(
                             'Aucune alerte',
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Vous serez noté ici des alertes budget et de revenu',
+                            'Vous serez notifié ici des alertes budget et de revenu',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             textAlign: TextAlign.center,
                           ),
@@ -165,35 +280,94 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           final alert = _alerts[index];
                           final type = alert['type'] ?? 'info';
                           final isRead = alert['is_read'] ?? false;
+                          final color = _getAlertColor(type);
+                          final icon = _getAlertIcon(type);
 
-                          return Card(
-                            color: isRead ? null : _getAlertColor(type).withValues(alpha: 0.1),
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: _getAlertColor(type).withValues(alpha: 0.2),
-                                child: Icon(
-                                  _getAlertIcon(type),
-                                  color: _getAlertColor(type),
-                                  size: 20,
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Dismissible(
+                              key: Key(alert['id'].toString()),
+                              direction: isRead ? DismissDirection.none : DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 24),
+                                margin: const EdgeInsets.only(bottom: 14),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(Icons.check, color: Colors.white, size: 22),
+                              ),
+                              onDismissed: (_) => _markAsRead(alert['id']),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isRead ? null : color.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: isRead ? null : Border.all(color: color.withValues(alpha: 0.3), width: 1),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: () => _showAlertDetail(alert),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: color.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(icon, color: color, size: 22),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  alert['title'] ?? 'Alerte',
+                                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                    fontWeight: isRead ? FontWeight.normal : FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  alert['message'] ?? '',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (!isRead) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: color,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(width: 12),
+                                        Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant, size: 18),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                              title: Text(
-                                alert['title'] ?? 'Alerte',
-                                style: TextStyle(
-                                  fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(alert['message'] ?? ''),
-                              trailing: !isRead
-                                  ? IconButton(
-                                      icon: const Icon(Icons.check, size: 20),
-                                      onPressed: () => _markAsRead(alert['id']),
-                                    )
-                                  : null,
                             ),
-                          );
-                        },
+                          ),
+                        );
+                      },
                       ),
                     ),
     );

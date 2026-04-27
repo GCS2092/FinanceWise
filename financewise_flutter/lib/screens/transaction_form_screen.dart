@@ -92,7 +92,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       await NotificationService().showNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: _isEdit ? 'Transaction modifiée' : 'Transaction créée',
-        body: '${_type == 'income' ? 'Revenu' : 'Dépense'} de ${_amountCtrl.text} XOF',
+        body: '${_type == 'income' ? 'Revenu' : 'Dépense'} de ${_amountCtrl.text} FCFA',
       );
       if (mounted) Navigator.pop(context);
     } else {
@@ -115,6 +115,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -148,7 +149,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       decoration: InputDecoration(
                         labelText: 'Montant',
                         prefixIcon: const Icon(Icons.money),
-                        suffixText: 'XOF',
+                        suffixText: 'FCFA',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       keyboardType: TextInputType.number,
@@ -172,7 +173,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                         prefixIcon: const Icon(Icons.account_balance_wallet),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      items: _wallets.map<DropdownMenuItem<int>>((w) => DropdownMenuItem(value: w['id'] as int, child: Text('${w['name']} (${w['balance']} ${w['currency'] ?? 'XOF'})'))).toList(),
+                      items: _wallets.map<DropdownMenuItem<int>>((w) => DropdownMenuItem(value: w['id'] as int, child: Text('${w['name']} (${AppTheme.formatCurrency(w['balance'])})'))).toList(),
                       onChanged: (v) => setState(() => _walletId = v),
                     ),
                     const SizedBox(height: 16),

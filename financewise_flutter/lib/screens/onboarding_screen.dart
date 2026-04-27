@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'home_screen.dart';
@@ -344,9 +342,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           TextField(
             controller: _incomeController,
             decoration: InputDecoration(
-              labelText: 'Revenu mensuel (XOF)',
+              labelText: 'Revenu mensuel (FCFA)',
               prefixIcon: const Icon(Icons.money),
-              suffixText: 'XOF',
+              suffixText: 'FCFA',
               hintText: 'Ex: 300000',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -615,7 +613,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               const SizedBox(height: 8),
                               TextField(
                                 decoration: InputDecoration(
-                                  labelText: 'Montant (XOF)',
+                                  labelText: 'Montant (FCFA)',
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),

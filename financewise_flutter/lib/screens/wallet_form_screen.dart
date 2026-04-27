@@ -74,6 +74,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             children: [
               if (_error != null)
@@ -138,7 +139,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'XOF', child: Text('XOF')),
+                  DropdownMenuItem(value: 'XOF', child: Text('FCFA')),
                   DropdownMenuItem(value: 'EUR', child: Text('EUR')),
                   DropdownMenuItem(value: 'USD', child: Text('USD')),
                 ],

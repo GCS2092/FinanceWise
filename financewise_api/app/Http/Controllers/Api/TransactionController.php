@@ -49,7 +49,7 @@ class TransactionController extends Controller
             $query->where('amount', '<=', $request->max_amount);
         }
 
-        return TransactionResource::collection($query->paginate(20));
+        return TransactionResource::collection($query->cursorPaginate(20));
     }
 
     public function store(StoreTransactionRequest $request): JsonResponse

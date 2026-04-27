@@ -77,7 +77,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
       await NotificationService().showNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: _isEdit ? 'Budget modifié' : 'Budget créé',
-        body: 'Budget de ${_amountCtrl.text} XOF pour la catégorie sélectionnée',
+        body: 'Budget de ${_amountCtrl.text} FCFA pour la catégorie sélectionnée',
       );
       if (mounted) Navigator.pop(context);
     } else {
@@ -95,6 +95,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   children: [
                     if (_error != null)
@@ -132,7 +133,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                       decoration: InputDecoration(
                         labelText: 'Montant budget',
                         prefixIcon: const Icon(Icons.money),
-                        suffixText: 'XOF',
+                        suffixText: 'FCFA',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       keyboardType: TextInputType.number,

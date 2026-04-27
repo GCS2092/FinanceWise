@@ -106,6 +106,7 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -134,9 +135,9 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
               controller: _targetAmountController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Montant cible (XOF) *',
+                labelText: 'Montant cible (FCFA) *',
                 prefixIcon: const Icon(Icons.money),
-                suffixText: 'XOF',
+                suffixText: 'FCFA',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
@@ -146,9 +147,9 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
               controller: _currentAmountController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Montant actuel (XOF)',
+                labelText: 'Montant actuel (FCFA)',
                 prefixIcon: const Icon(Icons.account_balance_wallet),
-                suffixText: 'XOF',
+                suffixText: 'FCFA',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),

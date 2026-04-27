@@ -41,11 +41,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Color _getNotificationColor(String? type) {
+    switch (type) {
+      case 'danger':
+        return AppTheme.error;
+      case 'warning':
+        return Colors.orange;
+      case 'success':
+        return AppTheme.primary;
+      case 'info':
+        return AppTheme.tertiary;
+      default:
+        return AppTheme.onSurfaceVariant;
+    }
+  }
+
+  IconData _getNotificationIcon(String? type) {
+    switch (type) {
+      case 'danger':
+        return Icons.error;
+      case 'warning':
+        return Icons.warning;
+      case 'success':
+        return Icons.check_circle;
+      case 'info':
+        return Icons.info;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final dt = DateTime.parse(dateStr);
+      return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Notifications'),
+            if (!_loading && _notifications.isNotEmpty)
+              Text(
+                '${_notifications.length} notification${_notifications.length > 1 ? 's' : ''}',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -57,6 +107,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
                       const SizedBox(height: 12),
                       Text(_error!, style: const TextStyle(color: AppTheme.error)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(onPressed: _loadNotifications, child: const Text('Réessayer')),
                     ],
                   ),
                 )
@@ -67,27 +119,74 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         children: [
                           Icon(Icons.notifications_off_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                           const SizedBox(height: 16),
-                          Text('Aucune notification', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          Text('Aucune notification', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 8),
+                          Text('Vous serez notifié ici des événements importants', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         ],
                       ),
                     )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _notifications.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (ctx, i) {
-                        final alert = _notifications[i];
-                        final type = alert['type'] ?? 'warning';
-                        final color = type == 'warning' ? Colors.orange : AppTheme.error;
-                        return Card(
-                          color: color.withValues(alpha: 0.1),
-                          child: ListTile(
-                            leading: Icon(Icons.warning, color: color),
-                            title: Text(alert['message'] ?? '', style: TextStyle(color: color)),
-                            subtitle: Text(alert['created_at'] ?? '', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                          ),
-                        );
-                      },
+                  : RefreshIndicator(
+                      onRefresh: _loadNotifications,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _notifications.length,
+                        itemBuilder: (ctx, i) {
+                          final alert = _notifications[i];
+                          final type = alert['type'] ?? 'info';
+                          final color = _getNotificationColor(type);
+                          final icon = _getNotificationIcon(type);
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(14),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(icon, color: color, size: 22),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                alert['message'] ?? '',
+                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                _formatDate(alert['created_at']),
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
     );
   }

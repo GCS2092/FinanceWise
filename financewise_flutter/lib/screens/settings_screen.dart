@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/auto_transaction_service.dart';
 import '../services/biometric_service.dart';
-import '../theme.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatefulWidget {

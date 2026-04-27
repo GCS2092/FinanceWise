@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -96,22 +95,27 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                 Text('Résumé', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 16),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
-                                    _StatItem(
-                                      label: 'Balance',
-                                      value: _formatAmount(_data?['balance']),
-                                      color: AppTheme.secondary,
+                                    Expanded(
+                                      child: _StatItem(
+                                        label: 'Balance',
+                                        value: _formatAmount(_data?['balance']),
+                                        color: AppTheme.secondary,
+                                      ),
                                     ),
-                                    _StatItem(
-                                      label: 'Revenus',
-                                      value: _formatAmount(_data?['monthly_income']),
-                                      color: AppTheme.primary,
+                                    Expanded(
+                                      child: _StatItem(
+                                        label: 'Revenus',
+                                        value: _formatAmount(_data?['monthly_income']),
+                                        color: AppTheme.primary,
+                                      ),
                                     ),
-                                    _StatItem(
-                                      label: 'Dépenses',
-                                      value: _formatAmount(_data?['monthly_expense']),
-                                      color: AppTheme.error,
+                                    Expanded(
+                                      child: _StatItem(
+                                        label: 'Dépenses',
+                                        value: _formatAmount(_data?['monthly_expense']),
+                                        color: AppTheme.error,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -131,7 +135,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                 Text('Dépenses par catégorie', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 16),
                                 SizedBox(
-                                  height: 250,
+                                  height: 300,
                                   child: _buildCategoryChart(),
                                 ),
                               ],
@@ -323,10 +327,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  String _formatAmount(dynamic value) {
-    final amount = (value ?? 0).toDouble();
-    return NumberFormat.currency(locale: 'fr_FR', symbol: 'XOF ', decimalDigits: 0).format(amount);
-  }
+  String _formatAmount(dynamic value) => AppTheme.formatCurrency(value);
 }
 
 class _StatItem extends StatelessWidget {

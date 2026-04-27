@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class AppTheme {
+  /// Formatte un montant au format "12 500 FCFA"
+  static String formatCurrency(dynamic value) {
+    final amount = (value ?? 0).toDouble();
+    final formatter = NumberFormat('#,##0', 'fr_FR');
+    return '${formatter.format(amount)} FCFA';
+  }
   // Palette de couleurs Material 3
   static const Color primary = Color(0xFF006D5B); // Teal moderne
   static const Color onPrimary = Color(0xFFFFFFFF);

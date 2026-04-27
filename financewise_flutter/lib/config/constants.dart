@@ -1,5 +1,3 @@
-import 'dart:io';
-
 class AppConstants {
   // ┌─────────────────────────────────────────────┐
   // │  CONFIGURATION IP BACKEND                   │
