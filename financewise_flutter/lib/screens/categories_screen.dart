@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../theme.dart';
@@ -114,14 +116,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            const Gap(24),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -165,12 +171,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const Gap(20),
             _detailRow(Icons.category_outlined, 'Nom', name),
             _detailRow(Icons.trending_up, 'Type', type, valueColor: color),
             _detailRow(Icons.info_outline, 'Statut', isSystem ? 'Système (non modifiable)' : 'Personnalisée'),
             if (!isSystem) ...[
-              const SizedBox(height: 24),
+              const Gap(24),
               Row(
                 children: [
                   Expanded(
@@ -205,15 +211,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+          Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: valueColor)),
         ],
       ),
     );
@@ -312,11 +323,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                               if (confirm == true) await _deleteCategory(c['id']);
                               return false;
                             },
-                            child: Card(
-                              margin: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: AppTheme.softShadow,
+                              ),
                               child: InkWell(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(18),
                                 onTap: () => _showCategoryDetail(c),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
@@ -326,29 +340,29 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: color.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(14),
                                         ),
                                         child: Icon(icon, color: color, size: 22),
                                       ),
-                                      const SizedBox(width: 14),
+                                      const Gap(14),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                            const SizedBox(height: 4),
+                                            Text(name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+                                            const Gap(4),
                                             Row(
                                               children: [
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                   decoration: BoxDecoration(
-                                                    color: color.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(4),
+                                                    color: color.withValues(alpha: 0.08),
+                                                    borderRadius: BorderRadius.circular(6),
                                                   ),
-                                                  child: Text(type, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                                                  child: Text(type, style: GoogleFonts.inter(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
                                                 ),
                                                 if (isSystem) ...[
-                                                  const SizedBox(width: 6),
+                                                  const Gap(6),
                                                   Icon(Icons.lock, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                 ],
                                               ],
@@ -357,7 +371,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                         ),
                                       ),
                                       if (!isSystem) ...[
-                                        const SizedBox(width: 12),
+                                        const Gap(12),
                                         Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant, size: 18),
                                       ],
                                     ],

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/auto_transaction_service.dart';
 import '../services/biometric_service.dart';
+import '../theme.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -49,19 +52,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 // ── Apparence ──
-                Card(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.softShadow,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Apparence',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        Text('Apparence', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Gap(16),
                         Consumer<ThemeProvider>(
                           builder: (context, themeProvider, _) {
                             return SwitchListTile(
@@ -78,22 +81,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const Gap(20),
 
                 // ── Sécurité ──
-                Card(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.softShadow,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Sécurité',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        Text('Sécurité', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Gap(16),
                         if (_biometricEnabled)
                           SwitchListTile(
                             title: const Text('Authentification biométrique'),
@@ -123,22 +126,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const Gap(20),
 
                 // ── Automatisation des transactions ──
-                Card(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.softShadow,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Automatisation des transactions',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        Text('Automatisation des transactions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Gap(16),
                         SwitchListTile(
                           title: const Text('Activer la détection SMS automatique'),
                           subtitle: const Text('Détecte automatiquement les transactions Wave/Orange Money'),
@@ -162,22 +165,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const Gap(20),
 
                 // ── Onboarding ──
-                Card(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.softShadow,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Configuration',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        Text('Configuration', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Gap(16),
                         ListTile(
                           leading: Icon(Icons.school, color: Theme.of(context).colorScheme.primary),
                           title: const Text('Relancer l\'onboarding'),
@@ -194,22 +197,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const Gap(20),
 
                 // ── Informations ──
-                Card(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.softShadow,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Fonctionnalités d\'automatisation',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        Text('Fonctionnalités d\'automatisation', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Gap(16),
                         Text(
                           '• Écoute des SMS en temps réel',
                           style: Theme.of(context).textTheme.bodyMedium,

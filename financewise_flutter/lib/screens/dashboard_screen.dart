@@ -1,4 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/sms_listener_service.dart';
@@ -268,17 +272,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildBankCard(dynamic balance, dynamic income, dynamic expense) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF43A047)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF1B5E20).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8)),
-        ],
+        gradient: AppTheme.cardGradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppTheme.strongShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,120 +287,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.account_balance_wallet, color: Colors.white, size: 18),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 18),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  const Text('FinanceWise', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 1)),
+                  const Gap(10),
+                  Text('FinanceWise', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.8)),
                 ],
               ),
               GestureDetector(
                 onTap: () => setState(() => _balanceHidden = !_balanceHidden),
                 child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-                  child: Icon(_balanceHidden ? Icons.visibility_off : Icons.visibility, color: Colors.white70, size: 18),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                  child: Icon(_balanceHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: Colors.white70, size: 18),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const Gap(24),
           // Solde
-          const Text('Solde total', style: TextStyle(color: Colors.white60, fontSize: 12)),
-          const SizedBox(height: 4),
+          Text('Solde total', style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w400)),
+          const Gap(6),
           Text(
             _balanceHidden ? '••••••••' : _formatAmount(balance),
-            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            style: GoogleFonts.poppins(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700, letterSpacing: 0.3),
           ),
-          const SizedBox(height: 20),
+          const Gap(24),
           // Revenus / Dépenses
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
-                        child: const Icon(Icons.arrow_upward, color: Colors.greenAccent, size: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: const Color(0xFF69F0AE).withValues(alpha: 0.25), borderRadius: BorderRadius.circular(8)),
+                            child: const Icon(Icons.trending_up_rounded, color: Color(0xFF69F0AE), size: 16),
+                          ),
+                          const Gap(10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Revenus', style: GoogleFonts.inter(color: Colors.white54, fontSize: 11)),
+                                const Gap(2),
+                                Text(
+                                  _balanceHidden ? '••••' : _formatAmount(income),
+                                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    Container(width: 1, height: 36, margin: const EdgeInsets.symmetric(horizontal: 4), color: Colors.white.withValues(alpha: 0.15)),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: Row(
                           children: [
-                            const Text('Revenus', style: TextStyle(color: Colors.white60, fontSize: 10)),
-                            Text(
-                              _balanceHidden ? '••••' : _formatAmount(income),
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: const Color(0xFFFF8A80).withValues(alpha: 0.25), borderRadius: BorderRadius.circular(8)),
+                              child: const Icon(Icons.trending_down_rounded, color: Color(0xFFFF8A80), size: 16),
+                            ),
+                            const Gap(10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Dépenses', style: GoogleFonts.inter(color: Colors.white54, fontSize: 11)),
+                                  const Gap(2),
+                                  Text(
+                                    _balanceHidden ? '••••' : _formatAmount(expense),
+                                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Container(width: 1, height: 30, color: Colors.white24),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
-                          child: const Icon(Icons.arrow_downward, color: Colors.redAccent, size: 14),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Dépenses', style: TextStyle(color: Colors.white60, fontSize: 10)),
-                              Text(
-                                _balanceHidden ? '••••' : _formatAmount(expense),
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
       ),
-    );
+    )
+        .animate()
+        .fadeIn(duration: 500.ms)
+        .slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOut);
   }
 
   // ── Chip action rapide ──
   Widget _buildQuickChip(IconData icon, String label, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
-      child: Material(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSecondaryContainer),
-                const SizedBox(width: 8),
-                Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSecondaryContainer)),
-              ],
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.softShadow,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 16, color: cs.primary),
+                  ),
+                  const Gap(10),
+                  Text(label, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                ],
+              ),
             ),
           ),
         ),
@@ -451,15 +481,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSectionHeader(String title, {VoidCallback? onSeeAll}) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        Text(title, style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w600, color: cs.onSurface)),
         if (onSeeAll != null)
-          TextButton.icon(
-            onPressed: onSeeAll,
-            icon: const Text('Voir tout', style: TextStyle(fontSize: 13)),
-            label: const Icon(Icons.chevron_right, size: 18),
+          GestureDetector(
+            onTap: onSeeAll,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Voir tout', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: cs.primary)),
+                  const Gap(4),
+                  Icon(Icons.arrow_forward_rounded, size: 14, color: cs.primary),
+                ],
+              ),
+            ),
           ),
       ],
     );

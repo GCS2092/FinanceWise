@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -101,14 +103,18 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            const Gap(24),
             // Progress circulaire
             SizedBox(
               width: 120, height: 120,
@@ -131,7 +137,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const Gap(20),
             _detailRow(Icons.flag_outlined, 'Objectif', name),
             if (description != null) _detailRow(Icons.description_outlined, 'Description', description),
             _detailRow(Icons.trending_up, 'Actuel', _formatAmount(currentAmount)),
@@ -144,7 +150,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
             ),
             if (targetDate != null) _detailRow(Icons.calendar_today, 'Date cible', DateFormat('dd/MM/yyyy').format(DateTime.parse(targetDate))),
             _detailRow(Icons.info_outline, 'Statut', status == 'completed' ? 'Atteint' : 'En cours', valueColor: color),
-            const SizedBox(height: 24),
+            const Gap(24),
             Row(
               children: [
                 Expanded(
@@ -170,7 +176,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const Gap(12),
             FilledButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -187,15 +193,20 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+          Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: valueColor)),
         ],
       ),
     );
@@ -285,11 +296,14 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                   if (confirm == true) await _delete(goal['id']);
                                   return false;
                                 },
-                                child: Card(
-                                  margin: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(18),
+                                    boxShadow: AppTheme.softShadow,
+                                  ),
                                   child: InkWell(
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(18),
                                     onTap: () => _showGoalDetail(goal),
                                     child: Padding(
                                       padding: const EdgeInsets.all(16),
@@ -332,9 +346,9 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                                   spacing: 8,
                                                   crossAxisAlignment: WrapCrossAlignment.center,
                                                   children: [
-                                                    Text('${_formatAmount(currentAmount)}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+                                                    Text(_formatAmount(currentAmount), style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w700, fontSize: 14)),
                                                     const Text(' / ', style: TextStyle(fontSize: 12)),
-                                                    Text(_formatAmount(targetAmount), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+                                                    Text(_formatAmount(targetAmount), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
                                                     Container(
                                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                       decoration: BoxDecoration(

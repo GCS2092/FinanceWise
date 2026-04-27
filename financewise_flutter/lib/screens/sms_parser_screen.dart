@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -178,41 +180,44 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.info_outline, color: AppTheme.primary, size: 20),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppTheme.softShadow,
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(width: 12),
-                        Text('Comment ça marche', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Collez votre SMS Wave ou Orange Money. Le serveur détectera automatiquement le montant, le type et la catégorie.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Pour envoyer plusieurs SMS, séparez-les par ---',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
-                    ),
-                  ],
-                ),
+                        child: const Icon(Icons.info_outline_rounded, color: AppTheme.primary, size: 22),
+                      ),
+                      const Gap(12),
+                      Text('Comment ça marche', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const Gap(12),
+                  Text(
+                    'Collez votre SMS Wave ou Orange Money. Le serveur détectera automatiquement le montant, le type et la catégorie.',
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+                  ),
+                  const Gap(8),
+                  Text(
+                    'Pour envoyer plusieurs SMS, séparez-les par ---',
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13, fontStyle: FontStyle.italic),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const Gap(16),
             DropdownButtonFormField<String>(
               value: _provider,
               decoration: InputDecoration(
@@ -239,7 +244,7 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
               maxLines: 6,
               validator: (v) => v == null || v.trim().isEmpty ? 'Contenu requis' : null,
             ),
-            const SizedBox(height: 24),
+            const Gap(24),
             Row(
               children: [
                 Expanded(
@@ -251,7 +256,7 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
                     label: Text(_parsing ? 'Envoi...' : 'Analyser'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const Gap(12),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _parsing ? null : _parseBatch,
@@ -261,7 +266,7 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const Gap(24),
             if (_error != null)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -269,7 +274,7 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
                 child: Row(
                   children: [
                     const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
-                    const SizedBox(width: 8),
+                    const Gap(8),
                     Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
                   ],
                 ),
@@ -281,7 +286,7 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
                 child: Row(
                   children: [
                     const Icon(Icons.check_circle, color: AppTheme.primary),
-                    const SizedBox(width: 8),
+                    const Gap(8),
                     Expanded(child: Text(_result!, style: const TextStyle(color: AppTheme.primary))),
                   ],
                 ),

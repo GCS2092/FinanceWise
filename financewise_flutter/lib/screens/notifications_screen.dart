@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -140,15 +142,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             padding: const EdgeInsets.only(bottom: 14),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: AppTheme.softShadow,
+                                border: Border.all(color: color.withValues(alpha: 0.15)),
                               ),
                               child: Material(
                                 color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(18),
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(18),
                                   child: Padding(
                                     padding: const EdgeInsets.all(16),
                                     child: Row(
@@ -157,23 +160,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
                                             color: color.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(14),
                                           ),
                                           child: Icon(icon, color: color, size: 22),
                                         ),
-                                        const SizedBox(width: 14),
+                                        const Gap(14),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 alert['message'] ?? '',
-                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
                                               ),
-                                              const SizedBox(height: 4),
+                                              const Gap(4),
                                               Text(
                                                 _formatDate(alert['created_at']),
-                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                                               ),
                                             ],
                                           ),

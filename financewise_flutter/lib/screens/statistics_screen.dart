@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -86,106 +89,140 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ── Résumé ──
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Résumé', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _StatItem(
-                                        label: 'Balance',
-                                        value: _formatAmount(_data?['balance']),
-                                        color: AppTheme.secondary,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _StatItem(
-                                        label: 'Revenus',
-                                        value: _formatAmount(_data?['monthly_income']),
-                                        color: AppTheme.primary,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _StatItem(
-                                        label: 'Dépenses',
-                                        value: _formatAmount(_data?['monthly_expense']),
-                                        color: AppTheme.error,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.softShadow,
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Résumé du mois', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                              const Gap(16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatItem(
+                                      label: 'Balance',
+                                      value: _formatAmount(_data?['balance']),
+                                      color: AppTheme.secondary,
+                                      icon: Icons.account_balance_wallet_rounded,
+                                    ),
+                                  ),
+                                  const Gap(10),
+                                  Expanded(
+                                    child: _StatItem(
+                                      label: 'Revenus',
+                                      value: _formatAmount(_data?['monthly_income']),
+                                      color: AppTheme.success,
+                                      icon: Icons.trending_up_rounded,
+                                    ),
+                                  ),
+                                  const Gap(10),
+                                  Expanded(
+                                    child: _StatItem(
+                                      label: 'Dépenses',
+                                      value: _formatAmount(_data?['monthly_expense']),
+                                      color: AppTheme.error,
+                                      icon: Icons.trending_down_rounded,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0, duration: 400.ms),
+                        const Gap(20),
 
                         // ── Dépenses par catégorie ──
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Dépenses par catégorie', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  height: 300,
-                                  child: _buildCategoryChart(),
-                                ),
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.softShadow,
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Dépenses par catégorie', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                              const Gap(16),
+                              SizedBox(
+                                height: 300,
+                                child: _buildCategoryChart(),
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(delay: 100.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 100.ms, duration: 400.ms),
+                        const Gap(20),
 
-                        // ── Graphique à barres (dépenses par catégorie) ──
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Dépenses par catégorie (barres)', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  height: 250,
-                                  child: _buildBarChart(),
-                                ),
-                              ],
-                            ),
+                        // ── Graphique à barres ──
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.softShadow,
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Répartition (barres)', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                              const Gap(16),
+                              SizedBox(
+                                height: 250,
+                                child: _buildBarChart(),
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 200.ms, duration: 400.ms),
+                        const Gap(20),
 
                         // ── Top dépenses ──
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Top dépenses', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 16),
-                                ...(_transactions
-                                    .where((t) => t['type'] == 'expense')
-                                    .toList()
-                                  ..sort((a, b) => ((b['amount'] ?? 0) as num).compareTo((a['amount'] ?? 0) as num))
-                                ).take(5).map((t) => ListTile(
-                                      dense: true,
-                                      title: Text(t['description'] ?? ''),
-                                      subtitle: Text(t['category'] is Map ? t['category']['name'] : ''),
-                                      trailing: Text(_formatAmount(t['amount']), style: const TextStyle(color: AppTheme.error, fontWeight: FontWeight.bold)),
-                                    )),
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.softShadow,
                           ),
-                        ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Top dépenses', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                              const Gap(16),
+                              ...(_transactions
+                                  .where((t) => t['type'] == 'expense')
+                                  .toList()
+                                ..sort((a, b) => ((b['amount'] ?? 0) as num).compareTo((a['amount'] ?? 0) as num))
+                              ).take(5).map((t) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                                          child: const Icon(Icons.north_east_rounded, color: AppTheme.error, size: 16),
+                                        ),
+                                        const Gap(12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(t['description'] ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                                              Text(t['category'] is Map ? t['category']['name'] : '', style: GoogleFonts.inter(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                            ],
+                                          ),
+                                        ),
+                                        Text(_formatAmount(t['amount']), style: GoogleFonts.poppins(color: AppTheme.error, fontWeight: FontWeight.w700, fontSize: 13)),
+                                      ],
+                                    ),
+                                  )),
+                            ],
+                          ),
+                        ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 300.ms, duration: 400.ms),
                       ],
                     ),
                   ),
@@ -334,24 +371,31 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final IconData icon;
 
-  const _StatItem({required this.label, required this.value, required this.color});
+  const _StatItem({required this.label, required this.value, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 18),
           ),
-          child: Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      ],
+          const Gap(8),
+          Text(value, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: color), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+          const Gap(2),
+          Text(label, style: GoogleFonts.inter(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ],
+      ),
     );
   }
 }

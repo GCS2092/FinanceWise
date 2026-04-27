@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
@@ -117,14 +119,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            const Gap(24),
             // Progress circulaire
             SizedBox(
               width: 120, height: 120,
@@ -157,7 +163,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               _fmt(remaining),
               valueColor: remaining >= 0 ? AppTheme.primary : AppTheme.error,
             ),
-            const SizedBox(height: 24),
+            const Gap(24),
             Row(
               children: [
                 Expanded(
@@ -191,15 +197,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+          Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: valueColor)),
         ],
       ),
     );
@@ -308,11 +319,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 if (confirm == true) await _delete(b['id']);
                                 return false;
                               },
-                              child: Card(
-                                margin: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: AppTheme.softShadow,
+                                ),
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(18),
                                   onTap: () => _showBudgetDetail(b),
                                   child: Padding(
                                     padding: const EdgeInsets.all(16),
@@ -355,9 +369,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                                 spacing: 8,
                                                 crossAxisAlignment: WrapCrossAlignment.center,
                                                 children: [
-                                                  Text('${_fmt(spent)}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+                                                  Text(_fmt(spent), style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w700, fontSize: 14)),
                                                   const Text(' / ', style: TextStyle(fontSize: 12)),
-                                                  Text(_fmt(amount), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+                                                  Text(_fmt(amount), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                     decoration: BoxDecoration(

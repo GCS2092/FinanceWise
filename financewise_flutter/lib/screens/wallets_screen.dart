@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/onboarding_tooltip.dart';
@@ -143,52 +146,61 @@ class _WalletsScreenState extends State<WalletsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            const Gap(20),
             // Mini carte
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(icon, color: Colors.white70, size: 20),
-                      const SizedBox(width: 8),
-                      Text(name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(icon, color: Colors.white, size: 20),
+                      ),
+                      const Gap(10),
+                      Text(name, style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const Gap(20),
                   Text(
                     _fmt(balance),
-                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 4),
-                  Text(type, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                  const Gap(4),
+                  Text(type, style: GoogleFonts.inter(color: Colors.white60, fontSize: 12)),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const Gap(24),
             _walletDetailRow(Icons.category_outlined, 'Type', type),
             _walletDetailRow(Icons.calendar_today_outlined, 'Créé le', formattedDate),
             _walletDetailRow(
-              Icons.trending_up,
+              Icons.trending_up_rounded,
               'Solde',
               _fmt(balance),
-              valueColor: balance >= 0 ? AppTheme.primary : AppTheme.error,
+              valueColor: balance >= 0 ? AppTheme.success : AppTheme.error,
             ),
-            const SizedBox(height: 24),
+            const Gap(28),
             Row(
               children: [
                 Expanded(
@@ -201,7 +213,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                     label: const Text('Modifier'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const Gap(12),
                 Expanded(
                   child: FilledButton.icon(
                     onPressed: () {
@@ -222,15 +234,20 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   Widget _walletDetailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+          Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: valueColor ?? cs.onSurface)),
         ],
       ),
     );
@@ -324,95 +341,88 @@ class _WalletsScreenState extends State<WalletsScreen> {
                                   onTap: () => _showWalletDetail(w),
                                   child: Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.all(18),
+                                    padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: gradient,
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
-                                      borderRadius: BorderRadius.circular(18),
+                                      borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
-                                        BoxShadow(color: gradient[0].withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 6)),
+                                        BoxShadow(color: gradient[0].withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 8)),
                                       ],
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        // Header : icône + nom + type
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Row(
                                               children: [
                                                 Container(
-                                                  padding: const EdgeInsets.all(6),
+                                                  padding: const EdgeInsets.all(8),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.white.withValues(alpha: 0.2),
-                                                    borderRadius: BorderRadius.circular(8),
+                                                    color: Colors.white.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(12),
                                                   ),
                                                   child: Icon(icon, color: Colors.white, size: 18),
                                                 ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  name,
-                                                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                                                ),
+                                                const Gap(10),
+                                                Text(name, style: GoogleFonts.poppins(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
                                               ],
                                             ),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                               decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.15),
-                                                borderRadius: BorderRadius.circular(12),
+                                                color: Colors.white.withValues(alpha: 0.12),
+                                                borderRadius: BorderRadius.circular(20),
                                               ),
-                                              child: Text(
-                                                type,
-                                                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
-                                              ),
+                                              child: Text(type, style: GoogleFonts.inter(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 18),
-                                        // Solde
-                                        const Text('Solde', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                                        const SizedBox(height: 2),
+                                        const Gap(20),
+                                        Text('Solde', style: GoogleFonts.inter(color: Colors.white54, fontSize: 11)),
+                                        const Gap(4),
                                         Text(
                                           _fmt(balance),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.5,
-                                          ),
+                                          style: GoogleFonts.poppins(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700),
                                         ),
-                                        const SizedBox(height: 12),
-                                        // Indicateur bas
+                                        const Gap(14),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Row(
                                               children: [
                                                 Icon(
-                                                  balance >= 0 ? Icons.check_circle_outline : Icons.warning_amber_rounded,
-                                                  color: Colors.white60,
+                                                  balance >= 0 ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
+                                                  color: Colors.white54,
                                                   size: 14,
                                                 ),
-                                                const SizedBox(width: 4),
+                                                const Gap(6),
                                                 Text(
                                                   balance >= 0 ? 'Solde positif' : 'Solde négatif',
-                                                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
                                                 ),
                                               ],
                                             ),
-                                            const Icon(Icons.chevron_right, color: Colors.white38, size: 18),
+                                            Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                                              child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 12),
+                                            ),
                                           ],
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
-                              );
+                              )
+                                  .animate()
+                                  .fadeIn(delay: (100 * i).ms, duration: 400.ms)
+                                  .slideY(begin: 0.1, end: 0, delay: (100 * i).ms, duration: 400.ms);
                             },
                           ),
               ),

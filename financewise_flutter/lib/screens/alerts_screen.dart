@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -123,14 +125,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            const Gap(24),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -166,11 +172,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const Gap(20),
             _detailRow(Icons.info_outline, 'Type', type.toUpperCase(), valueColor: color),
             _detailRow(Icons.visibility, 'Statut', isRead ? 'Lu' : 'Non lu', valueColor: isRead ? null : AppTheme.primary),
             if (!isRead) ...[
-              const SizedBox(height: 24),
+              const Gap(24),
               FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
@@ -198,15 +204,20 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+          Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: valueColor)),
         ],
       ),
     );
@@ -301,13 +312,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
                               onDismissed: (_) => _markAsRead(alert['id']),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: isRead ? null : color.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: isRead ? null : Border.all(color: color.withValues(alpha: 0.3), width: 1),
+                                  color: isRead ? Colors.white : color.withValues(alpha: 0.04),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: isRead ? null : Border.all(color: color.withValues(alpha: 0.2), width: 1),
+                                  boxShadow: AppTheme.softShadow,
                                 ),
                                 child: Material(
                                   color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(18),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(14),
                                     onTap: () => _showAlertDetail(alert),
@@ -319,26 +331,28 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                             padding: const EdgeInsets.all(10),
                                             decoration: BoxDecoration(
                                               color: color.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(14),
                                             ),
                                             child: Icon(icon, color: color, size: 22),
                                           ),
-                                          const SizedBox(width: 14),
+                                          const Gap(14),
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   alert['title'] ?? 'Alerte',
-                                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                    fontWeight: isRead ? FontWeight.normal : FontWeight.w600,
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: isRead ? FontWeight.w400 : FontWeight.w600,
+                                                    fontSize: 14,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 4),
+                                                const Gap(4),
                                                 Text(
                                                   alert['message'] ?? '',
-                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  style: GoogleFonts.inter(
                                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    fontSize: 12,
                                                   ),
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,

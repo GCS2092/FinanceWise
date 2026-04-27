@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -94,14 +96,18 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            const Gap(24),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -132,7 +138,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const Gap(20),
             _detailRow(Icons.attach_money, 'Montant', _formatAmount(amount)),
             _detailRow(Icons.calendar_today, 'Date échéance', DateFormat('dd/MM/yyyy').format(dueDate)),
             _detailRow(Icons.repeat, 'Fréquence', _getFrequencyLabel(frequency)),
@@ -150,7 +156,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                 valueColor: isOverdue ? AppTheme.error : Colors.orange,
               ),
             ],
-            const SizedBox(height: 24),
+            const Gap(24),
             Row(
               children: [
                 Expanded(
@@ -178,7 +184,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const Gap(12),
             FilledButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -195,15 +201,20 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor)),
+          Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: valueColor)),
         ],
       ),
     );
@@ -296,15 +307,16 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: isCompleted ? null : color.withValues(alpha: 0.05),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: isCompleted ? null : Border.all(color: color.withValues(alpha: 0.3), width: 1),
+                                    color: isCompleted ? Colors.white : color.withValues(alpha: 0.04),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: isCompleted ? null : Border.all(color: color.withValues(alpha: 0.2), width: 1),
+                                    boxShadow: AppTheme.softShadow,
                                   ),
                                   child: Material(
                                     color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(18),
                                     child: InkWell(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(18),
                                       onTap: () => _showReminderDetail(reminder),
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -318,7 +330,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                               ),
                                               child: Icon(icon, color: color, size: 24),
                                             ),
-                                            const SizedBox(width: 14),
+                                            const Gap(14),
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +342,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                                       decoration: isCompleted ? TextDecoration.lineThrough : null,
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 4),
+                                                  const Gap(4),
                                                   Wrap(
                                                     spacing: 8,
                                                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -348,7 +360,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                                     ],
                                                   ),
                                                   if (!isCompleted) ...[
-                                                    const SizedBox(height: 6),
+                                                    const Gap(6),
                                                     Text(
                                                       isOverdue ? 'En retard de ${daysUntilDue.abs()} jours' : (daysUntilDue == 0 ? 'Aujourd\'hui' : 'Dans $daysUntilDue jours'),
                                                       style: TextStyle(fontSize: 11, color: isOverdue ? AppTheme.error : Colors.orange, fontWeight: FontWeight.w500),
@@ -357,7 +369,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                                                 ],
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
+                                            const Gap(12),
                                             Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant, size: 18),
                                         ],
                                       ),

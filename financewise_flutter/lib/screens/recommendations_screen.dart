@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -104,26 +107,63 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                           itemBuilder: (_, i) {
                             final recommendation = _recommendations[i];
                             final type = recommendation['type'] ?? 'info';
+                            final color = _getTypeColor(type);
+                            final delayMs = (60 * i).clamp(0, 500);
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: _getTypeColor(type).withValues(alpha: 0.15),
-                                  child: Icon(
-                                    _getTypeIcon(type),
-                                    color: _getTypeColor(type),
-                                  ),
-                                ),
-                                title: Text(
-                                  recommendation['message'] ?? 'Recommandation',
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                subtitle: recommendation['category'] != null
-                                    ? Text('Catégorie: ${recommendation['category']}')
-                                    : null,
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 14),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: AppTheme.softShadow,
+                                border: Border.all(color: color.withValues(alpha: 0.15)),
                               ),
-                            );
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: color.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(_getTypeIcon(type), color: color, size: 22),
+                                    ),
+                                    const Gap(14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            recommendation['message'] ?? 'Recommandation',
+                                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                                          ),
+                                          if (recommendation['category'] != null) ...[
+                                            const Gap(6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: color.withValues(alpha: 0.08),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                recommendation['category'],
+                                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: color),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                                .animate()
+                                .fadeIn(delay: Duration(milliseconds: delayMs), duration: 300.ms)
+                                .slideX(begin: 0.03, end: 0, delay: Duration(milliseconds: delayMs), duration: 300.ms);
                           },
                         ),
             ),

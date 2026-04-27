@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
@@ -408,72 +411,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                       if (confirm == true) await _delete(t['id']);
                                       return false;
                                     },
-                                    child: Card(
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(14),
-                                        onTap: () => _showTransactionDetail(t),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(14),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 44, height: 44,
-                                                decoration: BoxDecoration(
-                                                  color: income ? AppTheme.primary.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Icon(income ? Icons.south_west : Icons.north_east, color: income ? AppTheme.primary : AppTheme.error, size: 20),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      t['description'] ?? 'Transaction',
-                                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                                                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Row(
-                                                      children: [
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                          decoration: BoxDecoration(
-                                                            color: Theme.of(context).colorScheme.secondaryContainer,
-                                                            borderRadius: BorderRadius.circular(4),
-                                                          ),
-                                                          child: Text(catName, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSecondaryContainer)),
-                                                        ),
-                                                        if (walletName.isNotEmpty) ...[
-                                                          const SizedBox(width: 6),
-                                                          Text('•', style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant, fontSize: 10)),
-                                                          const SizedBox(width: 6),
-                                                          Text(walletName, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                                        ],
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Column(
-                                                crossAxisAlignment: CrossAxisAlignment.end,
-                                                children: [
-                                                  Text(
-                                                    '${income ? '+' : '-'}${_fmt(t['amount'])}',
-                                                    style: TextStyle(color: income ? AppTheme.primary : AppTheme.error, fontWeight: FontWeight.bold, fontSize: 14),
-                                                  ),
-                                                  const SizedBox(height: 3),
-                                                  Text(shortDate, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    child: _buildTransactionCard(t, income, catName, walletName, shortDate, i),
                                   );
                                 },
                               ),
@@ -492,45 +430,132 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
+  Widget _buildTransactionCard(dynamic t, bool income, String catName, String walletName, String shortDate, int i) {
+    final delayMs = (50 * i).clamp(0, 500);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => _showTransactionDetail(t),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: income ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(income ? Icons.south_west_rounded : Icons.north_east_rounded, color: income ? AppTheme.success : AppTheme.error, size: 22),
+                ),
+                const Gap(14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t['description'] ?? 'Transaction',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                      const Gap(4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(catName, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.primary)),
+                          ),
+                          if (walletName.isNotEmpty) ...[
+                            const Gap(6),
+                            Text('•', style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant, fontSize: 10)),
+                            const Gap(6),
+                            Text(walletName, style: GoogleFonts.inter(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${income ? '+' : '-'}${_fmt(t['amount'])}',
+                      style: GoogleFonts.poppins(color: income ? AppTheme.success : AppTheme.error, fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    const Gap(4),
+                    Text(shortDate, style: GoogleFonts.inter(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: delayMs), duration: 300.ms)
+        .slideX(begin: 0.03, end: 0, delay: Duration(milliseconds: delayMs), duration: 300.ms);
+  }
+
   void _showTransactionDetail(Map<dynamic, dynamic> t) {
+    final cs = Theme.of(context).colorScheme;
     final income = t['type'] == 'income';
     final catName = t['category']?['name'] ?? 'Sans catégorie';
     final walletName = t['wallet']?['name'] ?? '';
     final date = t['transaction_date']?.toString() ?? '';
     final formattedDate = date.length >= 10 ? '${date.substring(8, 10)}/${date.substring(5, 7)}/${date.substring(0, 4)}' : date;
+    final accentColor = income ? AppTheme.success : AppTheme.error;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: cs.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            const Gap(24),
             Container(
-              width: 56, height: 56,
+              width: 60, height: 60,
               decoration: BoxDecoration(
-                color: income ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(income ? Icons.south_west : Icons.north_east, color: income ? AppTheme.primary : AppTheme.error, size: 28),
+              child: Icon(income ? Icons.south_west_rounded : Icons.north_east_rounded, color: accentColor, size: 28),
             ),
-            const SizedBox(height: 12),
+            const Gap(14),
             Text(
               '${income ? '+' : '-'}${_fmt(t['amount'])}',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: income ? AppTheme.primary : AppTheme.error),
+              style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.w700, color: accentColor),
             ),
-            const SizedBox(height: 4),
-            Text(income ? 'Revenu' : 'Dépense', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
-            const SizedBox(height: 20),
+            const Gap(4),
+            Text(income ? 'Revenu' : 'Dépense', style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
+            const Gap(24),
             _detailRow(Icons.description_outlined, 'Description', t['description'] ?? '—'),
             _detailRow(Icons.category_outlined, 'Catégorie', catName),
             if (walletName.isNotEmpty) _detailRow(Icons.account_balance_wallet_outlined, 'Portefeuille', walletName),
             _detailRow(Icons.calendar_today_outlined, 'Date', formattedDate),
-            const SizedBox(height: 20),
+            const Gap(24),
             Row(
               children: [
                 Expanded(
@@ -543,7 +568,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     label: const Text('Modifier'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const Gap(12),
                 Expanded(
                   child: FilledButton.icon(
                     onPressed: () {
@@ -564,15 +589,20 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
+          const Gap(12),
+          Text(label, style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 13)),
           const Spacer(),
-          Flexible(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13), textAlign: TextAlign.end, overflow: TextOverflow.ellipsis)),
+          Flexible(child: Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13), textAlign: TextAlign.end, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
@@ -582,20 +612,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        builder: (ctx, setSheetState) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
+              const Gap(16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Filtres', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('Filtres', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600)),
                   TextButton(
                     onPressed: () {
                       _resetFilters();
@@ -605,9 +639,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text('Type', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
+              const Gap(16),
+              Text('Type', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+              const Gap(10),
               Row(
                 children: [
                   _filterChip('Tous', _selectedType == null, () {
@@ -615,13 +649,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     setSheetState(() {});
                     _applyFilters();
                   }),
-                  const SizedBox(width: 8),
+                  const Gap(10),
                   _filterChip('Revenus', _selectedType == 'income', () {
                     setState(() => _selectedType = 'income');
                     setSheetState(() {});
                     _applyFilters();
                   }),
-                  const SizedBox(width: 8),
+                  const Gap(10),
                   _filterChip('Dépenses', _selectedType == 'expense', () {
                     setState(() => _selectedType = 'expense');
                     setSheetState(() {});
@@ -629,9 +663,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   }),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text('Période', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
+              const Gap(20),
+              Text('Période', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+              const Gap(10),
               Row(
                 children: [
                   Expanded(
@@ -678,12 +712,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const Gap(24),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text('Voir ${_filteredTransactions.length} résultat${_filteredTransactions.length > 1 ? 's' : ''}'),
+                height: 52,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: AppTheme.mediumShadow,
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                    child: Text('Voir ${_filteredTransactions.length} résultat${_filteredTransactions.length > 1 ? 's' : ''}', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
                 ),
               ),
             ],
@@ -694,19 +737,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _filterChip(String label, bool selected, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
+          color: selected ? cs.primary : cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: selected ? [BoxShadow(color: cs.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))] : [],
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+          style: GoogleFonts.poppins(
+            color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
         ),

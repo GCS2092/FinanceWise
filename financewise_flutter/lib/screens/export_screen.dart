@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -95,33 +97,37 @@ class _ExportScreenState extends State<ExportScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primary.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(Icons.file_download, color: AppTheme.primary),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: AppTheme.softShadow,
+                        ),
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Export CSV', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                      Text('${_transactions.length} transactions', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
+                                  child: const Icon(Icons.file_download_rounded, color: AppTheme.primary, size: 24),
+                                ),
+                                const Gap(16),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Export CSV', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                                    Text('${_transactions.length} transactions', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const Gap(16),
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
@@ -132,16 +138,15 @@ class _ExportScreenState extends State<ExportScreen> {
                                   label: Text(_exporting ? 'Exportation...' : 'Copier en CSV'),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text('Le CSV sera copié dans le presse-papier', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                              const Gap(8),
+                              Text('Le CSV sera copié dans le presse-papier', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
                             ],
                           ),
                         ),
                       ),
-                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('Aperçu des données', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      child: Text('Aperçu des données', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
                     ),
                     Expanded(
                       child: ListView.builder(
