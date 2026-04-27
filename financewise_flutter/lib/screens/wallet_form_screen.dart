@@ -112,7 +112,6 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 keyboardType: TextInputType.number,
-                enabled: !_isEdit,
                 validator: (v) => v != null && v.isNotEmpty ? null : 'Solde requis',
               ),
               const SizedBox(height: 16),

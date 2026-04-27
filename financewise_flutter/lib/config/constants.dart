@@ -7,8 +7,8 @@ class AppConstants {
   // │  • Téléphone physique →  IP WiFi du PC      │
   // │    (Ex: 192.168.1.42 — voir ipconfig)       │
   // └─────────────────────────────────────────────┘
-  static const String apiHost = '192.168.1.6';
-  // static const String apiHost = '192.168.1.42'; // ← Pour téléphone physique
+  static const String apiHost = '10.0.2.2'; // ← Pour émulateur Android
+  // static const String apiHost = '192.168.1.6'; // ← Pour téléphone physique
 
   static String get baseUrl => 'http://$apiHost:8000/api';
 

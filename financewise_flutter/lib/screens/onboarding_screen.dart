@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'home_screen.dart';
@@ -66,6 +67,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       });
       
       if (mounted) {
+        // Sauvegarder l'état onboarding complété
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('onboarding_completed', true);
+        
         final walletsCreated = response['wallets_created'] ?? 0;
         final budgetsCreated = response['budgets_created'] ?? 0;
         

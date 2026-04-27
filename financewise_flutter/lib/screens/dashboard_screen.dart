@@ -417,7 +417,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: onTap,
             borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

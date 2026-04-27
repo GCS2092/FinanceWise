@@ -3,7 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
+import '../services/biometric_service.dart';
 import '../theme.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
@@ -20,6 +22,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscure = true;
+  final BiometricService _bioService = BiometricService();
+  bool _showBiometricButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final hasBio = await _bioService.hasBiometrics();
+    final prefs = await SharedPreferences.getInstance();
+    final biometricActivated = prefs.getBool('biometric_activated') ?? false;
+    final savedEmail = prefs.getString('saved_email');
+
+    if (hasBio && biometricActivated && savedEmail != null) {
+      setState(() {
+        _showBiometricButton = true;
+        _emailCtrl.text = savedEmail;
+      });
+    }
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -30,9 +54,36 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
     if (success && mounted) {
+      // Save email and password for biometric login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_email', _emailCtrl.text.trim());
+      await prefs.setString('saved_password', _passwordCtrl.text);
+      
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+    }
+  }
+
+  Future<void> _biometricLogin() async {
+    final authenticated = await _bioService.authenticate();
+    if (authenticated && mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('saved_email');
+      final savedPassword = prefs.getString('saved_password');
+
+      if (savedEmail != null && savedPassword != null) {
+        final success = await context.read<AuthProvider>().login(
+              savedEmail,
+              savedPassword,
+            );
+
+        if (success) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        }
+      }
     }
   }
 
@@ -175,6 +226,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       .animate()
                       .fadeIn(delay: 500.ms, duration: 400.ms)
                       .slideY(begin: 0.1, end: 0, delay: 500.ms, duration: 400.ms),
+                  const Gap(12),
+
+                  // ── Bouton biométrique ──
+                  if (_showBiometricButton)
+                    IconButton(
+                      onPressed: _biometricLogin,
+                      icon: const Icon(Icons.fingerprint, size: 48),
+                      style: IconButton.styleFrom(
+                        foregroundColor: cs.primary,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 600.ms, duration: 400.ms)
+                        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1), delay: 600.ms, duration: 400.ms),
                   const Gap(20),
 
                   // ── Lien inscription ──

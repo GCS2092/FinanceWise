@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/theme_provider.dart';
 import '../services/auto_transaction_service.dart';
 import '../services/biometric_service.dart';
+import '../services/sms_listener_service.dart';
 import '../theme.dart';
 import 'onboarding_screen.dart';
 
@@ -21,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isEnabled = false;
   bool _autoConfirm = false;
   bool _biometricEnabled = false;
+  bool _biometricActivated = false;
   bool _loading = true;
 
   @override
@@ -32,10 +35,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     await _autoService.loadSettings();
     final hasBio = await _bioService.hasBiometrics();
+    final prefs = await SharedPreferences.getInstance();
+    final biometricActivated = prefs.getBool('biometric_activated') ?? false;
     setState(() {
       _isEnabled = _autoService.isEnabled;
       _autoConfirm = _autoService.autoConfirm;
       _biometricEnabled = hasBio;
+      _biometricActivated = biometricActivated;
       _loading = false;
     });
   }
@@ -101,15 +107,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SwitchListTile(
                             title: const Text('Authentification biométrique'),
                             subtitle: const Text('Utiliser empreinte ou FaceID pour vous connecter'),
-                            value: true,
+                            value: _biometricActivated,
                             onChanged: (value) async {
                               if (value) {
-                                final authenticated = await _bioService.authenticate();
-                                if (!authenticated) {
+                                final availableBiometrics = await _bioService.getAvailableBiometrics();
+                                if (availableBiometrics == null || availableBiometrics.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Authentification échouée')),
+                                    const SnackBar(
+                                      content: Text('Aucune empreinte ou FaceID configurée sur cet appareil. Allez dans Paramètres > Sécurité de votre appareil.'),
+                                      duration: Duration(seconds: 4),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                
+                                final authenticated = await _bioService.authenticate();
+                                if (authenticated) {
+                                  final prefs = await SharedPreferences.getInstance();
+                                  await prefs.setBool('biometric_activated', true);
+                                  setState(() => _biometricActivated = true);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Authentification biométrique activée')),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Authentification annulée ou échouée. Réessayez.'),
+                                      duration: Duration(seconds: 3),
+                                    ),
                                   );
                                 }
+                              } else {
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setBool('biometric_activated', false);
+                                setState(() => _biometricActivated = false);
                               }
                             },
                           )
@@ -147,6 +178,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: const Text('Détecte automatiquement les transactions Wave/Orange Money'),
                           value: _isEnabled,
                           onChanged: (value) async {
+                            if (value) {
+                              // Demander les permissions SMS avant d'activer
+                              final hasPermission = await SmsListenerService.checkSmsPermission();
+                              if (!hasPermission) {
+                                final granted = await SmsListenerService.requestSmsPermission();
+                                if (!granted) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Permission SMS requise pour la détection automatique'),
+                                        duration: Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                              }
+                            }
                             await _autoService.setEnabled(value);
                             setState(() => _isEnabled = value);
                           },

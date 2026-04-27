@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Telephony
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import io.flutter.plugin.common.MethodChannel
@@ -17,22 +18,31 @@ class SmsReceiver : BroadcastReceiver() {
         private var methodChannel: MethodChannel? = null
         private const val CHANNEL_ID = "sms_detection_channel"
         private const val NOTIFICATION_ID = 1001
+        private const val TAG = "SmsReceiver"
         
         fun setMethodChannel(channel: MethodChannel) {
             methodChannel = channel
+            Log.d(TAG, "MethodChannel set")
         }
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
+        Log.d(TAG, "onReceive called with action: ${intent?.action}")
+        
         if (intent?.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
+            Log.d(TAG, "Received ${messages.size} SMS messages")
             
             for (message in messages) {
                 val sender = message.originatingAddress ?: ""
                 val body = message.messageBody ?: ""
                 
+                Log.d(TAG, "SMS from: $sender, body: $body")
+                
                 // Détecter si c'est un SMS de Wave ou Orange Money
                 if (isTransactionSms(sender, body)) {
+                    Log.d(TAG, "Transaction SMS detected!")
+                    
                     // Créer une notification
                     createNotification(context, sender, body)
                     
@@ -45,6 +55,9 @@ class SmsReceiver : BroadcastReceiver() {
                         "body" to body,
                         "timestamp" to System.currentTimeMillis()
                     ))
+                    Log.d(TAG, "Sent to Flutter via MethodChannel")
+                } else {
+                    Log.d(TAG, "Not a transaction SMS")
                 }
             }
         }

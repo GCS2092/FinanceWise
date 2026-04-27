@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -102,7 +103,7 @@ class _AppInitializerState extends State<AppInitializer> {
                   if (snapshot.data == false) {
                     return const OnboardingScreen();
                   }
-                  return const HomeScreen();
+                  return const BiometricCheckScreen(child: HomeScreen());
                 },
               );
             },
@@ -115,5 +116,72 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<bool> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('onboarding_completed') ?? false;
+  }
+}
+
+class BiometricCheckScreen extends StatefulWidget {
+  final Widget child;
+  const BiometricCheckScreen({super.key, required this.child});
+
+  @override
+  State<BiometricCheckScreen> createState() => _BiometricCheckScreenState();
+}
+
+class _BiometricCheckScreenState extends State<BiometricCheckScreen> {
+  final BiometricService _bioService = BiometricService();
+  bool _authenticated = false;
+  DateTime? _lastAuthTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final prefs = await SharedPreferences.getInstance();
+    final biometricActivated = prefs.getBool('biometric_activated') ?? false;
+    final hasBio = await _bioService.hasBiometrics();
+    final lastAuthTime = prefs.getInt('last_biometric_auth_time');
+
+    // Vérifier si l'authentification a été faite il y a moins de 5 minutes
+    // Si oui, ne pas redemander (évite de demander à chaque resume)
+    bool recentAuth = false;
+    if (lastAuthTime != null) {
+      final lastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthTime);
+      final difference = DateTime.now().difference(lastAuth);
+      recentAuth = difference.inMinutes < 5;
+    }
+
+    if (biometricActivated && hasBio && !recentAuth) {
+      final authenticated = await _bioService.authenticate();
+      if (authenticated && mounted) {
+        await prefs.setInt('last_biometric_auth_time', DateTime.now().millisecondsSinceEpoch);
+        setState(() => _authenticated = true);
+      } else if (mounted) {
+        setState(() => _authenticated = false);
+      }
+    } else {
+      setState(() => _authenticated = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_authenticated) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Authentification biométrique requise'),
+            ],
+          ),
+        ),
+      );
+    }
+    return widget.child;
   }
 }

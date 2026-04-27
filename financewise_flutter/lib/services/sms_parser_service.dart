@@ -1,8 +1,8 @@
-import '../services/api_service.dart';
+import 'api_service.dart';
 
 class SmsTransaction {
   final double amount;
-  final String type; // 'credit' or 'debit'
+  final String type; // 'income' or 'expense'
   final String? category; // category name
   final String description;
   final DateTime date;
@@ -26,7 +26,7 @@ class SmsTransaction {
   Map<String, dynamic> toJson() {
     return {
       'amount': amount,
-      'type': type,
+      'type': type == 'income' ? 'income' : 'expense',
       'description': description,
       'transaction_date': date.toIso8601String(),
       'sender': sender,
