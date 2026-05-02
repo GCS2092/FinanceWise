@@ -131,7 +131,10 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
       _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Objectif supprimé')),
+          const SnackBar(
+            content: Text('Objectif supprimé'),
+            duration: Duration(seconds: 2),
+          ),
         );
       }
     } catch (e) {
@@ -630,7 +633,10 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                   Navigator.pop(ctx);
                   _load();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${_formatAmount(amount)} ajouté')),
+                    const SnackBar(
+                      content: Text('Montant ajouté avec succès'),
+                      duration: Duration(seconds: 2),
+                    ),
                   );
                 }
               } catch (e) {
@@ -838,7 +844,20 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                   const SizedBox(height: 16),
                                   Center(child: Text('Aucun objectif', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w500))),
                                   const SizedBox(height: 8),
-                                  Center(child: Text('Définissez un objectif d\'\u00e9pargne avec le bouton +', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
+                                  Center(child: Text('Définissez un objectif d\'\u00e9pargne pour commencer', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
+                                  const SizedBox(height: 24),
+                                  Center(
+                                    child: FilledButton.icon(
+                                      onPressed: () async {
+                                        final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialGoalFormScreen()));
+                                        if (result == true) {
+                                          _load();
+                                        }
+                                      },
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Créer un objectif'),
+                                    ),
+                                  ),
                                 ],
                               )
                             : _filteredGoals.isEmpty
@@ -1056,7 +1075,10 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                   Navigator.pop(ctx);
                   _load();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Montant mis à jour: ${_formatAmount(amount)}')),
+                    SnackBar(
+                      content: Text('Montant mis à jour: ${_formatAmount(amount)}'),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
                 }
               } catch (e) {

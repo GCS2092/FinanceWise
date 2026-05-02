@@ -245,34 +245,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Alertes ──
+              // ── Alertes (max 1, le reste derrière Voir tout) ──
               ...alerts.asMap().entries
                   .where((e) => !_dismissedAlerts.contains(e.key))
-                  .take(3)
+                  .take(1)
                   .map((e) => _buildAlert(e.value, e.key)),
+              if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).length > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: TextButton(
+                    onPressed: () {
+                      // Naviguer vers écran complet des alertes
+                    },
+                    child: Text('Voir toutes les alertes (${alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).length})'),
+                  ),
+                ),
               if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).isNotEmpty)
                 const SizedBox(height: 12),
 
-              // ── Objectif de revenu (compact) ──
-              if (incomeTarget > 0) ...[
-                _buildIncomeGoal(income, incomeTarget, incomeProgress),
-                const SizedBox(height: 16),
-              ],
-
-              // ── Budgets actifs (max 2) ──
-              _buildSectionHeader('Budgets actifs', onSeeAll: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen()));
-              }),
-              const SizedBox(height: 8),
-              _buildActiveBudgets(),
-              const SizedBox(height: 20),
-
-              // ── Transactions récentes (max 3) ──
-              _buildSectionHeader('Transactions récentes', onSeeAll: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen()));
-              }),
-              const SizedBox(height: 8),
-              _buildRecentTransactions(),
+              // ── Voir tout (accès au reste) ──
+              _buildSeeAllSection(incomeTarget > 0, income, incomeTarget, incomeProgress),
               const SizedBox(height: 80),
             ],
         ),
@@ -410,8 +402,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     )
         .animate()
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOut);
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.1, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
 
   // ── Chip action rapide ──
@@ -756,6 +748,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           );
         }).toList(),
+      ),
+    );
+  }
+
+  // ── Section Voir tout (regroupe les sections secondaires) ──
+  Widget _buildSeeAllSection(bool hasIncomeGoal, dynamic income, dynamic target, dynamic progress) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Voir tout',
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface),
+                ),
+                Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildQuickActionChip(Icons.account_balance_wallet, 'Budgets', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen()));
+                }),
+                _buildQuickActionChip(Icons.receipt_long, 'Transactions', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen()));
+                }),
+                if (hasIncomeGoal)
+                  _buildQuickActionChip(Icons.trending_up, 'Objectif revenu', () {
+                    // Naviguer vers écran objectif revenu
+                  }),
+                _buildQuickActionChip(Icons.flag, 'Objectifs', () {
+                  // Naviguer vers écran objectifs
+                }),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionChip(IconData icon, String label, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: cs.primary),
+                const SizedBox(width: 6),
+                Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: cs.onSurface)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

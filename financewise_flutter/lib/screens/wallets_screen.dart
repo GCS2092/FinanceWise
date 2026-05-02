@@ -322,6 +322,17 @@ class _WalletsScreenState extends State<WalletsScreen> {
                               Center(child: Text('Aucun portefeuille', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
                               const SizedBox(height: 8),
                               Center(child: Text('Ajoutez Wave, Orange Money, Banque...', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                              const SizedBox(height: 24),
+                              Center(
+                                child: FilledButton.icon(
+                                  onPressed: () async {
+                                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletFormScreen()));
+                                    _load();
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Ajouter un portefeuille'),
+                                ),
+                              ),
                             ],
                           )
                         : ListView.builder(

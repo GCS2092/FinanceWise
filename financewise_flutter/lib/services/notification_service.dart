@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
@@ -113,7 +115,7 @@ class NotificationService {
     await showNotification(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: 'Alerte Budget',
-      body: 'Catégorie $categoryName: ${spent.toStringAsFixed(0)} / ${limit.toStringAsFixed(0)} FCFA',
+      body: 'Catégorie $categoryName: ${AppTheme.formatCurrency(spent)} / ${AppTheme.formatCurrency(limit)}',
       severity: severity,
     );
   }

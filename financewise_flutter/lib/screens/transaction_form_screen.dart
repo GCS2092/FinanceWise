@@ -147,19 +147,19 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     TextFormField(
                       controller: _amountCtrl,
                       decoration: InputDecoration(
-                        labelText: 'Montant',
+                        labelText: 'Montant *',
                         prefixIcon: const Icon(Icons.money),
                         suffixText: 'FCFA',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                       validator: (v) => v != null && v.isNotEmpty ? null : 'Montant requis',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _descCtrl,
                       decoration: InputDecoration(
-                        labelText: 'Description',
+                        labelText: 'Description *',
                         prefixIcon: const Icon(Icons.notes),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),

@@ -274,6 +274,17 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           Center(child: Text('Aucun budget', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
                           const SizedBox(height: 8),
                           Center(child: Text('Créez un budget pour contrôler vos dépenses', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: FilledButton.icon(
+                              onPressed: () async {
+                                await Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetFormScreen()));
+                                _load();
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('Créer un budget'),
+                            ),
+                          ),
                         ],
                       )
                     : ListView.builder(

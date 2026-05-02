@@ -79,7 +79,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       );
       
       _loadCategories();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Catégorie supprimée')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Catégorie supprimée'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
     }

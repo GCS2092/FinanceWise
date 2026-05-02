@@ -349,9 +349,20 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                   const SizedBox(height: 80),
                                   Icon(Icons.receipt_long_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                                   const SizedBox(height: 16),
-                                  Center(child: Text('Aucune transaction trouvée', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                                  Center(child: Text('Aucune transaction trouvée', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500))),
                                   const SizedBox(height: 8),
-                                  Center(child: Text('Ajoutez votre première transaction avec le bouton +', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                                  Center(child: Text('Ajoutez votre première transaction pour commencer', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                                  const SizedBox(height: 24),
+                                  Center(
+                                    child: FilledButton.icon(
+                                      onPressed: () async {
+                                        await Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionFormScreen()));
+                                        _load();
+                                      },
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Ajouter une transaction'),
+                                    ),
+                                  ),
                                 ],
                               )
                             : ListView.builder(

@@ -131,12 +131,12 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                     TextFormField(
                       controller: _amountCtrl,
                       decoration: InputDecoration(
-                        labelText: 'Montant budget',
+                        labelText: 'Montant budget *',
                         prefixIcon: const Icon(Icons.money),
                         suffixText: 'FCFA',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                       validator: (v) => v != null && v.isNotEmpty ? null : 'Montant requis',
                     ),
                     const SizedBox(height: 16),
