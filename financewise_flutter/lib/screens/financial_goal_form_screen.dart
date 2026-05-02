@@ -172,9 +172,17 @@ class _FinancialGoalFormScreenState extends State<FinancialGoalFormScreen> {
     } catch (e) {
       print('Erreur sauvegarde: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la sauvegarde: $e')),
-        );
+        // Vérifier si c'est une erreur de doublon
+        final errorMessage = e.toString();
+        if (errorMessage.contains('name') && errorMessage.contains('already been taken') || errorMessage.contains('unique')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Un objectif avec ce nom existe déjà')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur lors de la sauvegarde: $e')),
+          );
+        }
       }
     } finally {
       if (mounted) {

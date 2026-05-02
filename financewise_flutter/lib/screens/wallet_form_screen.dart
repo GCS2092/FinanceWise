@@ -62,7 +62,13 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
       );
       if (mounted) Navigator.pop(context);
     } else {
-      setState(() => _error = result?['message'] ?? 'Erreur lors de l\'enregistrement');
+      // Vérifier si c'est une erreur de doublon
+      final message = result?['message']?.toString() ?? 'Erreur lors de l\'enregistrement';
+      if (message.contains('name') && message.contains('already been taken') || message.contains('unique')) {
+        setState(() => _error = 'Un wallet avec ce nom existe déjà');
+      } else {
+        setState(() => _error = message);
+      }
     }
   }
 

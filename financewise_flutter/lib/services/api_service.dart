@@ -7,6 +7,7 @@ import 'server_discovery_service.dart';
 import 'offline_cache_service.dart';
 import 'offline_queue_service.dart';
 import 'connectivity_service.dart';
+import 'logger_service.dart';
 
 class ApiException implements Exception {
   final int statusCode;
@@ -230,12 +231,12 @@ class ApiService {
     }
     
     final url = '$baseUrl$endpoint';
-    print('DELETE appel: $url');
+    LoggerService().debug('DELETE appel: $url');
     final response = await http.delete(
       Uri.parse(url),
       headers: _headers,
     );
-    print('DELETE response: ${response.statusCode}');
+    LoggerService().debug('DELETE response: ${response.statusCode}');
     return _parse(response);
   }
 

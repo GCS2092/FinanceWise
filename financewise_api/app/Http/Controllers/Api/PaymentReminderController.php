@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentReminder;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PaymentReminderController extends Controller
 {
@@ -26,7 +27,7 @@ class PaymentReminderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', Rule::unique('payment_reminders')->where('user_id', auth()->id())],
             'description' => 'nullable|string',
             'amount' => 'required|numeric|min:0',
             'due_date' => 'required|date',

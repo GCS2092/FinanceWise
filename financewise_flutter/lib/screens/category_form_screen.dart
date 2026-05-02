@@ -59,10 +59,19 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         );
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _saving = false;
-      });
+      // Vérifier si c'est une erreur de doublon
+      final errorMessage = e.toString();
+      if (errorMessage.contains('name') && errorMessage.contains('already been taken') || errorMessage.contains('unique')) {
+        setState(() {
+          _error = 'Une catégorie avec ce nom existe déjà';
+          _saving = false;
+        });
+      } else {
+        setState(() {
+          _error = e.toString();
+          _saving = false;
+        });
+      }
     }
   }
 

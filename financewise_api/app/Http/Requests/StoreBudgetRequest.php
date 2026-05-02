@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreBudgetRequest extends FormRequest
 {
@@ -17,6 +18,7 @@ class StoreBudgetRequest extends FormRequest
             'category_id' => [
                 'required',
                 'exists:categories,id',
+                Rule::unique('budgets')->where('user_id', auth()->id()),
                 function ($attribute, $value, $fail) {
                     $category = \App\Models\Category::where('id', $value)
                         ->where(function ($query) {

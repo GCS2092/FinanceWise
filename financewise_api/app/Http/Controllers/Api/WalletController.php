@@ -7,6 +7,7 @@ use App\Http\Resources\WalletResource;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 class WalletController extends Controller
 {
@@ -22,7 +23,7 @@ class WalletController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('wallets')->where('user_id', auth()->id())],
             'type' => ['required', 'in:cash,mobile_money,bank'],
             'currency' => ['nullable', 'string', 'size:3'],
             'balance' => ['nullable', 'numeric', 'min:0'],

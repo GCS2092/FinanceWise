@@ -69,10 +69,20 @@ class _PaymentReminderFormScreenState extends State<PaymentReminderFormScreen> {
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+      // Vérifier si c'est une erreur de doublon
+      final errorMessage = e.toString();
+      if (errorMessage.contains('name') && errorMessage.contains('already been taken') || errorMessage.contains('unique')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Un rappel avec ce nom existe déjà')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e')),
+          );
+        }
       }
     }
   }

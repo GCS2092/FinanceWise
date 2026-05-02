@@ -9,6 +9,7 @@ use App\Models\GoalReminder;
 use App\Services\GoalReminderService;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 class FinancialGoalController extends Controller
 {
@@ -29,7 +30,7 @@ class FinancialGoalController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', Rule::unique('financial_goals')->where('user_id', auth()->id())],
             'description' => 'nullable|string',
             'target_amount' => 'required|numeric|min:0',
             'current_amount' => 'nullable|numeric|min:0',

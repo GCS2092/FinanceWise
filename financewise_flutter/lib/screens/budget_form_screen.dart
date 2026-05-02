@@ -81,7 +81,13 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
       );
       if (mounted) Navigator.pop(context);
     } else {
-      setState(() => _error = result?['message'] ?? 'Erreur lors de l\'enregistrement');
+      // Vérifier si c'est une erreur de doublon
+      final message = result?['message']?.toString() ?? 'Erreur lors de l\'enregistrement';
+      if (message.contains('category_id') && message.contains('already been taken') || message.contains('unique')) {
+        setState(() => _error = 'Un budget existe déjà pour cette catégorie');
+      } else {
+        setState(() => _error = message);
+      }
     }
   }
 

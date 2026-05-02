@@ -87,15 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _loading = false;
       });
 
-      // Afficher des notifications pour les alertes budget
-      final alerts = (result['alerts'] as List<dynamic>?) ?? [];
-      for (final alert in alerts) {
-        await NotificationService().showNotification(
-          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          title: 'Alerte Budget',
-          body: alert['message'] ?? 'Alerte budget',
-        );
-      }
+      // Les alertes budget sont affichées dans le dashboard, pas besoin de notifications automatiques
     } else if (result is Map && result.containsKey('message')) {
       setState(() {
         _error = result['message'];
