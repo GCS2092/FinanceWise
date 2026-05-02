@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import '../services/sms_native_service.dart';
 import '../theme.dart';
+import '../widgets/connectivity_banner.dart';
 import 'dashboard_screen.dart';
 import 'transactions_screen.dart';
 import 'wallets_screen.dart';
@@ -34,12 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
     DashboardScreen(),
     TransactionsScreen(),
     WalletsScreen(),
+    FinancialGoalsScreen(),
     ProfileScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
+    // Réinitialiser l'index pour éviter les erreurs après hot reload
+    if (_selectedIndex >= _pages.length) {
+      _selectedIndex = 0;
+    }
     // Initialiser l'écoute SMS après un court délai
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _smsService.initialize(context);
@@ -107,7 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildOptionTile(sheetCtx, Icons.bar_chart_rounded, AppTheme.primary, 'Statistiques', 'Graphiques et analyses', const StatisticsScreen()),
                     _buildOptionTile(sheetCtx, Icons.notifications_active_rounded, AppTheme.warning, 'Alertes', 'Alertes budget et revenus', const AlertsScreen()),
                     _buildOptionTile(sheetCtx, Icons.lightbulb_rounded, AppTheme.tertiary, 'Recommandations', 'Conseils personnalisés', const RecommendationsScreen()),
-                    _buildOptionTile(sheetCtx, Icons.flag_rounded, AppTheme.success, 'Objectifs', 'Suivez vos objectifs', const FinancialGoalsScreen()),
                     _buildOptionTile(sheetCtx, Icons.alarm_rounded, AppTheme.error, 'Rappels', 'Ne manquez aucun paiement', const PaymentRemindersScreen()),
                     _buildOptionTile(sheetCtx, Icons.category_rounded, AppTheme.secondary, 'Catégories', 'Gérer vos catégories', const CategoriesScreen()),
                     _buildOptionTile(sheetCtx, Icons.pie_chart_rounded, AppTheme.primary, 'Budgets', 'Contrôlez vos dépenses', const BudgetsScreen()),
@@ -160,7 +165,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: Builder(
+        builder: (context) => Stack(
+          children: [
+            _pages[_selectedIndex],
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ConnectivityBanner(),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).navigationBarTheme.backgroundColor,
@@ -192,6 +209,11 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Wallets',
             ),
             NavigationDestination(
+              icon: Icon(Icons.flag_outlined),
+              selectedIcon: Icon(Icons.flag_rounded),
+              label: 'Objectifs',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.person_outline_rounded),
               selectedIcon: Icon(Icons.person_rounded),
               label: 'Profil',
@@ -208,10 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 4) {
+    if (index < _pages.length) {
+      setState(() => _selectedIndex = index);
+    } else if (index == 5) {
       _showMoreOptions(context);
-      return;
     }
-    setState(() => _selectedIndex = index);
   }
 }

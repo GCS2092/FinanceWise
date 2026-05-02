@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AlertController;
+use App\Http\Controllers\Api\GoalHistoryController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
@@ -30,11 +31,18 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/user/onboarding/status', [OnboardingController::class, 'checkStatus']);
 
     Route::apiResource('/wallets', WalletController::class);
+    Route::get('/wallets/default', [WalletController::class, 'getDefault']);
+    Route::post('/wallets/{wallet}/set-default', [WalletController::class, 'setDefault']);
     Route::apiResource('/categories', CategoryController::class);
     Route::apiResource('/transactions', TransactionController::class);
     Route::apiResource('/budgets', BudgetController::class);
     Route::apiResource('/financial-goals', FinancialGoalController::class);
+    Route::get('/financial-goals/categories', [FinancialGoalController::class, 'categories']);
     Route::post('/financial-goals/{financial_goal}/add-amount', [FinancialGoalController::class, 'addAmount']);
+    Route::get('/financial-goals/suggestions', [FinancialGoalController::class, 'suggestions']);
+    Route::get('/financial-goals/{financial_goal}/monthly-savings', [FinancialGoalController::class, 'monthlySavingsRecommendation']);
+    Route::get('/financial-goals/{financial_goal}/history', [GoalHistoryController::class, 'index']);
+    Route::post('/goal-histories/{goal_history}/revert', [GoalHistoryController::class, 'revert']);
     
     Route::apiResource('/payment-reminders', PaymentReminderController::class);
     Route::get('/payment-reminders/upcoming', [PaymentReminderController::class, 'upcoming']);

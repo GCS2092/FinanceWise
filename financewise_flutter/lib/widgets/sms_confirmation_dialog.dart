@@ -26,11 +26,26 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
   bool _loading = true;
   bool _submitting = false;
   String? _selectedCategoryId;
+  int? _defaultWalletId;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _loadDefaultWallet();
+  }
+
+  Future<void> _loadDefaultWallet() async {
+    try {
+      final result = await _api.get('/wallets/default');
+      if (mounted && result is Map && result['data'] != null) {
+        setState(() {
+          _defaultWalletId = result['data']['id'];
+        });
+      }
+    } catch (e) {
+      // Silencieux, utiliser null si pas de wallet
+    }
     _loadCategories();
   }
 
@@ -240,6 +255,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
     try {
       final data = widget.transaction.toJson();
       data['category_id'] = int.tryParse(_selectedCategoryId!);
+      data['wallet_id'] = _defaultWalletId;
       
       await _api.post('/transactions', data);
       

@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 class AppTheme {
   /// Formatte un montant au format "12 500 FCFA"
   static String formatCurrency(dynamic value) {
-    final amount = (value ?? 0).toDouble();
+    final amount = double.tryParse((value ?? 0).toString()) ?? 0;
     final formatter = NumberFormat('#,##0', 'fr_FR');
     return '${formatter.format(amount)} FCFA';
   }

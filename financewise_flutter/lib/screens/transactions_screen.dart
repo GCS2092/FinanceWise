@@ -218,16 +218,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Transactions'),
-            if (!_loading)
-              Text(
-                '${_filteredTransactions.length} transaction${_filteredTransactions.length > 1 ? 's' : ''}',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
-              ),
-          ],
+        title: const Text(
+          'Transactions',
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(

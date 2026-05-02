@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'monthly_income_target',
+        'onboarding_completed',
     ];
 
     /**

@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Models\Transaction;
 use App\Models\PaymentReminder;
+use App\Models\Budget;
+use App\Models\FinancialGoal;
 use App\Observers\TransactionObserver;
 use App\Observers\PaymentReminderObserver;
+use App\Observers\BudgetObserver;
+use App\Observers\FinancialGoalObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -34,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
         // Enregistrer les observateurs
         Transaction::observe(TransactionObserver::class);
         PaymentReminder::observe(PaymentReminderObserver::class);
+        Budget::observe(BudgetObserver::class);
+        FinancialGoal::observe(FinancialGoalObserver::class);
 
         $this->configureRateLimiting();
     }

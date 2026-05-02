@@ -122,7 +122,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       items: _categories
-                          .where((c) => c['type'] == 'expense')
+                          .where((c) => c['type'] == 'expense' || c['type'] == 'financial_goal')
                           .map<DropdownMenuItem<int>>((c) => DropdownMenuItem(value: c['id'] as int, child: Text(c['name'])))
                           .toList(),
                       onChanged: (v) => setState(() => _categoryId = v),

@@ -127,13 +127,13 @@ class _WalletsScreenState extends State<WalletsScreen> {
   double get _totalBalance {
     double total = 0;
     for (final w in _wallets) {
-      total += (w['balance'] ?? 0).toDouble();
+      total += double.tryParse((w['balance'] ?? 0).toString()) ?? 0;
     }
     return total;
   }
 
   void _showWalletDetail(Map<dynamic, dynamic> w) {
-    final balance = (w['balance'] ?? 0).toDouble();
+    final balance = double.tryParse((w['balance'] ?? 0).toString()) ?? 0;
     final type = w['type']?.toString() ?? 'Autre';
     final name = w['name']?.toString() ?? 'Portefeuille';
     final gradient = _walletGradient(type);
@@ -329,7 +329,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                             itemCount: _wallets.length,
                             itemBuilder: (_, i) {
                               final w = _wallets[i];
-                              final balance = (w['balance'] ?? 0).toDouble();
+                              final balance = double.tryParse((w['balance'] ?? 0).toString()) ?? 0;
                               final type = w['type']?.toString() ?? 'Autre';
                               final name = w['name']?.toString() ?? 'Portefeuille';
                               final gradient = _walletGradient(type);

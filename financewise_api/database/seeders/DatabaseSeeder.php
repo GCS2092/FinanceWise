@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             TransactionSeeder::class,
             BudgetSeeder::class,
+            GoalSeeder::class,
             ParsedSmsSeeder::class,
         ]);
     }

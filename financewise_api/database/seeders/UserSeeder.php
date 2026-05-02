@@ -10,18 +10,22 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // User 1 — Demo avec beaucoup de données
-        $user1 = User::factory()->create([
-            'name' => 'Demo User',
-            'email' => 'demo@financewise.com',
-            'password' => 'password123',
-        ]);
+        $user1 = User::firstOrCreate(
+            ['email' => 'demo@financewise.com'],
+            [
+                'name' => 'Demo User',
+                'password' => bcrypt('password123'),
+            ]
+        );
 
         // User 2 — Second user pour tests d'autorisation
-        $user2 = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@financewise.com',
-            'password' => 'password123',
-        ]);
+        $user2 = User::firstOrCreate(
+            ['email' => 'test@financewise.com'],
+            [
+                'name' => 'Test User',
+                'password' => bcrypt('password123'),
+            ]
+        );
 
         // Wallets pour user1
         \App\Models\Wallet::factory()->create([

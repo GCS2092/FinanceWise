@@ -27,10 +27,10 @@ class Budget {
     return Budget(
       id: json['id'] ?? 0,
       categoryId: json['category_id'] ?? 0,
-      amount: (json['amount'] ?? 0).toDouble(),
-      spent: (json['spent'] ?? 0).toDouble(),
-      remaining: (json['remaining'] ?? 0).toDouble(),
-      percentage: (json['percentage'] ?? 0).toDouble(),
+      amount: double.tryParse((json['amount'] ?? 0).toString()) ?? 0,
+      spent: double.tryParse((json['spent'] ?? 0).toString()) ?? 0,
+      remaining: double.tryParse((json['remaining'] ?? 0).toString()) ?? 0,
+      percentage: double.tryParse((json['percentage'] ?? 0).toString()) ?? 0,
       period: json['period'] ?? 'monthly',
       startDate: json['start_date'] != null
           ? DateTime.tryParse(json['start_date'].toString())

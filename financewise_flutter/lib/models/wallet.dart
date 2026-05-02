@@ -19,7 +19,7 @@ class Wallet {
     return Wallet(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      balance: (json['balance'] ?? 0).toDouble(),
+      balance: double.tryParse((json['balance'] ?? 0).toString()) ?? 0,
       currency: json['currency'] ?? 'XOF',
       type: json['type'] ?? 'mobile_money',
       createdAt: json['created_at'] != null

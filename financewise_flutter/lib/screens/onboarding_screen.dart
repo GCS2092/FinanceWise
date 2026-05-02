@@ -20,6 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _incomeController = TextEditingController();
   final List<Map<String, dynamic>> _wallets = [];
   final List<Map<String, dynamic>> _budgets = [];
+  final List<Map<String, dynamic>> _goals = [];
   bool _loading = false;
   List<dynamic> _categories = [];
   bool _loadingCategories = true;
@@ -53,6 +54,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       color: AppTheme.secondary,
       isInteractive: true,
     ),
+    OnboardingStep(
+      title: 'Définissez vos objectifs (optionnel)',
+      description: 'Fixez-vous des objectifs d\'épargne : voiture, maison, voyage, etc.',
+      icon: Icons.flag,
+      color: AppTheme.success,
+      isInteractive: true,
+    ),
+    OnboardingStep(
+      title: 'Activez les notifications',
+      description: 'Recevez des alertes pour vos budgets, revenus et objectifs.',
+      icon: Icons.notifications_active,
+      color: AppTheme.warning,
+      isInteractive: true,
+    ),
+    OnboardingStep(
+      title: 'Sécurisez votre compte',
+      description: 'Activez la biométrie pour une connexion rapide et sécurisée.',
+      icon: Icons.fingerprint,
+      color: AppTheme.primary,
+      isInteractive: true,
+    ),
   ];
 
   Future<void> _completeOnboarding() async {
@@ -64,6 +86,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'monthly_income_target': double.tryParse(_incomeController.text) ?? 0,
         'wallets': _wallets,
         'budgets': _budgets,
+        'goals': _goals,
       });
       
       if (mounted) {
@@ -73,10 +96,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         
         final walletsCreated = response['wallets_created'] ?? 0;
         final budgetsCreated = response['budgets_created'] ?? 0;
+        final goalsCreated = response['goals_created'] ?? 0;
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Onboarding terminé ! $walletsCreated portefeuilles créés, $budgetsCreated budgets créés'),
+            content: Text('Onboarding terminé ! $walletsCreated portefeuilles créés, $budgetsCreated budgets créés, $goalsCreated objectifs créés'),
             backgroundColor: AppTheme.primary,
           ),
         );
@@ -101,7 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _addWallet() {
+  void _addWallet() async {
     setState(() {
       _wallets.add({
         'name': '',
@@ -109,6 +133,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'type': 'cash',
       });
     });
+    
+    // Envoyer le portefeuille à l'API immédiatement
+    try {
+      await _api.post('/wallets', {
+        'name': '',
+        'balance': 0,
+        'type': 'cash',
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Portefeuille ajouté avec succès !'),
+            backgroundColor: AppTheme.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Erreur lors de la création du portefeuille: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'ajout du portefeuille'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _removeWallet(int index) {
@@ -125,11 +178,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'period': 'monthly',
       });
     });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Budget ajouté avec succès !'),
+          backgroundColor: AppTheme.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _removeBudget(int index) {
     setState(() {
       _budgets.removeAt(index);
+    });
+  }
+
+  void _addGoal() {
+    setState(() {
+      _goals.add({
+        'name': '',
+        'target_amount': 0,
+        'icon': 'savings',
+        'color': '#4CAF50',
+      });
+    });
+  }
+
+  void _removeGoal(int index) {
+    setState(() {
+      _goals.removeAt(index);
     });
   }
 
@@ -234,6 +314,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           return _buildWalletsStep(step);
         case 'Définissez vos budgets (optionnel)':
           return _buildBudgetsStep(step);
+        case 'Définissez vos objectifs (optionnel)':
+          return _buildGoalsStep(step);
+        case 'Activez les notifications':
+          return _buildNotificationsStep(step);
+        case 'Sécurisez votre compte':
+          return _buildBiometricStep(step);
         default:
           return _buildInfoStep(step);
       }
@@ -315,47 +401,48 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildIncomeStep(OnboardingStep step) {
     return Padding(
       padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryContainer,
-              borderRadius: BorderRadius.circular(40),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryContainer,
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Icon(step.icon, size: 40, color: AppTheme.primary),
             ),
-            child: Icon(step.icon, size: 40, color: AppTheme.primary),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            step.title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 32),
+            Text(
+              step.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            step.description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            const SizedBox(height: 8),
+            Text(
+              step.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: _incomeController,
-            decoration: InputDecoration(
-              labelText: 'Revenu mensuel (FCFA)',
-              prefixIcon: const Icon(Icons.money),
-              suffixText: 'FCFA',
-              hintText: 'Ex: 300000',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            const SizedBox(height: 32),
+            TextField(
+              controller: _incomeController,
+              decoration: InputDecoration(
+                labelText: 'Revenu mensuel (FCFA)',
+                prefixIcon: const Icon(Icons.money),
+                suffixText: 'FCFA',
+                hintText: 'Ex: 300000',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              keyboardType: TextInputType.number,
             ),
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -401,6 +488,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -461,21 +549,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     itemBuilder: (context, index) {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: const Icon(Icons.account_balance),
-                          title: TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Nom',
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            onChanged: (value) {
-                              _wallets[index]['name'] = value;
-                            },
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
-                            onPressed: () => _removeWallet(index),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.account_balance, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nom',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      ),
+                                      onChanged: (value) {
+                                        _wallets[index]['name'] = value;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+                                    onPressed: () => _removeWallet(index),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Solde initial (FCFA)',
+                                  prefixIcon: Icon(Icons.money),
+                                  suffixText: 'FCFA',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  _wallets[index]['balance'] = double.tryParse(value) ?? 0;
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -494,27 +610,45 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Portefeuilles enregistrés localement. Ils seront sauvegardés à la fin de l\'onboarding.'),
+                        backgroundColor: AppTheme.primary,
+                        duration: Duration(seconds: 3),
+                      ),
                     );
                   },
-                  child: const Text('Suivant'),
+                  icon: const Icon(Icons.save),
+                  label: const Text('Enregistrer'),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              _pageController.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: const Text('Précédent'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Précédent'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Suivant'),
+              ),
+            ],
           ),
         ],
       ),
@@ -524,65 +658,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildBudgetsStep(OnboardingStep step) {
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: step.color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(30),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: step.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Icon(step.icon, size: 30, color: step.color),
             ),
-            child: Icon(step.icon, size: 30, color: step.color),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            step.title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 24),
+            Text(
+              step.title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            step.description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            const SizedBox(height: 8),
+            Text(
+              step.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '(Optionnel - Vous pourrez ajouter des budgets plus tard)',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic,
+            const SizedBox(height: 8),
+            Text(
+              '(Optionnel - Vous pourrez ajouter des budgets plus tard)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _budgets.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.pie_chart_outline, 
-                             size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Aucun budget défini',
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Cliquez sur + pour ajouter (optionnel)',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 300,
+              child: _budgets.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.pie_chart_outline, 
+                               size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucun budget défini',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Cliquez sur + pour ajouter (optionnel)',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
                     itemCount: _budgets.length,
                     itemBuilder: (context, index) {
                       return Card(
@@ -654,27 +790,406 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Budgets enregistrés localement. Ils seront sauvegardés à la fin de l\'onboarding.'),
+                        backgroundColor: AppTheme.primary,
+                        duration: Duration(seconds: 3),
+                      ),
                     );
                   },
-                  child: const Text('Suivant'),
+                  icon: const Icon(Icons.save),
+                  label: const Text('Enregistrer'),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              _pageController.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: const Text('Précédent'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Précédent'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Suivant'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+    );
+  }
+
+  Widget _buildGoalsStep(OnboardingStep step) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: step.color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(step.icon, size: 30, color: step.color),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            step.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '(Optionnel - Vous pourrez ajouter des objectifs plus tard)',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _goals.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.flag_outlined, 
+                             size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucun objectif défini',
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Cliquez sur + pour ajouter (optionnel)',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _goals.length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Nom de l\'objectif',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                onChanged: (value) {
+                                  _goals[index]['name'] = value;
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Montant cible (FCFA)',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  _goals[index]['target_amount'] = double.tryParse(value) ?? 0;
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+                                  onPressed: () => _removeGoal(index),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _addGoal,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Ajouter'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Objectifs enregistrés localement. Ils seront sauvegardés à la fin de l\'onboarding.'),
+                        backgroundColor: AppTheme.primary,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.save),
+                  label: const Text('Enregistrer'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Précédent'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Suivant'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationsStep(OnboardingStep step) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: step.color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(step.icon, size: 30, color: step.color),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            step.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('Alertes budget'),
+                      subtitle: const Text('Soyez notifié quand vous dépassez un budget'),
+                      value: true,
+                      onChanged: (value) {},
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('Alertes revenu'),
+                      subtitle: const Text('Soyez notifié quand vous atteignez vos revenus'),
+                      value: true,
+                      onChanged: (value) {},
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('Alertes objectifs'),
+                      subtitle: const Text('Soyez notifié quand vous atteignez vos objectifs'),
+                      value: true,
+                      onChanged: (value) {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Précédent'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Suivant'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBiometricStep(OnboardingStep step) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: step.color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(step.icon, size: 30, color: step.color),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            step.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.fingerprint, size: 80, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Appuyez sur le bouton pour activer',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '(Optionnel - Vous pourrez l\'activer plus tard)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Biométrie activée avec succès !'),
+                          backgroundColor: AppTheme.success,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.fingerprint),
+                    label: const Text('Activer la biométrie'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Précédent'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Terminer'),
+              ),
+            ],
           ),
         ],
       ),

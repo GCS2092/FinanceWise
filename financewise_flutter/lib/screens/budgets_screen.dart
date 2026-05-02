@@ -102,15 +102,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   double get _totalBudget {
     double total = 0;
     for (final b in _budgets) {
-      total += (b['amount'] ?? 0).toDouble();
+      total += double.tryParse((b['amount'] ?? 0).toString()) ?? 0;
     }
     return total;
   }
 
   void _showBudgetDetail(Map<dynamic, dynamic> b) {
-    final pct = (b['percentage'] ?? 0).toDouble();
-    final spent = (b['spent'] ?? 0).toDouble();
-    final amount = (b['amount'] ?? 0).toDouble();
+    final pct = double.tryParse((b['percentage'] ?? 0).toString()) ?? 0;
+    final spent = double.tryParse((b['spent'] ?? 0).toString()) ?? 0;
+    final amount = double.tryParse((b['amount'] ?? 0).toString()) ?? 0;
     final remaining = amount - spent;
     final catName = b['category']?['name'] ?? 'Budget';
     final color = pct >= 100 ? AppTheme.error : (pct >= 80 ? Colors.orange : AppTheme.primary);
@@ -281,9 +281,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         itemCount: _budgets.length,
                         itemBuilder: (_, i) {
                           final b = _budgets[i];
-                          final pct = (b['percentage'] ?? 0).toDouble();
-                          final spent = (b['spent'] ?? 0).toDouble();
-                          final amount = (b['amount'] ?? 0).toDouble();
+                          final pct = double.tryParse((b['percentage'] ?? 0).toString()) ?? 0;
+                          final spent = double.tryParse((b['spent'] ?? 0).toString()) ?? 0;
+                          final amount = double.tryParse((b['amount'] ?? 0).toString()) ?? 0;
                           final remaining = amount - spent;
                           final catName = b['category']?['name'] ?? 'Budget';
                           final color = pct >= 100 ? AppTheme.error : (pct >= 80 ? Colors.orange : AppTheme.primary);

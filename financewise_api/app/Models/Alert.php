@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Alert extends Model
 {
-    protected $fillable = ['user_id', 'type', 'title', 'message', 'data', 'is_read', 'read_at'];
+    protected $fillable = ['user_id', 'type', 'title', 'message', 'data', 'is_read', 'read_at', 'severity'];
 
     protected $casts = [
         'data' => 'array',
@@ -25,5 +25,15 @@ class Alert extends Model
             'is_read' => true,
             'read_at' => now(),
         ]);
+    }
+
+    public function scopeForUser($query)
+    {
+        return $query->where('user_id', auth()->id());
+    }
+
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
     }
 }

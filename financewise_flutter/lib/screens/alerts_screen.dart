@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import '../theme.dart';
 
 class AlertsScreen extends StatefulWidget {
@@ -35,11 +36,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
         setState(() {
           _alerts = result['data'];
           _loading = false;
+          _playAlertSoundForNewAlerts();
         });
       } else if (result is List) {
         setState(() {
           _alerts = result;
           _loading = false;
+          _playAlertSoundForNewAlerts();
         });
       } else {
         setState(() {
@@ -112,6 +115,25 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 
   int get _unreadCount => _alerts.where((a) => !(a['is_read'] ?? false)).length;
+
+  void _playAlertSoundForNewAlerts() {
+    // Importer NotificationService
+    final notificationService = NotificationService();
+    
+    // Jouer une notification pour les alertes danger ou warning non lues
+    final importantAlerts = _alerts.where((a) => 
+      a['is_read'] == false && 
+      (a['severity'] == 'danger' || a['severity'] == 'warning')
+    ).toList();
+    
+    if (importantAlerts.isNotEmpty) {
+      notificationService.showAlert(
+        title: 'Alerte importante',
+        message: 'Vous avez ${importantAlerts.length} alerte${importantAlerts.length > 1 ? 's' : ''} importante${importantAlerts.length > 1 ? 's' : ''}',
+        severity: importantAlerts.any((a) => a['severity'] == 'danger') ? 'danger' : 'warning',
+      );
+    }
+  }
 
   void _showAlertDetail(Map<dynamic, dynamic> alert) {
     final type = alert['type'] ?? 'info';

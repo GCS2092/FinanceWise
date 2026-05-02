@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
+import '../services/pending_transaction_retry_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -41,6 +42,10 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _user = User.fromJson(result['user'] ?? {});
         await _saveUserData(result);
+        
+        // Tenter de resynchroniser les transactions en attente
+        PendingTransactionRetryService().retryPendingTransactions();
+        
         notifyListeners();
         return true;
       } else {
@@ -69,6 +74,10 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _user = User.fromJson(result['user'] ?? {});
         await _saveUserData(result);
+        
+        // Tenter de resynchroniser les transactions en attente
+        PendingTransactionRetryService().retryPendingTransactions();
+        
         notifyListeners();
         return true;
       } else {
@@ -104,12 +113,18 @@ class AuthProvider extends ChangeNotifier {
     if (_api.isAuthenticated && userData != null) {
       _isAuthenticated = true;
       _user = User.fromJson(jsonDecode(userData));
+      
+      // Tenter de resynchroniser les transactions en attente
+      PendingTransactionRetryService().retryPendingTransactions();
     } else if (_api.isAuthenticated) {
       // Si le token existe mais pas les données utilisateur, les récupérer
       _user = await _api.getUser();
       if (_user != null) {
         _isAuthenticated = true;
         await _saveUserData({'user': _user?.toJson()});
+        
+        // Tenter de resynchroniser les transactions en attente
+        PendingTransactionRetryService().retryPendingTransactions();
       }
     }
     

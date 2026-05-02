@@ -6,8 +6,11 @@ import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
+import 'services/api_service.dart';
+import 'services/offline_sync_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'theme.dart';
@@ -47,6 +50,9 @@ void main() async {
   // Initialiser le service de notifications
   await NotificationService().initialize();
   await NotificationService().requestPermissions();
+  
+  // Initialiser le service de sync offline
+  OfflineSyncService().startListening();
   
   runApp(
     MultiProvider(
@@ -92,7 +98,7 @@ class _AppInitializerState extends State<AppInitializer> {
                 return const SplashScreen();
               }
               if (!auth.isAuthenticated) {
-                return const LoginScreen();
+                return const WelcomeScreen();
               }
               return FutureBuilder<bool>(
                 future: _checkOnboarding(),
@@ -115,6 +121,25 @@ class _AppInitializerState extends State<AppInitializer> {
 
   Future<bool> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
+    final api = ApiService();
+    
+    // Essayer d'abord depuis l'API (source de vérité)
+    try {
+      await api.init();
+      if (api.isAuthenticated) {
+        final result = await api.get('/user/onboarding/status');
+        if (result is Map && result.containsKey('onboarding_completed')) {
+          final apiStatus = result['onboarding_completed'] as bool;
+          // Synchroniser avec SharedPreferences
+          await prefs.setBool('onboarding_completed', apiStatus);
+          return apiStatus;
+        }
+      }
+    } catch (e) {
+      // En cas d'erreur, utiliser SharedPreferences comme fallback
+    }
+    
+    // Fallback sur SharedPreferences
     return prefs.getBool('onboarding_completed') ?? false;
   }
 }

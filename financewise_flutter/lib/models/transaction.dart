@@ -27,7 +27,7 @@ class Transaction {
       walletId: json['wallet_id'] ?? 0,
       categoryId: json['category_id'],
       type: json['type'] ?? 'expense',
-      amount: (json['amount'] ?? 0).toDouble(),
+      amount: double.tryParse((json['amount'] ?? 0).toString()) ?? 0,
       description: json['description'],
       status: json['status'] ?? 'completed',
       transactionDate: json['transaction_date'] != null

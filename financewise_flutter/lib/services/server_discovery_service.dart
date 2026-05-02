@@ -68,27 +68,24 @@ class ServerDiscoveryService {
   /// Détection émulateur Android (heuristique simple)
   static Future<bool> _isEmulator() async {
     if (!Platform.isAndroid) return false;
-    final fingerprint = await _getProp('ro.build.fingerprint');
-    final model = await _getProp('ro.product.model');
-    final manufacturer = await _getProp('ro.product.manufacturer');
-    final hardware = await _getProp('ro.hardware');
-
-    return (fingerprint?.contains('generic') ?? false) ||
-           (fingerprint?.contains('emulator') ?? false) ||
-           (model?.contains('Emulator') ?? false) ||
-           (model?.contains('sdk') ?? false) ||
-           (manufacturer?.contains('Google') ?? false) ||
-           (hardware?.contains('goldfish') ?? false) ||
-           (hardware?.contains('ranchu') ?? false);
-  }
-
-  static Future<String?> _getProp(String prop) async {
+    
+    // Vérifier les propriétés système via Process.run
     try {
-      if (!Platform.isAndroid) return null;
-      // Utiliser les propriétés système via Platform
-      return null; // Simplifié : on peut améliorer plus tard
+      final result = await Process.run('getprop', ['ro.build.characteristics']);
+      final output = (result.stdout as String).toLowerCase();
+      if (output.contains('emulator') || output.contains('generic')) return true;
+      
+      final modelResult = await Process.run('getprop', ['ro.product.model']);
+      final model = (modelResult.stdout as String).toLowerCase();
+      if (model.contains('emulator') || model.contains('sdk_gphone') || model.contains('sdk')) return true;
+      
+      final manufacturerResult = await Process.run('getprop', ['ro.product.manufacturer']);
+      final manufacturer = (manufacturerResult.stdout as String).toLowerCase();
+      if (manufacturer.contains('google') && model.contains('sdk')) return true;
     } catch (_) {
-      return null;
+      // En cas d'erreur, on assume que c'est un appareil physique
     }
+    
+    return false;
   }
 }

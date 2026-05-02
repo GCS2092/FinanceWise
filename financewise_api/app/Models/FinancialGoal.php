@@ -19,17 +19,36 @@ class FinancialGoal extends Model
         'icon',
         'color',
         'status',
+        'category_id',
+        'reminder_frequency',
+        'last_reminder_sent_at',
     ];
 
     protected $casts = [
         'target_amount' => 'decimal:2',
         'current_amount' => 'decimal:2',
         'target_date' => 'date',
+        'last_reminder_sent_at' => 'datetime',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(GoalHistory::class);
+    }
+
+    public function reminders()
+    {
+        return $this->hasMany(GoalReminder::class);
     }
 
     public function getProgressAttribute()
@@ -47,6 +66,19 @@ class FinancialGoal extends Model
     {
         if (!$this->target_date) return null;
         return now()->diffInDays($this->target_date, false);
+    }
+
+    public function getIsOverdueAttribute()
+    {
+        if (!$this->target_date) return false;
+        return now()->gt($this->target_date) && $this->status !== 'completed';
+    }
+
+    public function getIsNearDeadlineAttribute()
+    {
+        if (!$this->target_date || $this->status === 'completed') return false;
+        $days = $this->days_remaining;
+        return $days >= 0 && $days <= 7;
     }
 
     public function scopeForUser($query)

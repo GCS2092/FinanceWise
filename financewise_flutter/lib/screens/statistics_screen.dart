@@ -55,7 +55,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     for (final t in _transactions) {
       if (t['type'] == 'expense' && t['category'] is Map) {
         final name = t['category']['name'] ?? 'Autre';
-        final amount = (t['amount'] ?? 0).toDouble();
+        final amount = double.tryParse((t['amount'] ?? 0).toString()) ?? 0;
         categorySpending[name] = (categorySpending[name] ?? 0) + amount;
       }
     }
@@ -178,6 +178,28 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             ],
                           ),
                         ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 200.ms, duration: 400.ms),
+                        const Gap(20),
+
+                        // ── Évolution dans le temps (ligne) ──
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.softShadow,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Évolution des dépenses', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                              const Gap(16),
+                              SizedBox(
+                                height: 250,
+                                child: _buildLineChart(),
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 300.ms, duration: 400.ms),
                         const Gap(20),
 
                         // ── Top dépenses ──
@@ -360,6 +382,121 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
         borderData: FlBorderData(show: false),
         gridData: FlGridData(show: false),
+      ),
+    );
+  }
+
+  Widget _buildLineChart() {
+    final expensesByDate = <String, double>{};
+    for (final t in _transactions) {
+      if (t['type'] == 'expense') {
+        final dateStr = t['date'] != null 
+            ? DateTime.parse(t['date']).toString().split(' ')[0]
+            : 'Inconnu';
+        final amount = double.tryParse((t['amount'] ?? 0).toString()) ?? 0;
+        expensesByDate[dateStr] = (expensesByDate[dateStr] ?? 0) + amount;
+      }
+    }
+
+    if (expensesByDate.isEmpty) {
+      return const Center(child: Text('Aucune donnée de dépense'));
+    }
+
+    final sortedDates = expensesByDate.keys.toList()..sort();
+    final dataPoints = sortedDates.map((date) => expensesByDate[date] ?? 0).toList();
+    final maxValue = dataPoints.reduce((a, b) => a > b ? a : b);
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxValue / 4,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= sortedDates.length) return const SizedBox.shrink();
+                final dateStr = sortedDates[value.toInt()];
+                final shortDate = dateStr.length > 5 ? dateStr.substring(5) : dateStr;
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(shortDate, style: const TextStyle(fontSize: 10)),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                if (value == 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Text(
+                    _formatAmount(value),
+                    style: const TextStyle(fontSize: 9),
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        minX: 0,
+        maxX: (sortedDates.length - 1).toDouble(),
+        minY: 0,
+        maxY: maxValue * 1.1,
+        lineBarsData: [
+          LineChartBarData(
+            spots: List.generate(sortedDates.length, (index) {
+              return FlSpot(index.toDouble(), dataPoints[index]);
+            }),
+            isCurved: true,
+            gradient: LinearGradient(
+              colors: [AppTheme.primary.withOpacity(0.8), AppTheme.secondary],
+            ),
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: AppTheme.primary,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primary.withOpacity(0.2),
+                  AppTheme.primary.withOpacity(0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

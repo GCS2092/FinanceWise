@@ -7,6 +7,8 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/sms_listener_service.dart';
 import '../services/pending_sms_service.dart';
+import '../services/pending_transaction_retry_service.dart';
+import '../services/expense_reminder_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
 import '../widgets/skeleton_loader.dart';
@@ -37,6 +39,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDashboard();
     _initSmsListener();
+    _retryPendingTransactions();
+    _initExpenseReminder();
+  }
+
+  void _initExpenseReminder() {
+    // Initialiser le service de rappel bi-hebdomadaire
+    ExpenseReminderService().initialize();
+  }
+
+  void _retryPendingTransactions() {
+    // Tenter de resynchroniser les transactions en attente
+    PendingTransactionRetryService().retryPendingTransactions();
     _checkPendingSms();
   }
 
@@ -442,7 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Objectif revenu compact ──
   Widget _buildIncomeGoal(dynamic income, dynamic target, dynamic progress) {
-    final pct = (progress is num ? progress : 0).toDouble();
+    final pct = double.tryParse((progress is num ? progress : 0).toString()) ?? 0;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -463,7 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: (pct / 100).clamp(0, 1).toDouble(),
+                      value: ((pct / 100).clamp(0, 1)).toDouble(),
                       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation<Color>(pct >= 100 ? AppTheme.primary : Theme.of(context).colorScheme.secondary),
                       minHeight: 5,
@@ -576,8 +590,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (b is! Map) return const SizedBox.shrink();
         final category = b['category'];
         final categoryName = category is Map ? (category['name']?.toString() ?? 'Sans catégorie') : 'Sans catégorie';
-        final spent = (b['spent'] ?? 0).toDouble();
-        final amount = (b['amount'] ?? 0).toDouble();
+        final spent = double.tryParse((b['spent'] ?? 0).toString()) ?? 0;
+        final amount = double.tryParse((b['amount'] ?? 0).toString()) ?? 0;
         final percentage = amount > 0 ? (spent / amount * 100).clamp(0, 100) : 0.0;
         final remaining = amount - spent;
         

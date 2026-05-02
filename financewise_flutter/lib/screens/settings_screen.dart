@@ -7,6 +7,7 @@ import '../providers/theme_provider.dart';
 import '../services/auto_transaction_service.dart';
 import '../services/biometric_service.dart';
 import '../services/sms_listener_service.dart';
+import '../services/expense_reminder_service.dart';
 import '../theme.dart';
 import 'onboarding_screen.dart';
 
@@ -20,10 +21,13 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final AutoTransactionService _autoService = AutoTransactionService();
   final BiometricService _bioService = BiometricService();
+  final ExpenseReminderService _reminderService = ExpenseReminderService();
   bool _isEnabled = false;
   bool _autoConfirm = false;
   bool _biometricEnabled = false;
   bool _biometricActivated = false;
+  bool _reminderEnabled = false;
+  int _reminderDay = 0;
   bool _loading = true;
 
   @override
@@ -37,11 +41,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hasBio = await _bioService.hasBiometrics();
     final prefs = await SharedPreferences.getInstance();
     final biometricActivated = prefs.getBool('biometric_activated') ?? false;
+    final reminderEnabled = await _reminderService.isReminderEnabled();
+    final reminderDay = await _reminderService.getReminderDay();
     setState(() {
       _isEnabled = _autoService.isEnabled;
       _autoConfirm = _autoService.autoConfirm;
       _biometricEnabled = hasBio;
       _biometricActivated = biometricActivated;
+      _reminderEnabled = reminderEnabled;
+      _reminderDay = reminderDay;
       _loading = false;
     });
   }
@@ -216,6 +224,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const Gap(20),
 
+                // ── Rappels ──
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.softShadow,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Rappels', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Gap(16),
+                        SwitchListTile(
+                          title: const Text('Rappel bi-hebdomadaire'),
+                          subtitle: const Text('Recevoir un rappel toutes les 2 semaines pour faire le point sur vos dépenses'),
+                          value: _reminderEnabled,
+                          onChanged: (value) async {
+                            await _reminderService.setReminderEnabled(value);
+                            setState(() => _reminderEnabled = value);
+                            if (value) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Rappel activé. Vous recevrez une notification tous les 15 jours.'),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        if (_reminderEnabled) ...[
+                          const Divider(height: 1),
+                          ListTile(
+                            title: const Text('Jour de rappel'),
+                            subtitle: Text(_reminderService.getDayName(_reminderDay)),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () => _showReminderDaySelector(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const Gap(20),
+
                 // ── Onboarding ──
                 Container(
                   decoration: BoxDecoration(
@@ -291,6 +345,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  void _showReminderDaySelector() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Choisir le jour de rappel'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(7, (index) {
+            return ListTile(
+              title: Text(_reminderService.getDayName(index)),
+              trailing: _reminderDay == index ? const Icon(Icons.check, color: AppTheme.primary) : null,
+              onTap: () async {
+                await _reminderService.setReminderDay(index);
+                setState(() => _reminderDay = index);
+                Navigator.pop(ctx);
+              },
+            );
+          }),
+        ),
+      ),
     );
   }
 }

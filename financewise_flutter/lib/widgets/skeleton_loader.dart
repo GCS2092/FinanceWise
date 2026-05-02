@@ -67,50 +67,52 @@ class DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Hero card skeleton
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  const SkeletonLoader(width: 80, height: 14),
-                  const SizedBox(height: 12),
-                  const SkeletonLoader(width: 180, height: 28),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Expanded(child: SkeletonLoader(height: 40)),
-                      const SizedBox(width: 12),
-                      const Expanded(child: SkeletonLoader(height: 40)),
-                    ],
-                  ),
-                ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero card skeleton
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const SkeletonLoader(width: 80, height: 14),
+                    const SizedBox(height: 12),
+                    const SkeletonLoader(width: 180, height: 28),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Expanded(child: SkeletonLoader(height: 40)),
+                        const SizedBox(width: 12),
+                        const Expanded(child: SkeletonLoader(height: 40)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Quick actions skeleton
-          Row(
-            children: [
-              Expanded(child: SkeletonLoader(height: 80, borderRadius: 12)),
-              const SizedBox(width: 12),
-              Expanded(child: SkeletonLoader(height: 80, borderRadius: 12)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // Section skeleton
-          const SkeletonLoader(width: 120, height: 16),
-          const SizedBox(height: 12),
-          ...List.generate(3, (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SkeletonLoader(height: 64, borderRadius: 12),
-          )),
-        ],
+            const SizedBox(height: 12),
+            // Quick actions skeleton
+            Row(
+              children: [
+                Expanded(child: SkeletonLoader(height: 80, borderRadius: 12)),
+                const SizedBox(width: 12),
+                Expanded(child: SkeletonLoader(height: 80, borderRadius: 12)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Section skeleton
+            const SkeletonLoader(width: 120, height: 16),
+            const SizedBox(height: 12),
+            ...List.generate(3, (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SkeletonLoader(height: 64, borderRadius: 12),
+            )),
+          ],
+        ),
       ),
     );
   }

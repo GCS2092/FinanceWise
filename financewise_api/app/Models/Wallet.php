@@ -15,6 +15,7 @@ class Wallet extends Model
         'balance',
         'currency',
         'type',
+        'is_default',
     ];
 
     protected function casts(): array

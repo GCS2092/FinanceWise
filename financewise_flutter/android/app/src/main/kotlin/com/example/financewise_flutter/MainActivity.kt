@@ -15,6 +15,12 @@ class MainActivity : FlutterFragmentActivity() {
     private val TAG = "MainActivity"
     private val SMS_PERMISSION_CODE = 1001
 
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Demander les permissions SMS au démarrage
+        requestSmsPermission()
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
