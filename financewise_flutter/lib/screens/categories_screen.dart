@@ -16,13 +16,36 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   final ApiService _api = ApiService();
   List<dynamic> _categories = [];
+  List<dynamic> _filteredCategories = [];
   String? _error;
   bool _loading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    _searchController.addListener(_filterCategories);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterCategories() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredCategories = _categories;
+      } else {
+        _filteredCategories = _categories.where((category) {
+          final name = (category['name'] ?? '').toString().toLowerCase();
+          return name.contains(query);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _loadCategories() async {
@@ -35,6 +58,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       final data = result is Map ? (result['data'] ?? result) : result;
       setState(() {
         _categories = data is List ? data : [];
+        _filteredCategories = _categories;
         _loading = false;
       });
     } catch (e) {
@@ -245,12 +269,43 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             const Text('Catégories'),
             if (!_loading && _categories.isNotEmpty)
               Text(
-                '${_categories.length} catégorie${_categories.length > 1 ? 's' : ''}',
+                '${_filteredCategories.length}/${_categories.length} catégorie${_categories.length > 1 ? 's' : ''}',
                 style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
               ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Rechercher une catégorie'),
+                  content: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Nom de la catégorie...',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Effacer'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Fermer'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
@@ -288,9 +343,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: _categories.length,
+                      itemCount: _filteredCategories.length,
                       itemBuilder: (_, i) {
-                        final c = _categories[i];
+                        final c = _filteredCategories[i];
                         final name = c['name'] ?? '';
                         final type = c['type']?.toString().toUpperCase() ?? '';
                         final isSystem = c['is_system'] ?? false;

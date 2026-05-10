@@ -18,14 +18,38 @@ class BudgetsScreen extends StatefulWidget {
 class _BudgetsScreenState extends State<BudgetsScreen> {
   final _api = ApiService();
   List<dynamic> _budgets = [];
+  List<dynamic> _filteredBudgets = [];
   bool _loading = true;
   String? _error;
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+    _searchController.addListener(_filterBudgets);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterBudgets() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredBudgets = _budgets;
+      } else {
+        _filteredBudgets = _budgets.where((budget) {
+          final name = (budget['name'] ?? '').toString().toLowerCase();
+          final category = (budget['category_name'] ?? '').toString().toLowerCase();
+          return name.contains(query) || category.contains(query);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -36,8 +60,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         _loading = false;
         if (result is Map && result.containsKey('data')) {
           _budgets = result['data'] as List;
+          _filteredBudgets = _budgets;
         } else if (result is List) {
           _budgets = result;
+          _filteredBudgets = _budgets;
         } else {
           _error = result?['message'] ?? 'Erreur';
         }
@@ -226,12 +252,43 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             const Text('Budgets'),
             if (!_loading && _budgets.isNotEmpty)
               Text(
-                '${_budgets.length} budget${_budgets.length > 1 ? 's' : ''} • ${_fmt(_totalBudget)} total',
+                '${_filteredBudgets.length}/${_budgets.length} budget${_budgets.length > 1 ? 's' : ''} • ${_fmt(_totalBudget)} total',
                 style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
               ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Rechercher un budget'),
+                  content: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Nom ou catégorie...',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Effacer'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Fermer'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => _tooltipKey.currentState?.showTooltip(),
@@ -289,9 +346,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: _budgets.length,
+                        itemCount: _filteredBudgets.length,
                         itemBuilder: (_, i) {
-                          final b = _budgets[i];
+                          final b = _filteredBudgets[i];
                           final pct = double.tryParse((b['percentage'] ?? 0).toString()) ?? 0;
                           final spent = double.tryParse((b['spent'] ?? 0).toString()) ?? 0;
                           final amount = double.tryParse((b['amount'] ?? 0).toString()) ?? 0;

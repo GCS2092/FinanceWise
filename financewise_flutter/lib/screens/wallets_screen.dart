@@ -19,14 +19,38 @@ class WalletsScreen extends StatefulWidget {
 class _WalletsScreenState extends State<WalletsScreen> {
   final _api = ApiService();
   List<dynamic> _wallets = [];
+  List<dynamic> _filteredWallets = [];
   bool _loading = true;
   String? _error;
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+    _searchController.addListener(_filterWallets);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterWallets() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredWallets = _wallets;
+      } else {
+        _filteredWallets = _wallets.where((wallet) {
+          final name = (wallet['name'] ?? '').toString().toLowerCase();
+          final type = (wallet['type'] ?? '').toString().toLowerCase();
+          return name.contains(query) || type.contains(query);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -37,8 +61,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
         _loading = false;
         if (result is Map && result.containsKey('data')) {
           _wallets = result['data'] as List;
+          _filteredWallets = _wallets;
         } else if (result is List) {
           _wallets = result;
+          _filteredWallets = _wallets;
         } else {
           _error = result?['message'] ?? 'Erreur';
         }
@@ -263,12 +289,43 @@ class _WalletsScreenState extends State<WalletsScreen> {
             const Text('Portefeuilles'),
             if (!_loading && _wallets.isNotEmpty)
               Text(
-                '${_wallets.length} compte${_wallets.length > 1 ? 's' : ''} • ${_fmt(_totalBalance)}',
+                '${_filteredWallets.length}/${_wallets.length} compte${_wallets.length > 1 ? 's' : ''} • ${_fmt(_totalBalance)}',
                 style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal),
               ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Rechercher un portefeuille'),
+                  content: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Nom ou type...',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Effacer'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Fermer'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => _tooltipKey.currentState?.showTooltip(),
@@ -337,9 +394,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.all(16),
-                            itemCount: _wallets.length,
+                            itemCount: _filteredWallets.length,
                             itemBuilder: (_, i) {
-                              final w = _wallets[i];
+                              final w = _filteredWallets[i];
                               final balance = double.tryParse((w['balance'] ?? 0).toString()) ?? 0;
                               final type = w['type']?.toString() ?? 'Autre';
                               final name = w['name']?.toString() ?? 'Portefeuille';
