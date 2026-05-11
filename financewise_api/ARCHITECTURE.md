@@ -277,11 +277,14 @@ Authorization: Bearer <token>
 php artisan serve
 
 # Créer la base + exécuter les migrations
-php artisan migrate
-
+php artisan serve --host=0.0.0.0 --port=8000
 # Remplir la base avec les données de démo
 php artisan db:seed
+Queue worker : Développement vs Production
+En développement local :
 
+Oui, tu dois lancer php artisan queue:work manuellement
+Il doit tourner en parallèle du serveur (php artisan serve)
 # Lancer les tests
 php artisan test
 

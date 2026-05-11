@@ -1,5 +1,7 @@
 package com.example.financewise_flutter
 
+import android.content.Context
+import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,15 +21,50 @@ class MainActivity : FlutterFragmentActivity() {
         super.onCreate(savedInstanceState)
         // Demander les permissions SMS au démarrage
         requestSmsPermission()
+        
+        // Vérifier s'il y a des données SMS en attente dans l'intent
+        checkPendingSmsInIntent(intent)
+    }
+    
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        checkPendingSmsInIntent(intent)
+    }
+    
+    private fun checkPendingSmsInIntent(intent: Intent?) {
+        intent?.let {
+            val sender = it.getStringExtra("pending_sms_sender")
+            val body = it.getStringExtra("pending_sms_body")
+            val userChoice = it.getBooleanExtra("pending_sms_user_choice", false)
+            val timestamp = it.getLongExtra("pending_sms_timestamp", 0L)
+            
+            if (sender != null && body != null && userChoice) {
+                Log.d(TAG, "Found pending SMS in intent: $sender")
+                
+                // Stocker dans SharedPreferences natif pour compatibilité
+                val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
+                val editor = prefs.edit()
+                editor.putString("sender", sender)
+                editor.putString("body", body)
+                editor.putLong("timestamp", timestamp)
+                editor.putBoolean("user_choice", userChoice)
+                editor.apply()
+                
+                Log.d(TAG, "SMS data stored in native SharedPreferences")
+            }
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
         val methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
-        
+
         // Connecter le MethodChannel au SmsReceiver
         SmsReceiver.setMethodChannel(methodChannel)
+
+        // Connecter le MethodChannel au SmsActionReceiver
+        SmsActionReceiver.setMethodChannel(methodChannel)
         
         // Handler pour les appels depuis Flutter
         methodChannel.setMethodCallHandler { call, result ->
@@ -39,6 +76,32 @@ class MainActivity : FlutterFragmentActivity() {
                 "checkSmsPermission" -> {
                     val hasPermission = checkSmsPermission()
                     result.success(hasPermission)
+                }
+                "getPendingSms" -> {
+                    val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
+                    val sender = prefs.getString("sender", null)
+                    val body = prefs.getString("body", null)
+                    val timestamp = prefs.getLong("timestamp", 0L)
+                    val userChoice = prefs.getBoolean("user_choice", false)
+                    
+                    Log.d(TAG, "getPendingSms called: sender=$sender, body=$body, userChoice=$userChoice")
+                    
+                    if (sender != null && body != null) {
+                        result.success(mapOf(
+                            "sender" to sender,
+                            "body" to body,
+                            "timestamp" to timestamp,
+                            "user_choice" to userChoice
+                        ))
+                    } else {
+                        result.success(null)
+                    }
+                }
+                "clearPendingSms" -> {
+                    val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
+                    prefs.edit().clear().apply()
+                    Log.d(TAG, "Pending SMS cleared")
+                    result.success(true)
                 }
                 else -> {
                     result.notImplemented()

@@ -15,6 +15,87 @@ class TransactionService
     {
         return DB::transaction(function () use ($data, $userId) {
             $data['user_id'] = $userId;
+
+            // Si category_name est fourni, trouver le category_id correspondant
+            if (isset($data['category_name']) && !isset($data['category_id'])) {
+                $category = \App\Models\Category::where('name', $data['category_name'])
+                    ->where(function ($query) {
+                        $query->where('is_system', true)
+                              ->orWhere('user_id', $userId);
+                    })
+                    ->first();
+                
+                if ($category) {
+                    $data['category_id'] = $category->id;
+                }
+            }
+
+            // Si wallet_id est null, créer un wallet Divers par défaut
+            if (!isset($data['wallet_id']) || $data['wallet_id'] === null) {
+                $diversWallet = Wallet::where('user_id', $userId)
+                    ->where('name', 'Divers')
+                    ->first();
+
+                if (!$diversWallet) {
+                    // Créer le wallet Divers s'il n'existe pas
+                    $diversWallet = Wallet::create([
+                        'user_id' => $userId,
+                        'name' => 'Divers',
+                        'balance' => 0,
+                        'currency' => 'XOF',
+                        'type' => 'cash',
+                    ]);
+                }
+
+                $data['wallet_id'] = $diversWallet->id;
+            }
+
+            // Si la transaction est non catégorisée (category_id null ou category = "Autre"), assigner au wallet Divers
+            $categoryId = $data['category_id'] ?? null;
+            $isUncategorized = false;
+
+            if ($categoryId === null) {
+                $isUncategorized = true;
+            } elseif ($categoryId) {
+                $category = \App\Models\Category::find($categoryId);
+                if ($category && $category->name === 'Autre') {
+                    $isUncategorized = true;
+                }
+            }
+
+            if ($isUncategorized && $data['type'] === 'expense') {
+                // Trouver le wallet Divers de l'utilisateur (unique)
+                $diversWallet = Wallet::where('user_id', $userId)
+                    ->where('name', 'Divers')
+                    ->first();
+
+                if (!$diversWallet) {
+                    // Créer le wallet Divers s'il n'existe pas
+                    $diversWallet = Wallet::create([
+                        'user_id' => $userId,
+                        'name' => 'Divers',
+                        'balance' => 0,
+                        'currency' => 'XOF',
+                        'type' => 'cash',
+                    ]);
+                }
+
+                $data['wallet_id'] = $diversWallet->id;
+            } elseif (isset($data['wallet_id'])) {
+                // S'assurer que le wallet utilisé correspond à la période de la transaction
+                $wallet = Wallet::find($data['wallet_id']);
+                if ($wallet) {
+                    $transactionDate = \Carbon\Carbon::parse($data['transaction_date']);
+                    
+                    // Si le wallet n'a pas de période définie, la définir
+                    if (!$wallet->period_start || !$wallet->period_end) {
+                        $wallet->period_start = $transactionDate->startOfMonth();
+                        $wallet->period_end = $transactionDate->endOfMonth();
+                        $wallet->save();
+                    }
+                }
+            }
+
             $transaction = Transaction::create($data);
 
             $this->updateWalletBalance($transaction);

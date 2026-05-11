@@ -42,6 +42,7 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _user = User.fromJson(result['user'] ?? {});
         await _saveUserData(result);
+        await _saveLoginState(true);
         
         // Tenter de resynchroniser les transactions en attente
         PendingTransactionRetryService().retryPendingTransactions();
@@ -74,6 +75,7 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _user = User.fromJson(result['user'] ?? {});
         await _saveUserData(result);
+        await _saveLoginState(true);
         
         // Tenter de resynchroniser les transactions en attente
         PendingTransactionRetryService().retryPendingTransactions();
@@ -99,6 +101,7 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     _error = null;
     await _clearUserData();
+    await _saveLoginState(false);
     notifyListeners();
   }
 
@@ -113,6 +116,7 @@ class AuthProvider extends ChangeNotifier {
     if (_api.isAuthenticated && userData != null) {
       _isAuthenticated = true;
       _user = User.fromJson(jsonDecode(userData));
+      await _saveLoginState(true);
       
       // Tenter de resynchroniser les transactions en attente
       PendingTransactionRetryService().retryPendingTransactions();
@@ -122,6 +126,7 @@ class AuthProvider extends ChangeNotifier {
       if (_user != null) {
         _isAuthenticated = true;
         await _saveUserData({'user': _user?.toJson()});
+        await _saveLoginState(true);
         
         // Tenter de resynchroniser les transactions en attente
         PendingTransactionRetryService().retryPendingTransactions();
@@ -139,8 +144,14 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _saveLoginState(bool isLoggedIn) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', isLoggedIn);
+  }
+
   Future<void> _clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_data');
+    await prefs.remove('is_logged_in');
   }
 }

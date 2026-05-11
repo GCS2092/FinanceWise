@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +22,9 @@ class ServerDiscoveryService {
 
   /// Détecte automatiquement le serveur backend
   static Future<String?> discover() async {
+    // Sur le web, retourner null car Platform n'est pas disponible
+    if (kIsWeb) return null;
+
     // 1. Émulateur Android
     if (await _isEmulator()) {
       final url = 'http://10.0.2.2:8000/api';
@@ -67,6 +71,7 @@ class ServerDiscoveryService {
 
   /// Détection émulateur Android (heuristique simple)
   static Future<bool> _isEmulator() async {
+    if (kIsWeb) return false;
     if (!Platform.isAndroid) return false;
     
     // Vérifier les propriétés système via Process.run

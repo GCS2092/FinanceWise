@@ -37,10 +37,10 @@ class StoreTransactionRequest extends FormRequest
                 },
             ],
             'wallet_id' => [
-                'required',
+                'nullable',
                 'exists:wallets,id',
                 function ($attribute, $value, $fail) {
-                    if (\App\Models\Wallet::where('id', $value)->where('user_id', auth()->id())->doesntExist()) {
+                    if ($value !== null && \App\Models\Wallet::where('id', $value)->where('user_id', auth()->id())->doesntExist()) {
                         $fail('Le portefeuille sélectionné n\'appartient pas à l\'utilisateur.');
                     }
                 },

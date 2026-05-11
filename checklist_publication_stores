@@ -1,0 +1,473 @@
+# Checklist de Publication sur les Stores - FinanceWise
+
+Voici la liste complète de ce qu'il te faut pour publier FinanceWise sur Google Play Store et Apple App Store.
+
+---
+
+## Éléments Communs (Google Play + App Store)
+
+### 1. Informations de l'Application
+
+**Nom de l'application :**
+- FinanceWise (ou un autre nom si tu préfères)
+- Courte description (30-80 caractères)
+- Description longue (80-4000 caractères pour Google Play, 4000 pour App Store)
+
+**Catégorie :**
+- Finance / Gestion budgétaire
+- Sous-catégorie : Outils financiers
+
+### 2. Icônes et Screenshots
+
+**Icône de l'application :**
+- Taille : 512x512 pixels (Google Play), 1024x1024 pixels (App Store)
+- Format : PNG avec transparence
+- Design : Logo FinanceWise sur fond
+
+**Screenshots (captures d'écran) :**
+- Minimum 2, maximum 8 screenshots
+- Dimensions :
+  - Google Play : 
+    - Téléphone : 1080x1920 (portrait) ou 1920x1080 (landscape)
+    - Tablet : 2028x2736 (portrait) ou 2736x2028 (landscape)
+  - App Store :
+    - iPhone : 1170x2532 (iPhone 13/14), 1284x2778 (iPhone 14 Pro Max)
+    - iPad : 2048x2732 (iPad Pro)
+- Format : PNG ou JPG
+- Doivent montrer les écrans principaux avec des données de démo
+
+**Screenshots recommandés pour FinanceWise :**
+1. DashboardScreen (avec carte bancaire et statistiques)
+2. TransactionsScreen (avec liste de transactions)
+3. WalletsScreen (avec cartes de portefeuilles)
+4. FinancialGoalsScreen (avec objectifs et progression)
+5. OnboardingScreen (une des étapes de configuration)
+6. ProfileScreen (avec statistiques)
+7. SettingsScreen (avec options)
+8. HomeScreen (navigation principale)
+
+### 3. Description de l'Application
+
+**Courte description (30-80 caractères) :**
+- "Gérez vos finances intelligemment au Sénégal"
+- "Votre assistant financier Wave & Orange Money"
+
+**Description longue (Google Play - 4000 caractères max) :**
+
+```
+FinanceWise est votre assistant financier personnel conçu spécifiquement pour le Sénégal. Gérez vos finances en toute simplicité, sans effort de saisie grâce à la détection automatique des SMS Wave et Orange Money.
+
+🎯 POURQUOI FINANCEWISE ?
+
+✅ DÉTECTION AUTOMATIQUE DES TRANSACTIONS
+- Recevez un SMS de Wave ou Orange Money ? FinanceWise détecte automatiquement la transaction et l'ajoute à votre historique
+- Plus besoin de noter chaque dépense manuellement
+- Catégorisation intelligente (nourriture, transport, etc.)
+
+💰 GESTION DE TOUS VOS COMPTES
+- Wave, Orange Money, Free Money, Wari, Banque, Espèces
+- Vue d'ensemble de tous vos soldes en un coup d'œil
+- Cartes personnalisées par type de compte
+
+📊 TABLEAU DE BORD CLAIR
+- Solde total, revenus et dépenses du mois en 3 secondes
+- Alertes budgétaires automatiques
+- Objectifs d'épargne avec suivi de progression
+
+🎯 BUDGETS INTELLIGENTS
+- Créez des budgets par catégorie (nourriture, transport, etc.)
+- Alertes quand vous approchez ou dépassez votre budget
+- Recommandations personnalisées pour économiser
+
+🔒 SÉCURITÉ MAXIMALE
+- Authentification biométrique (empreinte, visage)
+- Chiffrement de vos données
+- Connexion sécurisée
+
+💾 MODE OFFLINE
+- Consultez vos finances même sans internet
+- Synchronisation automatique à la reconnexion
+- Fonctionne partout, même en zone 3G
+
+🇸🇳 100% ADAPTÉ AU SÉNÉGAL
+- Devise FCFA
+- Connaît Wave, Orange Money, Free Money, Wari
+- Entreprises sénégalaises (Sénélec, SDE, Proximo, Jumia)
+- Habitudes financières locales
+
+📱 SIMPLE COMME WAVE
+- Interface intuitive
+- Navigation en 2 taps maximum
+- Pas de menus compliqués
+
+FONCTIONNALITÉS PRINCIPALES :
+• Détection automatique SMS Wave/Orange Money
+• Gestion multi-portefeuilles
+• Budgets par catégorie avec alertes
+• Objectifs d'épargne avec suivi
+• Historique des transactions avec filtres
+• Statistiques et graphiques
+• Mode offline
+• Authentification biométrique
+• Export de données
+• Rappels de paiements
+
+FinanceWise : Transformez vos transactions mobile money en tableau de bord compréhensible sans effort de saisie.
+
+Téléchargez FinanceWise maintenant et reprenez le contrôle de vos finances !
+```
+
+**Description App Store (similaire mais optimisée pour iOS) :**
+- Même contenu mais avec une mise en page différente
+- Plus d'accent sur les bénéfices utilisateur
+
+### 4. Mots-clés (Keywords)
+
+**Google Play (30 mots-clés max) :**
+- finance, budget, gestion, argent, epargne, wave, orange money, mobile money, senegal, fcfa, comptes, depenses, revenus, transactions, wallet, portefeuille, objectif, economie, senelec, sde, proximo, jumia, free money, wari, transfert, paiement, facture, budgeting, money manager
+
+**App Store (100 caractères max) :**
+- finance budget epargne wave orange money senegal fcfa comptes depenses revenus transactions wallet portefeuille objectif economie
+
+### 5. Politique de Confidentialité
+
+**URL obligatoire :**
+- Tu dois héberger une page de politique de confidentialité sur ton site web
+- Doit expliquer : quelles données sont collectées, comment elles sont utilisées, avec qui elles sont partagées, comment les supprimer
+
+**Contenu minimal :**
+- Données collectées (email, transactions, etc.)
+- Utilisation des données (gestion financière, amélioration de l'app)
+- Partage des données (avec le serveur pour synchronisation)
+- Sécurité des données (chiffrement, biométrie)
+- Droits de l'utilisateur (accès, modification, suppression)
+- Contact pour les questions
+
+### 6. Mentions Légales
+
+**URL obligatoire (App Store) :**
+- Mentions légales sur ton site web
+- Nom de l'entreprise/développeur
+- Adresse
+- Numéro d'enregistrement si applicable
+
+### 7. Support Client
+
+**Email de contact :**
+- support@financewise.sn (ou autre)
+- Doit être fonctionnel et répondre rapidement
+
+**URL de support :**
+- Page d'aide sur ton site web
+- FAQ, guides, contact
+
+### 8. Vidéo de Présentation (Optionnelle mais recommandée)
+
+**Google Play :**
+- Durée : 30 secondes à 2 minutes
+- Dimensions : 1080x1920 (portrait) ou 1920x1080 (landscape)
+- Format : MP4 ou YouTube URL
+- Montage montrant les fonctionnalités principales
+
+**App Store :**
+- Durée : 15 à 30 secondes
+- Dimensions : 1080x1920 (iPhone)
+- Format : MP4
+- App Store Preview Video
+
+### 9. Classification par âge
+
+**Google Play :**
+- Répondre au questionnaire de contenu
+- Pas de contenu violent, sexuel, ou inapproprié
+- Classification : Tout public (PEGI 3)
+
+**App Store :**
+- Questionnaire de contenu similaire
+- Classification : 4+ (Tout public)
+
+---
+
+## Spécifique Google Play Store
+
+### 1. Compte Développeur
+
+**Coût :** 25 $ (paiement unique)
+**Informations requises :**
+- Nom du développeur
+- Adresse physique
+- Email
+- Numéro de téléphone
+- Compte Google Payments
+
+### 2. Signature de l'Application
+
+**APK ou AAB :**
+- Format AAB (Android App Bundle) recommandé (obligatoire depuis août 2021)
+- Signature avec keystore
+- Version de l'application (version code, version name)
+
+### 3. Liste de fonctionnalités (Feature Graphic)
+
+**Bannière promotionnelle :**
+- Dimensions : 1024x500 pixels
+- Format : JPG ou PNG
+- Montre l'application en action
+
+### 4. Permissions de l'application
+
+**Permissions demandées :**
+- INTERNET (pour synchronisation API)
+- READ_SMS / RECEIVE_SMS (pour détection SMS Wave/Orange Money)
+- CAMERA (optionnel pour scanner QR codes si ajouté)
+- USE_FINGERPRINT / USE_BIOMETRIC (pour authentification)
+- ACCESS_NETWORK_STATE (pour mode offline)
+
+**Justification des permissions :**
+- Expliquer pourquoi chaque permission est nécessaire dans la description du store
+- SMS : pour détecter automatiquement les transactions
+- Internet : pour synchroniser vos données
+- Biométrie : pour sécuriser votre compte
+
+### 5. Contenu pour enfants
+
+**FinanceWise n'est pas destiné aux enfants :**
+- Cocher "Non" si l'application n'est pas pour les moins de 13 ans
+- Ou répondre au questionnaire de conformité COPPA
+
+### 6. Cible de distribution
+
+**Pays :**
+- Sénégal (priorité)
+- Autres pays francophones d'Afrique (Mali, Burkina Faso, Côte d'Ivoire, etc.)
+- Monde entier (si support multilingue ajouté)
+
+**Appareils :**
+- Android 5.0 (Lollipop) ou supérieur
+- Téléphones et tablettes
+
+---
+
+## Spécifique Apple App Store
+
+### 1. Compte Développeur
+
+**Coût :** 99 $ / an
+**Informations requises :**
+- Nom de l'entreprise ou développeur individuel
+- Adresse physique
+- Email
+- Numéro D-U-N-S (si entreprise)
+- Compte bancaire pour les paiements
+
+### 2. Certificats et Profils
+
+**iOS Development Certificate :**
+- Pour tester sur appareils réels
+
+**iOS Distribution Certificate :**
+- Pour publier sur App Store
+
+**Provisioning Profiles :**
+- App Store Distribution Profile
+- Development Provisioning Profile
+
+### 3. Version de l'application
+
+**Version :**
+- Version number (ex: 1.0.0)
+- Build number (ex: 1)
+- Doit être incrémenté à chaque mise à jour
+
+### 4. TestFlight (Bêta testing)
+
+**Testeurs internes :**
+- Jusqu'à 30 membres de l'équipe
+
+**Testeurs externes :**
+- Jusqu'à 10 000 testeurs
+- Pour feedback avant publication
+
+### 5. App Information
+
+**SKU (Stock Keeping Unit) :**
+- Identifiant unique pour l'application
+- Ex: com.financewise.app
+
+**Bundle ID :**
+- Identifiant unique
+- Ex: sn.financewise.app
+
+### 6. Prix et disponibilité
+
+**Prix :**
+- Gratuit (freemium avec fonctionnalités payantes) ou payant
+- Choix du modèle de monétisation
+
+**Disponibilité :**
+- Pays où l'application sera disponible
+- Sénégal, autres pays francophones, monde entier
+
+### 7. Notes de version (Release Notes)
+
+**Pour chaque version :**
+- Description des nouveautés
+- Corrections de bugs
+- Améliorations
+
+**Exemple pour version 1.0 :**
+```
+Version initiale de FinanceWise !
+
+Nouvelles fonctionnalités :
+• Détection automatique des SMS Wave et Orange Money
+• Gestion multi-portefeuilles
+• Budgets par catégorie avec alertes
+• Objectifs d'épargne avec suivi
+• Mode offline complet
+• Authentification biométrique
+• Statistiques et graphiques
+
+FinanceWise transforme vos transactions mobile money en tableau de bord compréhensible sans effort de saisie.
+```
+
+---
+
+## Documents Légaux Obligatoires
+
+### 1. Politique de Confidentialité
+
+**Contenu :**
+- Introduction
+- Données collectées
+- Utilisation des données
+- Partage des données
+- Sécurité
+- Droits des utilisateurs
+- Modifications de la politique
+- Contact
+
+### 2. Conditions d'Utilisation
+
+**Contenu :**
+- Acceptation des conditions
+- Description du service
+- Responsabilités de l'utilisateur
+- Propriété intellectuelle
+- Limitation de responsabilité
+- Résiliation
+- Loi applicable
+
+### 3. Mentions Légales
+
+**Contenu :**
+- Éditeur du service
+- Adresse
+- Numéro SIRET/RCCM si entreprise
+- Hébergeur
+- Contact
+
+---
+
+## Assets Visuels à Préparer
+
+### Icônes
+- [ ] Icône 512x512 (Google Play)
+- [ ] Icône 1024x1024 (App Store)
+- [ ] Icône pour notification (Android)
+- [ ] Icône pour Android Wear (si applicable)
+
+### Screenshots
+- [ ] DashboardScreen - Téléphone
+- [ ] TransactionsScreen - Téléphone
+- [ ] WalletsScreen - Téléphone
+- [ ] FinancialGoalsScreen - Téléphone
+- [ ] OnboardingScreen - Téléphone
+- [ ] ProfileScreen - Téléphone
+- [ ] SettingsScreen - Téléphone
+- [ ] HomeScreen - Téléphone
+- [ ] (Optionnel) Screenshots tablettes
+
+### Bannières
+- [ ] Feature Graphic 1024x500 (Google Play)
+- [ ] (Optionnel) Bannière promotionnelle
+
+### Vidéo
+- [ ] Vidéo de présentation 30s-2min (Google Play)
+- [ ] App Store Preview Video 15-30s (App Store)
+
+---
+
+## Étapes de Publication
+
+### Google Play Store
+
+1. **Créer compte développeur** (25 $)
+2. **Préparer l'APK/AAB** (signé avec keystore)
+3. **Remplir les informations de l'application**
+4. **Uploader les assets** (icône, screenshots, feature graphic)
+5. **Rédiger la description**
+6. **Ajouter les mots-clés**
+7. **Répondre au questionnaire de contenu**
+8. **Soumettre pour revue**
+9. **Attendre l'approbation** (1-3 jours)
+10. **Publier**
+
+### Apple App Store
+
+1. **Créer compte développeur** (99 $/an)
+2. **Configurer les certificats et profils**
+3. **Préparer l'IPA**
+4. **Remplir les informations de l'application**
+5. **Uploader les assets** (icône, screenshots, preview video)
+6. **Rédiger la description**
+7. **Ajouter les mots-clés**
+8. **Répondre au questionnaire de contenu**
+9. **Soumettre pour revue**
+10. **Attendre l'approbation** (1-7 jours)
+11. **Publier**
+
+---
+
+## Coûts Estimés
+
+### Google Play Store
+- Compte développeur : 25 $ (une fois)
+- Hébergement site web (politique confidentialité) : ~5-10 $/mois
+- Nom de domaine : ~10-15 $/an
+
+### Apple App Store
+- Compte développeur : 99 $/an
+- Hébergement site web : ~5-10 $/mois
+- Nom de domaine : ~10-15 $/an
+- (Optionnel) Mac pour développement : si pas déjà
+
+### Total première année : ~150-200 $
+
+---
+
+## Conseils Importants
+
+1. **Teste l'application** sur plusieurs appareils avant publication
+2. **Vérifie les permissions** et justifie-les clairement
+3. **Prépare des données de démo** pour les screenshots
+4. **Rédige une politique de confidentialité** claire et honnête
+5. **Crée un site web** avec politique de confidentialité et mentions légales
+6. **Prépare un email de support** fonctionnel
+7. **Fais des tests bêta** via TestFlight (iOS) ou Google Play Console (Android)
+8. **Vérifie que l'application** ne plante pas et fonctionne offline
+9. **Assure-toi que le parsing SMS** fonctionne avec les formats actuels de Wave/Orange Money
+10. **Prépare des réponses** aux questions de revue des stores
+
+---
+
+## Prochaines Actions
+
+- [ ] Créer les icônes et screenshots
+- [ ] Rédiger la politique de confidentialité
+- [ ] Créer un site web avec mentions légales
+- [ ] Préparer la vidéo de présentation
+- [ ] Créer les comptes développeurs
+- [ ] Préparer l'APK/AAB et IPA
+- [ ] Remplir les formulaires des stores
+- [ ] Soumettre pour revue

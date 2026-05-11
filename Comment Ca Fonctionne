@@ -1,0 +1,468 @@
+# Le Backend de FinanceWise - Explication Simple
+
+Le backend de FinanceWise est comme le **cerveau** de l'application. C'est lui qui traite toutes les informations que vous envoyez depuis votre téléphone et qui garde vos données en sécurité sur un serveur. Imaginez que votre téléphone est comme un écran de contrôle, mais le backend est le moteur qui fait tout fonctionner en arrière-plan.
+
+## Ce que fait le backend
+
+Le backend reçoit toutes vos actions : quand vous ajoutez une dépense, quand vous créez un budget, ou quand vous importez un SMS de Wave ou Orange Money. Il vérifie que tout est correct, enregistre les informations dans une base de données (comme un grand classeur numérique), et renvoie les informations à votre téléphone pour qu'elles s'affichent correctement. Il fait aussi des calculs automatiques, comme additionner toutes vos dépenses du mois ou vérifier si vous avez dépassé votre budget.
+
+## Comment il protège vos données
+
+La sécurité est très importante pour le backend. Quand vous vous connectez, il vous donne un **jeton d'accès** personnel (comme un badge) que vous devez montrer à chaque fois que vous faites une action. Cela empêche les autres d'accéder à vos informations. De plus, il vérifie toujours que vous êtes bien le propriétaire des données que vous essayez de modifier. Par exemple, vous ne pouvez pas modifier le budget d'un autre utilisateur. Il limite aussi le nombre de demandes pour éviter que quelqu'un n'essaie de deviner votre mot de passe en essayant des milliers de combinaisons.
+
+## L'intelligence du backend
+
+Ce qui rend FinanceWise spécial, c'est que le backend est **intelligent**. Il peut lire vos SMS de Wave ou Orange Money et comprendre automatiquement combien d'argent vous avez envoyé ou reçu, sans que vous ayez à taper quoi que ce soit. Il reconnaît les mots-clés comme "reçu", "envoyé", "débit" et sait extraire le montant et la date. Il classe même automatiquement vos dépenses dans les bonnes catégories (nourriture, transport, etc.) en analysant le contenu du SMS.
+
+## Les calculs automatiques
+
+Le backend fait tous les calculs financiers pour vous. Quand vous ajoutez une dépense, il met automatiquement à jour le solde de votre portefeuille. Si cette dépense concerne une catégorie avec un budget, il calcule combien il vous reste dans ce budget et peut vous envoyer une alerte si vous avez dépensé trop. Il calcule aussi votre progression vers vos objectifs d'épargne et peut vous rappeler de mettre de l'argent de côté régulièrement.
+
+## La mémoire du backend
+
+Pour que l'application soit rapide, le backend **met en cache** les informations qu'il utilise souvent. C'est comme avoir un calepin sur son bureau avec les informations les plus importantes, plutôt que de devoir chercher dans le grand classeur à chaque fois. Par exemple, votre tableau de bord principal est gardé en mémoire pendant 5 minutes, ce qui permet de l'afficher instantanément quand vous l'ouvrez.
+
+## Le travail en arrière-plan
+
+Certaines tâches prennent du temps, comme analyser beaucoup de SMS ou envoyer des notifications. Le backend ne vous fait pas attendre : il met ces tâches dans une **file d'attente** et les traite en arrière-plan pendant que vous continuez à utiliser l'application. C'est comme laisser un collègue s'occuper d'une tâche longue pendant que vous passez à autre chose. Vous recevez une notification quand la tâche est terminée.
+
+## Les alertes intelligentes
+
+Le backend surveille vos finances en permanence et vous envoie des alertes quand quelque chose d'important se passe. Si un budget est presque épuisé (plus de 80% utilisé), il vous avertit. S'il est dépassé, il vous envoie une alerte plus urgente. Il peut aussi vous rappeler de vos objectifs d'épargne et vous donner des conseils personnalisés basés sur vos habitudes de dépenses, comme "tu dépenses beaucoup au restaurant, cuisiner à la maison pourrait t'économiser".
+
+## La fiabilité des données
+
+Le plus important pour une application financière, c'est que les données soient toujours exactes. Le backend utilise un système de **transactions** : quand il effectue une opération financière (comme ajouter une dépense), il fait plusieurs mises à jour en même temps (mise à jour du solde du portefeuille, mise à jour du budget, création de la transaction). Si quelque chose se passe mal au milieu, il annule tout et rien n'est modifié. C'est comme une opération bancaire : soit tout réussit, soit rien ne change.
+
+## L'adaptation au Sénégal
+
+Le backend a été conçu spécifiquement pour le Sénégal. Il connaît les services de mobile money locaux (Wave, Orange Money, Free Money, Wari) et les entreprises sénégalaises courantes (Sénélec, SDE, Proximo, Jumia). Il utilise la devise FCFA et comprend les habitudes financières locales, ce qui le rend beaucoup plus utile qu'une application financière générique qui ne connaîtrait pas ces spécificités.
+
+## En résumé
+
+Le backend de FinanceWise est un système intelligent et sécurisé qui travaille en arrière-plan pour vous simplifier la gestion de votre argent. Il automatise les tâches fastidieuses (saisie des transactions), protège vos données, calcule vos finances en temps réel, et vous donne des conseils personnalisés pour mieux gérer votre budget. Tout cela se passe de manière transparente : vous ouvrez l'application, vous voyez où va votre argent, et le backend s'occupe du reste.
+FinanceWise est un **assistant financier automatique** simple comme Wave, intelligent en arrière-plan, qui transforme les transactions mobile money en tableau de bord compréhensible sans effort de saisie.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Synthèse du Frontend Flutter FinanceWise
+
+## Architecture Générale
+
+L'application Flutter FinanceWise suit une architecture modulaire avec une séparation claire des responsabilités:
+
+- **Point d'entrée**: [main.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/main.dart:0:0-0:0) initialise les providers (Auth, Theme), configure le routing GoRouter et lance l'app
+- **Routing**: [router.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/config/router.dart:0:0-0:0) définit les routes avec GoRouter, incluant guards d'authentification
+- **Thème**: [theme.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/theme.dart:0:0-0:0) centralise les couleurs (teal primaire), gradients, typographie (Google Fonts Poppins/Inter), et formatage de devise ("12 500 FCFA")
+- **Configuration**: [constants.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/config/constants.dart:0:0-0:0) définit l'URL de base API et autres constantes
+
+## Écrans Principaux
+
+### Flow Authentification
+1. **SplashScreen** ([splash_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/splash_screen.dart:0:0-0:0)): Écran de démarrage avec animation Lottie, vérifie l'auth et l'état onboarding, timeout de 8s
+2. **LoginScreen** ([login_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/login_screen.dart:0:0-0:0)): Formulaire de connexion avec support biométrique (empreinte/FaceID), sauvegarde email/password pour auth biométrique ultérieure
+3. **RegisterScreen** ([register_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/register_screen.dart:0:0-0:0)): Inscription avec nom, email, mot de passe
+4. **OnboardingScreen** ([onboarding_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/onboarding_screen.dart:0:0-0:0)): Configuration initiale en 7 étapes (revenu mensuel, wallets, budgets, objectifs, notifications, biométrie)
+
+### Écran Principal
+**HomeScreen** ([home_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/home_screen.dart:0:0-0:0)): Navigation principale avec bottom bar à 5 onglets + bouton "Plus":
+- Dashboard
+- Transactions
+- Wallets
+- Objectifs financiers
+- Profil
+- Plus (bottom sheet avec options: Statistiques, Alertes, Recommandations, Rappels, Catégories, Budgets, Notifications, Exporter, Parser SMS, Paramètres)
+
+### Écrans de Gestion
+**DashboardScreen** ([dashboard_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/dashboard_screen.dart:0:0-0:0)):
+- Carte bancaire héro avec solde total, revenus/dépenses mensuels
+- Actions rapides (ajouter transaction, importer SMS)
+- Alertes budget (max 1 visible, reste derrière "Voir tout")
+- Section "Voir tout" regroupant accès aux autres fonctionnalités
+- Écoute SMS en temps réel, retry transactions pending, rappels dépenses
+
+**TransactionsScreen** ([transactions_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/transactions_screen.dart:0:0-0:0)):
+- Liste avec pagination cursor-based (20 items)
+- Recherche en temps réel + filtres avancés (type, catégorie, dates, montant) en bottom sheet
+- Chips de filtres actifs
+- Swipe pour modifier/supprimer
+- Empty state avec action suggérée
+
+**WalletsScreen** ([wallets_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/wallets_screen.dart:0:0-0:0)):
+- Cartes avec gradients personnalisés par type (Wave=bleu, Orange Money=orange, Banque=vert, Espèces=vert clair)
+- Solde total en header
+- Modal détail avec édition/suppression
+
+**FinancialGoalsScreen** ([financial_goals_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/financial_goals_screen.dart:0:0-0:0)):
+- Statistiques globales (épargne totale, % progression, objectifs atteints/en cours)
+- Filtres par statut (Tous, En cours, Atteints) et catégorie
+- Cartes objectifs avec progression circulaire
+- Ajout montant, historique avec possibilité d'annuler
+- Comparaison objectifs
+- Support offline avec [OfflineGoalService](cci:2://file:///c:/FinanceWise/financewise_flutter/lib/services/offline_goal_service.dart:5:0-275:1)
+
+**ProfileScreen** ([profile_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/profile_screen.dart:0:0-0:0)):
+- Avatar avec initiales + gradient
+- Statistiques financières (solde, revenus, dépenses)
+- Actions rapides (Statistiques, Exporter, Paramètres)
+- Déconnexion avec confirmation
+
+**SettingsScreen** ([settings_screen.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/screens/settings_screen.dart:0:0-0:0)):
+- Apparence (mode sombre via ThemeProvider)
+- Sécurité (auth biométrique via BiometricService)
+- Automatisation SMS (détection auto, confirmation auto via AutoTransactionService)
+- Rappels (bi-hebdomadaire via ExpenseReminderService)
+- Relancer onboarding
+
+## Services
+
+### API & Communication
+**ApiService**: Service central HTTP avec:
+- Auth (login, register, logout)
+- CRUD générique (GET, POST, PUT, DELETE)
+- Cache GET requests avec [OfflineCacheService](cci:2://file:///c:/FinanceWise/financewise_flutter/lib/services/offline_cache_service.dart:3:0-117:1)
+- Queue POST/PUT/DELETE offline avec [OfflineQueueService](cci:2://file:///c:/FinanceWise/financewise_flutter/lib/services/offline_queue_service.dart:3:0-63:1)
+- Gestion erreurs (401=session expired, 429=rate limit, 409=conflict)
+- Callback `onSessionExpired`
+- Découverte serveur auto via [ServerDiscoveryService](cci:2://file:///c:/FinanceWise/financewise_flutter/lib/services/server_discovery_service.dart:7:0-95:1)
+
+### Offline-First
+**OfflineCacheService**: Cache SharedPreferences (transactions, balance, budgets, goals, dashboard) - validité 24h
+
+**OfflineQueueService**: Queue SharedPreferences pour requêtes POST/PUT/DELETE pending
+
+**OfflineSyncService**: Écoute [ConnectivityService](cci:2://file:///c:/FinanceWise/financewise_flutter/lib/services/connectivity_service.dart:2:0-20:1), synchronise la queue offline à la reconnexion
+
+**OfflineGoalService**: Gestion objectifs/histoire en offline avec synchronisation au backend
+
+### SMS & Auto-Détection
+**SmsListenerService**: Écoute SMS via MethodChannel Android, détecte Wave/Orange Money, affiche [SmsConfirmationDialog](cci:2://file:///c:/FinanceWise/financewise_flutter/lib/widgets/sms_confirmation_dialog.dart:6:0-20:1)
+
+**SmsNativeService**: Initialisation écoute SMS natif Android
+
+**SmsParserService**: Parsing SMS Wave/Orange Money - extrait montant, type (income/expense), catégorie via keywords/API, balance, description
+
+**AutoTransactionService**: Gestion settings auto-transaction (enabled, auto-confirm), envoi SMS au backend pour parsing async
+
+**PendingSmsService**: Gestion SMS reçus hors app (background), affiche dialog confirmation à l'ouverture
+
+### Notifications
+**NotificationService**: Notifications locales (flutter_local_notifications) - budget alerts, transaction alerts, general alerts
+
+**ExpenseReminderService**: Rappels bi-hebdomadaires (tous les 15 jours) via NotificationService
+
+### Autres Services
+**BiometricService**: Auth biométrique (local_auth) - check disponibilité, authenticate, available types
+
+**ConnectivityService**: Monitoring connexion (connectivity_plus) - stream onConnectivityChanged, future isConnected
+
+**LoggerService**: Logging structuré (logger) avec PrettyPrinter
+
+**OnboardingTipsService**: Tracking tips onboarding vus via SharedPreferences
+
+**PendingTransactionRetryService**: Retry transactions failed/pending au startup ou reconnexion
+
+**ServerDiscoveryService**: Découverte auto URL serveur (emulator Android, iOS simulator, physical device) via scan WiFi subnet
+
+## State Management
+
+**AuthProvider** ([lib/providers/auth_provider.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/providers/auth_provider.dart:0:0-0:0)):
+- Gère état auth (user, isAuthenticated, isLoading, error)
+- Méthodes: login, register, logout, checkAuth
+- Sauvegarde user/token dans SharedPreferences
+- Auto-retry pending transactions après login/register
+- Callback onSessionExpired
+
+**ThemeProvider** ([lib/providers/theme_provider.dart](cci:7://file:///c:/FinanceWise/financewise_flutter/lib/providers/theme_provider.dart:0:0-0:0)):
+- Gère thème (light, dark, system)
+- Sauvegarde préférence SharedPreferences
+- Notifie listeners des changements
+
+## Modèles
+
+**User**: id, name, email, createdAt
+
+**Wallet**: id, name, balance, currency, type, createdAt
+
+**Transaction**: id, walletId, categoryId, type, amount, description, status, transactionDate, createdAt
+
+**Category**: id, name, type, icon, color, isSystem
+
+**Budget**: id, categoryId, amount, spent, remaining, percentage, period, startDate, endDate, isActive
+
+## Widgets Réutilisables
+
+**ConnectivityBanner**: Toast notification changement online/offline via ConnectivityService
+
+**SkeletonLoader**: Loaders shimmer (base, DashboardSkeleton, ListSkeleton)
+
+**SmsConfirmationDialog**: Dialog confirmation transaction SMS - montre SMS original, transaction détectée, catégorie suggérée, envoi API ou sauvegarde locale offline
+
+**OnboardingTooltip**: Overlay onboarding avec titre, description, tips additionnels, tracking vu/non-vu via OnboardingTipsService
+
+## Standards Produit Appliqués
+
+- **Devise**: Format "12 500 FCFA" (jamais XOF ou anglo-saxon)
+- **Langue**: Français, ton direct/chaleureux
+- **Navigation**: Pas de hamburger menu, tout en 2 taps max
+- **Dashboard**: 1 info primaire, 2-3 secondaires, reste derrière "Voir tout"
+- **Listes**: Infinite scroll 20 items, pagination cursor-based, skeleton loaders
+- **Filtres**: Search bar toujours visible, avancé en bottom sheet, chips actifs, max 4
+- **Offline**: Transactions, balance, budgets fonctionnent offline, sync silencieuse au reconnect
+- **Performance**: <2s load sur 3G, pas de blocage main thread
+- **Sécurité**: AES-256, auth biométrique, session expiry, pas de secrets en code
+- **Forms**: Clavier numérique pour montants, validation on blur
+- **Empty states**: Message + action suggérée
+- **Feedback**: <100ms, messages erreur français, toasts succès 2-3s, confirmation actions destructives
+- **SMS Parser**: Montre SMS original + transaction détectée + catégorie suggérée
+- **Code**: Pas de TODO/placeholder, responsabilité unique, try/catch sur appels réseau, logger structuré
+
+La revue du frontend Flutter FinanceWise est terminée. J'ai analysé l'ensemble de la structure du projet:
+
+- **29 fichiers écrans** (screens) - flow authentification complet + écrans de gestion
+- **18 services** - API, offline-first, SMS/parser, notifications, sécurité, logging
+- **2 providers** - auth et thème avec ChangeNotifier
+- **5 modèles** - User, Wallet, Transaction, Category, Budget
+- **4 widgets réutilisables** - connectivity banner, skeleton loaders, SMS dialog, onboarding tooltip
+- **Configuration** - routing GoRouter, thème avec Google Fonts, constants
+
+L'application suit une architecture offline-first robuste avec synchronisation automatique, intègre la détection SMS automatique pour Wave/Orange Money, respecte les standards produits (format devise FCFA, français, navigation en 2 taps, etc.), et utilise des patterns modernes Flutter (Provider, GoRouter, animations flutter_animate).
+
+---
+
+# Les Écrans de FinanceWise - Explication Simple
+
+Dans cette section, je vais expliquer chaque écran de l'application comme si je vous l'expliquais en face à face, sans termes techniques.
+
+## 1. Écran de Démarrage (SplashScreen)
+
+**C'est quoi ?** C'est la première chose que vous voyez quand vous ouvrez l'application. Il y a une animation avec le logo FinanceWise et le texte "Gérez vos finances intelligemment".
+
+**À quoi ça sert ?** Pendant que vous regardez cette animation (environ 1-2 secondes), l'application travaille en arrière-plan : elle vérifie si vous êtes déjà connecté, si vous avez déjà fait la configuration initiale, et elle prépare tout pour vous diriger vers le bon endroit.
+
+**Comment ça marche ?** Imaginez que c'est comme le "pré-générique" d'un film. Le temps que le film démarre, le projecteur se chauffe et le son se prépare. Ici, l'application charge vos informations et décide : si c'est votre première fois, elle vous envoie vers l'inscription. Si vous êtes déjà inscrit, elle vous envoie directement vers votre tableau de bord.
+
+**Pourquoi c'est important ?** Sans cet écran, l'application pourrait s'ouvrir n'importe comment ou vous montrer des erreurs pendant que les informations chargent. C'est une transition douce pour que tout soit prêt quand vous arrivez.
+
+---
+
+## 2. Écran de Connexion (LoginScreen)
+
+**C'est quoi ?** C'est l'écran où vous entrez votre email et votre mot de passe pour accéder à votre compte.
+
+**À quoi ça sert ?** Il vérifie que c'est bien vous et vous donne accès à toutes vos données financières.
+
+**Comment ça marche ?** Vous tapez votre email et votre mot de passe, puis vous cliquez sur "Se connecter". L'application envoie ces informations au serveur qui vérifie si elles correspondent à ce qui est enregistré. Si c'est correct, le serveur vous donne un "badge" (un jeton d'accès) que vous gardez sur votre téléphone pour ne pas avoir à vous reconnecter à chaque fois.
+
+**Pourquoi c'est important ?** C'est la porte de sécurité de votre application. Sans connexion, n'importe qui pourrait voir vos finances. Cet écran protège vos données personnelles.
+
+**Bonus :** Si vous avez activé la biométrie (empreinte ou visage), vous pouvez vous connecter juste en posant votre doigt sur le capteur, sans taper votre mot de passe. C'est comme utiliser votre doigt comme clé.
+
+---
+
+## 3. Écran d'Inscription (RegisterScreen)
+
+**C'est quoi ?** C'est l'écran où vous créez votre compte pour la première fois.
+
+**À quoi ça sert ?** Il enregistre vos informations dans le système pour que vous puissiez commencer à utiliser l'application.
+
+**Comment ça marche ?** Vous entrez votre nom complet, votre email et un mot de passe (minimum 6 caractères). L'application vérifie que l'email n'est pas déjà utilisé par quelqu'un d'autre, puis elle crée votre compte et vous envoie vers la configuration initiale.
+
+**Pourquoi c'est important ?** C'est votre première interaction avec l'application. Elle doit être simple et rapide pour ne pas vous décourager. Une fois inscrit, vous avez votre propre espace sécurisé pour vos finances.
+
+---
+
+## 4. Écran de Configuration Initiale (OnboardingScreen)
+
+**C'est quoi ?** C'est un écran avec plusieurs étapes (comme un questionnaire) qui apparaît après votre première inscription. Il y a 7 étapes au total.
+
+**À quoi ça sert ?** Il configure l'application selon vos besoins pour qu'elle soit vraiment utile dès le début.
+
+**Comment ça marche ?** Vous passez par 7 étapes :
+
+1. **Bienvenue** : Une présentation rapide de l'application
+2. **Revenu mensuel** : Vous entrez combien vous gagnez en moyenne par mois (par exemple 300 000 FCFA). Ça aide l'application à comparer vos revenus réels avec vos objectifs.
+3. **Portefeuilles** : Vous ajoutez vos comptes (Wave, Orange Money, Banque, Espèces). Vous pouvez en ajouter plusieurs avec leur solde de départ.
+4. **Budgets (optionnel)** : Vous pouvez créer des budgets par catégorie (par exemple 50 000 FCFA pour la nourriture par mois). C'est optionnel, vous pouvez le faire plus tard.
+5. **Objectifs (optionnel)** : Vous définissez vos objectifs d'épargne (par exemple 500 000 FCFA pour une voiture). C'est aussi optionnel.
+6. **Notifications** : Vous activez les notifications pour recevoir des alertes sur vos budgets et objectifs.
+7. **Biométrie** : Vous pouvez activer la connexion par empreinte ou visage pour plus de sécurité.
+
+**Pourquoi c'est important ?** Sans cette configuration, l'application serait vide et vous ne sauriez pas par où commencer. Cette étape personnalise l'application pour vous, en une seule fois, pour que tout soit prêt à l'usage.
+
+---
+
+## 5. Écran Principal (HomeScreen)
+
+**C'est quoi ?** C'est l'écran principal qui contient 5 onglets en bas : Dashboard, Transactions, Wallets, Objectifs, et Profil, plus un bouton "Plus".
+
+**À quoi ça sert ?** C'est le centre de commande de l'application. Tous les écrans importants sont accessibles en un seul clic.
+
+**Comment ça marche ?** Il y a une barre de navigation en bas avec 5 icônes. Vous cliquez sur une icône pour aller à l'écran correspondant :
+- **Dashboard** : Votre tableau de bord principal
+- **Transactions** : La liste de toutes vos dépenses et revenus
+- **Wallets** : Vos différents comptes (Wave, Orange Money, etc.)
+- **Objectifs** : Vos objectifs d'épargne
+- **Profil** : Vos informations personnelles et paramètres
+- **Plus** : Un menu avec toutes les autres fonctionnalités (Statistiques, Alertes, Catégories, Budgets, etc.)
+
+**Pourquoi c'est important ?** C'est comme le menu principal d'un restaurant. Tout est regroupé au même endroit pour que vous trouviez rapidement ce que vous cherchez. Pas besoin de chercher dans des menus cachés.
+
+---
+
+## 6. Écran Tableau de Bord (DashboardScreen)
+
+**C'est quoi ?** C'est l'écran le plus important de l'application. C'est la première chose que vous voyez après vous connecter.
+
+**À quoi ça sert ?** Il vous donne une vue d'ensemble instantanée de votre situation financière en un coup d'œil.
+
+**Comment ça marche ?** L'écran affiche :
+- **Une carte bancaire** avec votre solde total (somme de tous vos comptes), vos revenus du mois, et vos dépenses du mois. Vous pouvez cacher le montant en cliquant sur l'icône œil (utile si quelqu'un regarde par-dessus votre épaule).
+- **Deux boutons d'action rapide** : "Transaction" pour ajouter une dépense/revenu, et "Importer SMS" pour coller un SMS de Wave/Orange Money.
+- **Une alerte** si un budget est presque épuisé ou dépassé (maximum 1 alerte visible pour ne pas encombrer).
+- **Une section "Voir tout"** qui regroupe l'accès aux budgets, transactions, et objectifs.
+
+**Pourquoi c'est important ?** C'est l'écran qui répond à la question "Où en suis-je financièrement ?" en moins de 3 secondes. C'est le cœur de l'application. Sans lui, vous devriez cliquer partout pour savoir combien vous avez.
+
+**Bonus :** L'écran écoute aussi vos SMS en arrière-plan. Si vous recevez un SMS de Wave ou Orange Money, il peut automatiquement détecter la transaction et vous demander de la confirmer.
+
+---
+
+## 7. Écran Transactions (TransactionsScreen)
+
+**C'est quoi ?** C'est l'écran qui liste toutes vos transactions (dépenses et revenus) avec la possibilité de les filtrer et de les rechercher.
+
+**À quoi ça sert ?** Il vous permet de voir l'historique complet de vos dépenses et revenus, de trouver une transaction spécifique, et de gérer vos transactions.
+
+**Comment ça marche ?** 
+- **La liste** : Chaque transaction apparaît avec sa description, sa catégorie, le portefeuille concerné, le montant (en vert pour les revenus, en rouge pour les dépenses), et la date.
+- **La recherche** : Une barre de recherche en haut vous permet de taper un mot-clé pour trouver une transaction (par exemple "restaurant").
+- **Les filtres** : Un bouton "Filtres" ouvre un menu où vous pouvez filtrer par type (revenus/dépenses), par catégorie, par période de dates, ou par montant.
+- **Les actions** : Vous pouvez cliquer sur une transaction pour voir ses détails, la modifier, ou la supprimer. Vous pouvez aussi glisser vers la gauche pour modifier, ou glisser vers la droite pour supprimer.
+- **L'ajout** : Un bouton "+" en bas à droite permet d'ajouter une nouvelle transaction.
+
+**Pourquoi c'est important ?** C'est votre historique financier. Si vous voulez savoir "Combien j'ai dépensé au restaurant ce mois ?", c'est ici que vous trouvez la réponse. Les filtres vous permettent de voir exactement ce que vous cherchez sans devoir tout lire.
+
+---
+
+## 8. Écran Portefeuilles (WalletsScreen)
+
+**C'est quoi ?** C'est l'écran qui liste tous vos comptes (Wave, Orange Money, Banque, Espèces, etc.).
+
+**À quoi ça sert ?** Il vous permet de gérer vos différents comptes et de voir le solde de chacun.
+
+**Comment ça marche ?** 
+- Chaque compte apparaît comme une carte avec un design différent selon son type (bleu pour Wave, orange pour Orange Money, vert pour la banque, etc.).
+- La carte montre le nom du compte, son type, et son solde actuel.
+- Vous pouvez cliquer sur une carte pour voir les détails, modifier le nom ou le solde, ou supprimer le compte.
+- Un bouton "+" en bas permet d'ajouter un nouveau compte.
+
+**Pourquoi c'est important ?** Beaucoup de gens ont plusieurs comptes (Wave pour les transferts, Orange Money pour les paiements, espèces pour le quotidien). Cet écran vous permet de voir tout d'un coup et de savoir combien vous avez au total.
+
+---
+
+## 9. Écran Objectifs Financiers (FinancialGoalsScreen)
+
+**C'est quoi ?** C'est l'écran où vous gérez vos objectifs d'épargne (voiture, maison, voyage, etc.).
+
+**À quoi ça sert ?** Il vous aide à suivre vos progrès vers vos objectifs financiers et à rester motivé.
+
+**Comment ça marche ?** 
+- **En haut** : Une carte montre votre épargne totale (somme de tous vos objectifs), le pourcentage global atteint, et combien d'objectifs sont atteints ou en cours.
+- **Les filtres** : Vous pouvez filtrer pour voir "Tous les objectifs", "En cours", ou "Atteints".
+- **La liste** : Chaque objectif apparaît avec une barre de progression circulaire montrant combien vous avez épargné par rapport à votre cible.
+- **Les actions** : Vous pouvez cliquer sur un objectif pour voir les détails, ajouter de l'argent, voir l'historique de vos ajouts, ou modifier l'objectif.
+- **L'ajout** : Un bouton "+" permet de créer un nouvel objectif.
+
+**Pourquoi c'est important ?** Épargner sans objectif, c'est difficile. Cet écran rend vos objectifs visibles et concrets. Vous voyez votre progression, ce qui vous motive à continuer. C'est comme un thermomètre qui montre à quel point vous êtes proche de votre but.
+
+**Bonus intelligent** : L'application peut calculer combien vous devez épargner chaque mois pour atteindre votre objectif à temps, et vous le dire.
+
+---
+
+## 10. Écran Profil (ProfileScreen)
+
+**C'est quoi ?** C'est l'écran qui affiche vos informations personnelles et des statistiques rapides.
+
+**À quoi ça sert ?** Il vous permet de voir qui vous êtes dans l'application, vos statistiques financières, et d'accéder aux paramètres.
+
+**Comment ça marche ?** 
+- **Votre avatar** : Un cercle avec vos initiales (par exemple "AD" pour Amadou Diop).
+- **Vos informations** : Votre nom et email.
+- **Vos statistiques** : Une carte montre votre solde total, vos revenus du mois, et vos dépenses du mois.
+- **Actions rapides** : Trois boutons pour aller aux Statistiques, Exporter vos données, ou Paramètres.
+- **Déconnexion** : Un bouton rouge pour vous déconnecter de votre compte.
+
+**Pourquoi c'est important ?** C'est votre espace personnel. Vous pouvez vérifier vos informations, voir un résumé rapide de vos finances, et accéder aux réglages importants. La déconnexion est aussi ici pour que vous puissiez quitter l'application en sécurité.
+
+---
+
+## 11. Écran Paramètres (SettingsScreen)
+
+**C'est quoi ?** C'est l'écran où vous configurez toutes les options de l'application.
+
+**À quoi ça sert ?** Il vous permet de personnaliser l'application selon vos préférences.
+
+**Comment ça marche ?** Il y a plusieurs sections :
+- **Apparence** : Un bouton pour activer ou désactiver le mode sombre (thème noir).
+- **Sécurité** : Un bouton pour activer l'authentification biométrique (empreinte ou visage) pour vous connecter sans mot de passe.
+- **Automatisation des transactions** : 
+  - Un bouton pour activer la détection automatique des SMS (l'application lit vos SMS Wave/Orange Money et propose de les ajouter automatiquement).
+  - Un bouton pour activer la confirmation automatique (les transactions SMS sont ajoutées sans vous demander de confirmer).
+- **Rappels** : Un bouton pour activer les rappels bi-hebdomadaires (tous les 15 jours, l'application vous rappelle de faire le point sur vos dépenses).
+- **Configuration** : Un bouton pour relancer l'onboarding (refaire la configuration initiale).
+
+**Pourquoi c'est important ?** Chaque personne a des préférences différentes. Certains aiment le mode sombre, d'autres le mode clair. Certains veulent que tout soit automatique, d'autres préfèrent confirmer chaque action. Cet écran vous donne le contrôle.
+
+---
+
+## Résumé Simple
+
+FinanceWise a été conçu pour être **simple comme Wave** mais **intelligent en arrière-plan**. Chaque écran a un rôle précis :
+
+1. **SplashScreen** : Prépare l'application pendant que vous attendez
+2. **LoginScreen** : Vérifie que c'est bien vous
+3. **RegisterScreen** : Crée votre compte
+4. **OnboardingScreen** : Configure l'application pour vous en une seule fois
+5. **HomeScreen** : Le menu principal pour tout trouver rapidement
+6. **DashboardScreen** : La réponse à "Où en suis-je financièrement ?"
+7. **TransactionsScreen** : L'historique de tout ce que vous avez dépensé/gagné
+8. **WalletsScreen** : Vos différents comptes en un coup d'œil
+9. **FinancialGoalsScreen** : Vos rêves financiers avec leur progression
+10. **ProfileScreen** : Votre espace personnel et statistiques rapides
+11. **SettingsScreen** : Vos préférences pour personnaliser l'app
+
+L'idée est que vous ouvriez l'application, vous voyiez votre tableau de bord en 3 secondes, et tout le reste (parsing SMS, calculs, alertes) se passe automatiquement en arrière-plan. Vous ne faites presque rien, l'application fait tout pour vous.

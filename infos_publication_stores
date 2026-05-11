@@ -1,0 +1,706 @@
+# Informations de Publication pour FinanceWise - Stores
+
+Document contenant toutes les informations spécifiques à FinanceWise pour la publication sur Google Play Store et Apple App Store, basées sur l'analyse complète du code backend et frontend.
+
+---
+
+## Informations Générales de l'Application
+
+### Nom de l'Application
+- **Nom court** : FinanceWise
+- **Nom complet** : FinanceWise - Gestion Financière Sénégal
+- **Courte description** : Gérez vos finances intelligemment au Sénégal
+- **Alternative courte** : Votre assistant financier Wave & Orange Money
+
+### Catégorie
+- **Google Play** : Finance > Gestion budgétaire
+- **App Store** : Finance > Gestion financière
+
+### Langues
+- **Principale** : Français
+- **Pays cibles** : Sénégal, Mali, Burkina Faso, Côte d'Ivoire, autres pays francophones d'Afrique
+
+---
+
+## Description Complète (Google Play - 4000 caractères max)
+
+```
+FinanceWise est votre assistant financier personnel conçu spécifiquement pour le Sénégal et l'Afrique francophone. Gérez vos finances en toute simplicité, sans effort de saisie grâce à la détection automatique des SMS Wave et Orange Money.
+
+🎯 POURQUOI FINANCEWISE ?
+
+✅ DÉTECTION AUTOMATIQUE DES TRANSACTIONS
+- Recevez un SMS de Wave ou Orange Money ? FinanceWise détecte automatiquement la transaction et l'ajoute à votre historique
+- Plus besoin de noter chaque dépense manuellement
+- Catégorisation intelligente (nourriture, transport, internet, etc.)
+- Parsing intelligent des mots-clés : "reçu", "envoyé", "débit", "retrait", "paiement"
+- Reconnaissance automatique du fournisseur : Wave, Orange Money, Free Money, Wari
+
+💰 GESTION DE TOUS VOS COMPTES
+- Wave, Orange Money, Free Money, Wari, Banque, Espèces
+- Vue d'ensemble de tous vos soldes en un coup d'œil
+- Cartes personnalisées par type de compte (bleu pour Wave, orange pour Orange Money, vert pour Banque)
+- Wallet "Principal" créé automatiquement à l'inscription
+- Suivi individuel de chaque portefeuille
+
+📊 TABLEAU DE BORD EN 3 SECONDES
+- Solde total de tous vos comptes instantanément
+- Revenus et dépenses du mois en un coup d'œil
+- Carte bancaire héro avec option de confidentialité (cacher le montant)
+- Actions rapides : ajouter transaction, importer SMS
+- Alertes budgétaires automatiques (max 1 visible pour ne pas encombrer)
+- Section "Voir tout" pour accéder aux fonctionnalités avancées
+
+🎯 BUDGETS INTELLIGENTS PAR CATÉGORIE
+- 27 catégories système pré-configurées (spécifiques au Sénégal)
+- Créez des budgets mensuels par catégorie
+- Barres de progression visuelles
+- Alertes automatiques à 80% (avertissement) et 100% (danger)
+- Calcul automatique du reste à dépenser
+- Budgets optionnels lors de l'onboarding
+
+🎯 OBJECTIFS D'ÉPARGNE
+- Définissez vos objectifs : voiture, maison, voyage, études
+- Suivi de progression avec barres circulaires
+- Historique de vos ajouts (annulation possible)
+- Comparaison entre objectifs
+- Recommandations d'épargne mensuelle
+- Rappels automatiques (7 jours, 3 jours avant deadline)
+
+🔒 SÉCURITÉ MAXIMALE
+- Authentification biométrique (empreinte digitale, visage)
+- Chiffrement AES-256 des données sensibles
+- Tokens API sécurisés avec Laravel Sanctum
+- Session expiry configurable
+- Aucun secret en dur dans le code
+- Rate limiting pour prévenir les attaques
+
+💾 MODE OFFLINE ROBUSTE
+- Consultez vos finances même sans internet
+- Cache des données (transactions, balance, budgets, dashboard) - validité 24h
+- Queue de synchronisation pour les requêtes POST/PUT/DELETE
+- Sync silencieuse automatique à la reconnexion
+- Fonctionne sur 3G et zones mal connectées
+
+📱 INTERFACE SIMPLE ET INTUITIVE
+- Navigation en 2 taps maximum (pas de hamburger menu)
+- Dashboard hiérarchisé : 1 info primaire, 2-3 secondaires, reste derrière "Voir tout"
+- Listes avec infinite scroll (20 items/page)
+- Filtres avancés en bottom sheet (type, catégorie, dates, montant)
+- Chips de filtres actifs (max 4)
+- Skeleton loaders pour un chargement fluide
+- Empty states avec message + action suggérée
+- Feedback <100ms
+
+🇸🇳 100% ADAPTÉ AU SÉNÉGAL
+- Devise FCFA (format "12 500 FCFA")
+- Connaît Wave, Orange Money, Free Money, Wari
+- Entreprises sénégalaises : Sénélec, SDE, Proximo, Jumia, Canal+
+- Habitudes financières locales (revenus irréguliers, mobile money dominant)
+- Langue française, ton direct et chaleureux
+- Compatible Android mid-range (4GB RAM, 5.5" screen)
+
+⚡ PERFORMANCE OPTIMISÉE
+- Chargement initial <2s sur 3G
+- Pas de blocage du main thread
+- Cache côté serveur (dashboard 5min, catégories 1h, wallets 30s)
+- Requêtes SQL optimisées avec agrégation
+- Pagination cursor-based pour les listes
+
+FONCTIONNALITÉS PRINCIPALES :
+• Détection automatique SMS Wave/Orange Money/Free Money/Wari
+• Gestion multi-portefeuilles (illimité)
+• Budgets par catégorie avec alertes intelligentes
+• Objectifs d'épargne avec suivi et historique
+• Historique des transactions avec filtres avancés
+• Recherche en temps réel
+• Swipe pour modifier/supprimer
+• Statistiques et graphiques
+• Mode offline complet
+• Authentification biométrique
+• Export de données
+• Rappels de paiements (bi-hebdomadaires)
+• Rappels d'objectifs (deadline + réguliers)
+• Recommandations contextuelles basées sur vos données
+• Onboarding interactif en 7 étapes
+• Mode sombre/clair
+• Notifications push (budgets, objectifs, alertes)
+
+FLOW UTILISATEUR :
+1. Inscription (nom, email, mot de passe)
+2. Onboarding (revenu, wallets, budgets, objectifs, notifications, biométrie)
+3. Dashboard instantané avec solde total
+4. Détection SMS automatique ou ajout manuel
+5. Suivi des budgets et objectifs
+6. Alertes et recommandations automatiques
+
+FinanceWise transforme vos transactions mobile money en tableau de bord compréhensible sans effort de saisie. Simple comme Wave, intelligent en arrière-plan.
+
+Téléchargez FinanceWise maintenant et reprenez le contrôle de vos finances au Sénégal !
+```
+
+---
+
+## Description App Store (Optimisée iOS)
+
+```
+FinanceWise - Votre assistant financier personnel au Sénégal
+
+Gérez vos finances en toute simplicité grâce à la détection automatique des SMS Wave et Orange Money. Plus besoin de noter chaque dépense manuellement.
+
+FONCTIONNALITÉS PRINCIPALES :
+
+✨ DÉTECTION AUTOMATIQUE
+• Reçoit un SMS Wave/Orange Money ? FinanceWise détecte et ajoute automatiquement
+• Catégorisation intelligente (nourriture, transport, internet, etc.)
+• Reconnaissance : Wave, Orange Money, Free Money, Wari
+
+💰 GESTION MULTI-COMPTES
+• Wave, Orange Money, Banque, Espèces
+• Vue d'ensemble instantanée
+• Cartes personnalisées par type
+
+📊 DASHBOARD CLAIR
+• Solde total en 3 secondes
+• Revenus et dépenses du mois
+• Alertes budgétaires automatiques
+
+🎯 BUDGETS INTELLIGENTS
+• 27 catégories système (spécifiques Sénégal)
+• Alertes à 80% et 100%
+• Reste à dépenser calculé
+
+🎯 OBJECTIFS D'ÉPARGNE
+• Suivi de progression
+• Historique des ajouts
+• Rappels automatiques
+
+🔒 SÉCURITÉ
+• Authentification biométrique
+• Chiffrement AES-256
+• Connexion sécurisée
+
+💾 MODE OFFLINE
+• Fonctionne sans internet
+• Synchronisation automatique
+• Cache intelligent
+
+🇸🇳 100% SÉNÉGAL
+• Devise FCFA
+• Entreprises locales (Sénélec, SDE, Proximo)
+• Habitudes financières locales
+
+FinanceWise : Transformez vos transactions mobile money en tableau de bord compréhensible sans effort de saisie.
+```
+
+---
+
+## Mots-clés
+
+### Google Play (30 mots-clés max)
+finance, budget, gestion, argent, epargne, wave, orange money, mobile money, senegal, fcfa, comptes, depenses, revenus, transactions, wallet, portefeuille, objectif, economie, senelec, sde, proximo, jumia, free money, wari, transfert, paiement, facture, budgeting, money manager
+
+### App Store (100 caractères max)
+finance budget epargne wave orange money senegal fcfa comptes depenses revenus transactions wallet portefeuille objectif economie
+
+---
+
+## Permissions et Justifications
+
+### Android (Manifest)
+
+**Permissions demandées :**
+
+1. **INTERNET**
+   - Justification : Pour synchroniser vos données avec le serveur et permettre le mode offline
+   - Nécessaire : Oui
+
+2. **READ_SMS / RECEIVE_SMS**
+   - Justification : Pour détecter automatiquement les transactions de Wave et Orange Money et les ajouter à votre historique sans saisie manuelle
+   - Nécessaire : Oui
+   - Optionnel dans les paramètres (désactivable)
+
+3. **USE_FINGERPRINT / USE_BIOMETRIC**
+   - Justification : Pour sécuriser votre compte avec l'authentification biométrique (empreinte, visage)
+   - Nécessaire : Oui
+   - Optionnel dans les paramètres
+
+4. **ACCESS_NETWORK_STATE**
+   - Justification : Pour détecter si vous êtes connecté à internet et activer le mode offline automatiquement
+   - Nécessaire : Oui
+
+5. **VIBRATE**
+   - Justification : Pour le feedback haptique lors des interactions
+   - Nécessaire : Optionnel
+
+6. **CAMERA** (si ajouté plus tard)
+   - Justification : Pour scanner les QR codes de paiement
+   - Nécessaire : Non (non implémenté actuellement)
+
+**Message dans la description :**
+"Cette application demande la permission de lire vos SMS uniquement pour détecter automatiquement vos transactions Wave et Orange Money. Vos SMS ne sont jamais stockés ni partagés. Vous pouvez désactiver cette fonctionnalité dans les paramètres."
+
+### iOS (Info.plist)
+
+**Permissions demandées :**
+
+1. **NSFaceIDUsageDescription**
+   - "FinanceWise utilise l'authentification biométrique pour sécuriser votre compte et permettre une connexion rapide."
+
+2. **NSUserTrackingUsageDescription** (si ajouté)
+   - Non utilisé actuellement
+
+---
+
+## Screenshots Recommandés
+
+### Écrans à capturer (avec données de démo)
+
+1. **DashboardScreen**
+   - Carte bancaire avec solde : 350 000 FCFA
+   - Revenus du mois : 450 000 FCFA
+   - Dépenses du mois : 280 000 FCFA
+   - Alertes : "Budget Nourriture à 85%"
+   - Actions rapides visibles
+
+2. **TransactionsScreen**
+   - Liste de transactions variées
+   - Exemples : "Restaurant Le Népal" - 8 500 FCFA, "Car Rapide" - 200 FCFA, "Wave - Dépôt" - 50 000 FCFA
+   - Filtres actifs : "Dépenses", "Nourriture"
+   - Barre de recherche visible
+
+3. **WalletsScreen**
+   - Carte Wave : solde 150 000 FCFA (bleu)
+   - Carte Orange Money : solde 75 000 FCFA (orange)
+   - Carte Espèces : solde 125 000 FCFA (vert clair)
+   - Solde total en header
+
+4. **FinancialGoalsScreen**
+   - Carte statistiques : Épargne totale 200 000 FCFA, 2 objectifs atteints, 3 en cours
+   - Objectif "Voiture" : 500 000 FCFA cible, 150 000 FCFA actuel, 30% progression
+   - Objectif "Voyage" : 200 000 FCFA cible, 50 000 FCFA actuel, 25% progression
+
+5. **OnboardingScreen** (étape revenu)
+   - Chiffre 300 000 FCFA entré
+   - Animation Lottie visible
+   - Texte d'explication
+
+6. **ProfileScreen**
+   - Avatar avec initiales "AD"
+   - Nom : Amadou Diop
+   - Statistiques : Solde 350 000 FCFA, Revenus 450 000 FCFA, Dépenses 280 000 FCFA
+   - Actions rapides visibles
+
+7. **SettingsScreen**
+   - Mode sombre activé
+   - Biométrie activée
+   - Détection SMS activée
+   - Confirmation SMS désactivée
+
+8. **HomeScreen**
+   - Bottom navigation avec 5 onglets
+   - Onglet Dashboard actif
+   - Bouton "Plus" visible
+
+### Dimensions
+
+**Google Play :**
+- Téléphone portrait : 1080x1920 px
+- Téléphone landscape : 1920x1080 px
+- Tablet portrait : 2028x2736 px
+- Tablet landscape : 2736x2028 px
+
+**App Store :**
+- iPhone : 1170x2532 px (iPhone 13/14), 1284x2778 px (iPhone 14 Pro Max)
+- iPad : 2048x2732 px (iPad Pro)
+
+---
+
+## Icône de l'Application
+
+### Spécifications
+- **Google Play** : 512x512 px, PNG avec transparence
+- **App Store** : 1024x1024 px, PNG sans transparence (fond carré)
+- **Android notification** : 192x192 px, PNG avec transparence
+- **Android adaptive** : 432x432 px (foreground), 108x108 px (monochrome)
+
+### Design recommandé
+- Logo FinanceWise centré
+- Couleurs : Teal primaire (#009688) + blanc
+- Style : Moderne, épuré, professionnel
+- Fond : Dégradé ou uni selon le store
+- Texte : "FW" ou "FinanceWise" si lisible
+
+---
+
+## Vidéo de Présentation
+
+### Script recommandé (30-60 secondes)
+
+**Scène 1 (0-5s) :**
+- Logo FinanceWise avec animation
+- Texte : "Gérez vos finances au Sénégal"
+
+**Scène 2 (5-15s) :**
+- DashboardScreen avec solde
+- Texte : "Vos finances en 3 secondes"
+- Montre la carte bancaire et statistiques
+
+**Scène 3 (15-25s) :**
+- Animation SMS reçu
+- FinanceWise détecte la transaction
+- Texte : "Détection automatique Wave & Orange Money"
+- Transaction ajoutée automatiquement
+
+**Scène 4 (25-35s) :**
+- WalletsScreen avec cartes
+- FinancialGoalsScreen avec progression
+- Texte : "Multi-comptes + Objectifs d'épargne"
+
+**Scène 5 (35-45s) :**
+- SettingsScreen avec biométrie
+- Texte : "Sécurité biométrique"
+- Montre l'authentification par empreinte
+
+**Scène 6 (45-60s) :**
+- Logo FinanceWise
+- Texte : "FinanceWise - Téléchargez gratuitement"
+- Call to action
+
+### Dimensions
+- **Google Play** : 1080x1920 (portrait) ou 1920x1080 (landscape)
+- **App Store** : 1080x1920 (iPhone)
+
+---
+
+## Classification par Âge
+
+### Questionnaire de contenu
+
+**Violence :** Non
+**Sexuel :** Non
+**Langage offensant :** Non
+**Drogues :** Non
+**Alcool :** Non
+**Tabac :** Non
+**Jeu d'argent :** Non
+**Contenu effrayant :** Non
+**Contenu pour enfants :** Non (application financière)
+
+**Classification :**
+- Google Play : Tout public (PEGI 3)
+- App Store : 4+ (Tout public)
+
+**COPPA :** Non conforme (pas destiné aux enfants de moins de 13 ans)
+
+---
+
+## Notes de Version (Release Notes)
+
+### Version 1.0.0 (Version initiale)
+
+```
+Version initiale de FinanceWise ! 🎉
+
+Nouvelles fonctionnalités :
+✨ Détection automatique des SMS Wave, Orange Money, Free Money et Wari
+💰 Gestion multi-portefeuilles (Wave, Orange Money, Banque, Espèces)
+📊 Dashboard avec solde total, revenus et dépenses du mois
+🎯 Budgets par catégorie avec alertes automatiques
+🎯 Objectifs d'épargne avec suivi de progression et historique
+📋 Historique des transactions avec filtres avancés
+🔍 Recherche en temps réel
+🔒 Authentification biométrique (empreinte, visage)
+💾 Mode offline complet
+🌙 Mode sombre/clair
+🔔 Notifications push (budgets, objectifs, alertes)
+📱 Interface simple en 2 taps maximum
+🇸🇳 100% adapté au Sénégal (FCFA, entreprises locales)
+
+Améliorations :
+• Performance optimisée pour 3G
+• Chargement <2s
+• Cache intelligent
+• Sync silencieuse offline
+
+FinanceWise transforme vos transactions mobile money en tableau de bord compréhensible sans effort de saisie.
+```
+
+---
+
+## Politique de Confidentialité (Contenu)
+
+### Données collectées
+- **Informations de compte** : Nom, email (pour authentification)
+- **Données financières** : Transactions, soldes, budgets, objectifs
+- **SMS** : Contenu des SMS Wave/Orange Money (uniquement pour parsing, non stockés)
+- **Informations techniques** : Version de l'application, device ID (pour support)
+
+### Utilisation des données
+- Gestion de vos finances personnelles
+- Synchronisation entre vos appareils
+- Amélioration de l'application (anonymisé)
+- Support client
+
+### Partage des données
+- Serveur sécurisé pour synchronisation
+- Jamais partagé avec des tiers
+- Jamais vendu
+
+### Sécurité
+- Chiffrement AES-256 au repos
+- Authentification biométrique
+- Tokens sécurisés
+- Connexion HTTPS
+
+### Droits de l'utilisateur
+- Accès à vos données
+- Modification de vos données
+- Suppression de votre compte et données
+- Export de vos données
+
+### Contact
+- Email : support@financewise.sn
+- Site web : https://financewise.sn
+
+---
+
+## Mentions Légales (Contenu)
+
+### Éditeur
+- Nom : [Votre nom ou entreprise]
+- Adresse : [Votre adresse au Sénégal]
+- RCCM : [Numéro RCCM si entreprise]
+- Email : contact@financewise.sn
+
+### Hébergeur
+- Nom : [Nom de l'hébergeur]
+- Adresse : [Adresse de l'hébergeur]
+
+### Propriété intellectuelle
+- FinanceWise est une marque déposée
+- Code source propriétaire
+- Design propriétaire
+
+---
+
+## Support Client
+
+### Email
+- support@financewise.sn
+
+### Site web
+- https://financewise.sn
+- FAQ
+- Guides d'utilisation
+- Contact
+
+### Réponse attendue
+- <24h pour les questions urgentes (sécurité, compte)
+- <48h pour les autres questions
+
+---
+
+## Cible de Distribution
+
+### Pays (Google Play)
+- **Priorité** : Sénégal
+- **Secondaire** : Mali, Burkina Faso, Côte d'Ivoire, Niger, Guinée, Bénin, Togo
+- **Optionnel** : Autres pays francophones
+
+### Pays (App Store)
+- Sénégal
+- Mali
+- Burkina Faso
+- Côte d'Ivoire
+- Autres pays francophones
+
+### Appareils
+- **Android** : 5.0 (Lollipop) ou supérieur (API 21+)
+- **iOS** : 13.0 ou supérieur
+
+---
+
+## Prix et Modèle de Monétisation
+
+### Modèle recommandé
+- **Freemium** : Gratuit avec fonctionnalités de base
+- **Premium** : Abonnement mensuel ou annuel pour fonctionnalités avancées
+
+### Fonctionnalités gratuites (v1.0)
+- Détection SMS automatique
+- Gestion multi-portefeuilles (jusqu'à 3)
+- Budgets (jusqu'à 5)
+- Objectifs (jusqu'à 3)
+- Mode offline
+- Authentification biométrique
+- Export CSV
+
+### Fonctionnalités premium (futur)
+- Portefeuilles illimités
+- Budgets illimités
+- Objectifs illimités
+- Statistiques avancées
+- Recommandations personnalisées
+- Support prioritaire
+- Export Excel/PDF
+- Multi-devices
+
+### Prix suggéré (futur)
+- Mensuel : 2 000 FCFA / mois
+- Annuel : 20 000 FCFA / an (17% d'économie)
+
+---
+
+## Informations Techniques pour Stores
+
+### Android (Google Play)
+
+**Package name** : sn.financewise.app
+**Version code** : 1
+**Version name** : 1.0.0
+**Min SDK** : 21 (Android 5.0)
+**Target SDK** : 34 (Android 14)
+**Compile SDK** : 34
+**Build tools** : 34.0.0
+**Kotlin version** : 1.9.0
+**Gradle version** : 8.0
+
+**Dependencies principales :**
+- Flutter SDK 3.11.3+
+- provider: ^6.0.0
+- go_router: ^12.0.0
+- http: ^1.1.0
+- shared_preferences: ^2.2.0
+- flutter_local_notifications: ^16.0.0
+- local_auth: ^2.1.0
+- connectivity_plus: ^5.0.0
+- permission_handler: ^11.0.0
+- sms_listener (custom)
+
+### iOS (App Store)
+
+**Bundle ID** : sn.financewise.app
+**Version** : 1.0.0
+**Build** : 1
+**Min iOS** : 13.0
+**Target iOS** : 17.0
+**Swift version** : 5.9
+**Xcode version** : 15.0
+
+**Capabilities :**
+- Push Notifications
+- Face ID / Touch ID
+- Background Modes (Background fetch, Background processing)
+
+---
+
+## Checklist de Prépublication
+
+### Assets visuels
+- [ ] Icône 512x512 (Google Play)
+- [ ] Icône 1024x1024 (App Store)
+- [ ] Icône notification Android 192x192
+- [ ] Icône adaptive Android 432x432
+- [ ] Screenshot DashboardScreen (téléphone)
+- [ ] Screenshot TransactionsScreen (téléphone)
+- [ ] Screenshot WalletsScreen (téléphone)
+- [ ] Screenshot FinancialGoalsScreen (téléphone)
+- [ ] Screenshot OnboardingScreen (téléphone)
+- [ ] Screenshot ProfileScreen (téléphone)
+- [ ] Screenshot SettingsScreen (téléphone)
+- [ ] Screenshot HomeScreen (téléphone)
+- [ ] Feature Graphic 1024x500 (Google Play)
+- [ ] Vidéo de présentation 30-60s
+- [ ] App Store Preview Video 15-30s
+
+### Documents légaux
+- [ ] Politique de confidentialité rédigée
+- [ ] Conditions d'utilisation rédigées
+- [ ] Mentions légales rédigées
+- [ ] Site web créé avec les 3 documents
+- [ ] URL de la politique de confidentialité fonctionnelle
+
+### Comptes
+- [ ] Compte Google Play Developer créé (25 $)
+- [ ] Compte Apple Developer créé (99 $/an)
+- [ ] Email de support créé (support@financewise.sn)
+- [ ] Site web fonctionnel (financewise.sn)
+- [ ] Nom de domaine acheté
+
+### Application
+- [ ] APK/AAB signé avec keystore
+- [ ] IPA signé avec certificat de distribution
+- [ ] Version de l'application testée sur plusieurs appareils
+- [ ] Test de mode offline
+- [ ] Test de détection SMS
+- [ ] Test de biométrie
+- [ ] Test sur Android 5.0+
+- [ ] Test sur iOS 13.0+
+- [ ] Performance vérifiée (<2s load sur 3G)
+- [ ] Aucun crash détecté
+
+### Store
+- [ ] Remplir les informations de l'application (Google Play)
+- [ ] Remplir les informations de l'application (App Store)
+- [ ] Uploader les assets
+- [ ] Rédiger la description
+- [ ] Ajouter les mots-clés
+- [ ] Répondre au questionnaire de contenu
+- [ ] Répondre au questionnaire de sécurité
+- [ ] Configurer le prix
+- [ ] Configurer les pays de distribution
+- [ ] Soumettre pour revue (Google Play)
+- [ ] Soumettre pour revue (App Store)
+
+---
+
+## Coûts Totaux Estimés
+
+### Première année
+- Compte Google Play Developer : 25 $
+- Compte Apple Developer : 99 $
+- Hébergement site web : 60 $ (5 $/mois)
+- Nom de domaine : 15 $
+- **Total : 199 $**
+
+### Années suivantes
+- Compte Apple Developer : 99 $/an
+- Hébergement site web : 60 $/an
+- Nom de domaine : 15 $/an
+- **Total : 174 $/an**
+
+### Optionnel
+- Design professionnel (icône, screenshots) : 200-500 $
+- Vidéo de présentation professionnelle : 100-300 $
+- Marketing initial : 500-1000 $
+
+---
+
+## Conseils Spécifiques FinanceWise
+
+1. **Données de démo** : Utilisez des noms sénégalais réalistes (Amadou Diop, Fatou Ndiaye, etc.) et des montants en FCFA
+2. **Screenshots** : Montre la détection SMS en action avec un SMS Wave/Orange Money réel
+3. **Description** : Insiste sur l'adaptation au Sénégal (FCFA, entreprises locales)
+4. **Permissions** : Explique clairement pourquoi l'application lit les SMS
+5. **Test** : Teste le parsing SMS avec les formats actuels de Wave et Orange Money
+6. **Offline** : Vérifie que l'application fonctionne vraiment sans internet
+7. **Biométrie** : Teste sur différents appareils (Samsung, Xiaomi, iPhone, etc.)
+8. **Performance** : Vérifie le chargement sur connexion 3G simulée
+9. **Sécurité** : Prépare des réponses aux questions de sécurité des stores
+10. **Support** : Sois prêt à répondre rapidement aux questions des utilisateurs
+
+---
+
+## Prochaines Actions Immédiates
+
+1. **Créer les icônes** (512x512 et 1024x1024)
+2. **Capturer les screenshots** avec données de démo
+3. **Rédiger la politique de confidentialité**
+4. **Créer le site web** avec les 3 documents légaux
+5. **Acheter le nom de domaine** financewise.sn
+6. **Créer l'email support@financewise.sn**
+7. **Préparer la vidéo de présentation**
+8. **Créer les comptes développeurs**
+9. **Signer l'APK/AAB et l'IPA**
+10. **Remplir les formulaires des stores**

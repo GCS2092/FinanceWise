@@ -11,7 +11,7 @@ class AppConstants {
   // │  le serveur au démarrage. Cette IP est     │
   // │  utilisée uniquement en fallback.          │
   // └─────────────────────────────────────────────┘
-  static const String _defaultApiHost = '192.168.1.4'; // Fallback si détection échoue
+  static const String _defaultApiHost = '10.0.2.2'; // Fallback si détection échoue (émulateur Android)
 
   static String get baseUrl => 'http://$_defaultApiHost:8000/api';
 

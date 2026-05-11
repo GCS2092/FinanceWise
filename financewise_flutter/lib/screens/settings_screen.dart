@@ -1,6 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/theme_provider.dart';
@@ -56,6 +59,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final cardBg = Theme.of(context).cardColor;
+    final cardBorder = cs.outlineVariant.withValues(alpha: 0.35);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Paramètres'),
@@ -68,9 +75,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Apparence ──
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppTheme.softShadow,
+                    border: Border.all(color: cardBorder),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -100,9 +108,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Sécurité ──
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppTheme.softShadow,
+                    border: Border.all(color: cardBorder),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -170,9 +179,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Automatisation des transactions ──
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppTheme.softShadow,
+                    border: Border.all(color: cardBorder),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -227,9 +237,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Rappels ──
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppTheme.softShadow,
+                    border: Border.all(color: cardBorder),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -273,9 +284,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Onboarding ──
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppTheme.softShadow,
+                    border: Border.all(color: cardBorder),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -290,10 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: const Text('Refaire la configuration initiale'),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                            );
+                            context.push('/onboarding');
                           },
                         ),
                       ],
@@ -305,9 +314,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ── Informations ──
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppTheme.softShadow,
+                    border: Border.all(color: cardBorder),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),

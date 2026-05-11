@@ -17,7 +17,7 @@ class SmsReceiver : BroadcastReceiver() {
     companion object {
         private var methodChannel: MethodChannel? = null
         private const val CHANNEL_ID = "sms_detection_channel"
-        private const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_ID = 1001
         private const val TAG = "SmsReceiver"
         
         fun setMethodChannel(channel: MethodChannel) {
@@ -65,7 +65,7 @@ class SmsReceiver : BroadcastReceiver() {
 
     private fun createNotification(context: Context?, sender: String, body: String) {
         context ?: return
-        
+
         // Créer le canal de notification (nécessaire pour Android 8+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -75,34 +75,70 @@ class SmsReceiver : BroadcastReceiver() {
             ).apply {
                 description = "Notifications pour les transactions SMS détectées"
             }
-            
+
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
-        
+
         // Créer l'intent pour ouvrir l'app quand on clique sur la notification
         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("pending_sms", true)
         }
-        
+
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
-        // Créer la notification
+
+        // Intent pour l'action "Ajouter"
+        val addIntent = Intent(context, SmsActionReceiver::class.java).apply {
+            action = "ACTION_ADD_TRANSACTION"
+            putExtra("sender", sender)
+            putExtra("body", body)
+        }
+        val addPendingIntent = PendingIntent.getBroadcast(
+            context,
+            1,
+            addIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Intent pour l'action "Pas"
+        val dismissIntent = Intent(context, SmsActionReceiver::class.java).apply {
+            action = "ACTION_DISMISS_TRANSACTION"
+            putExtra("notification_id", NOTIFICATION_ID)
+        }
+        val dismissPendingIntent = PendingIntent.getBroadcast(
+            context,
+            2,
+            dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Créer la notification avec boutons d'action
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Transaction détectée")
-            .setContentText("SMS de $sender - Cliquez pour ajouter")
+            .setContentText("SMS de $sender - Cliquez pour traiter")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+            .setOngoing(false) // Non persistante pour afficher les boutons
+            .setAutoCancel(false) // Ne pas annuler automatiquement
             .setContentIntent(pendingIntent)
+            .addAction(
+                android.R.drawable.ic_input_add,
+                "Ajouter",
+                addPendingIntent
+            )
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "Ignorer",
+                dismissPendingIntent
+            )
             .build()
-        
+
         // Afficher la notification
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.notify(NOTIFICATION_ID, notification)
@@ -130,6 +166,22 @@ class SmsReceiver : BroadcastReceiver() {
         
         // Détecter Orange Money
         if (lowerSender.contains("orange") || lowerBody.contains("orange money")) {
+            return true
+        }
+        
+        // Détecter Taxi (Yango, Bolt, Uber)
+        if (lowerSender.contains("yango") || lowerBody.contains("yango") ||
+            lowerSender.contains("taxi") || lowerBody.contains("taxi") ||
+            lowerSender.contains("bolt") || lowerBody.contains("bolt") ||
+            lowerSender.contains("uber") || lowerBody.contains("uber")) {
+            return true
+        }
+        
+        // Détecter autres services (Free, Expresso, Wari, Jonah)
+        if (lowerSender.contains("free") || lowerBody.contains("free") ||
+            lowerSender.contains("expresso") || lowerBody.contains("expresso") ||
+            lowerSender.contains("wari") || lowerBody.contains("wari") ||
+            lowerSender.contains("jonah") || lowerBody.contains("jonah")) {
             return true
         }
         

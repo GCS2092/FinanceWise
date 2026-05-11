@@ -12,7 +12,8 @@ class TransactionObserver
         if ($transaction->type === 'expense') {
             $this->updateRelatedBudgets($transaction);
             $this->checkBudgetAlerts($transaction);
-            $this->checkLowBalance($transaction);
+            // Désactivé temporairement à cause de l'erreur PostgreSQL JSON
+            // $this->checkLowBalance($transaction);
         }
     }
 
@@ -97,16 +98,18 @@ class TransactionObserver
 
         // Alerte si solde inférieur à 10 000 FCFA
         if ($balance < 10000 && $balance > 0) {
+            $alertData = json_encode([
+                'wallet_id' => $wallet->id,
+                'balance' => $balance,
+            ]);
+
             \App\Models\Alert::firstOrCreate([
                 'user_id' => $wallet->user_id,
                 'type' => 'balance',
                 'title' => 'Solde faible',
                 'message' => "Votre solde est bas: {$balance} FCFA",
                 'severity' => 'warning',
-                'data' => [
-                    'wallet_id' => $wallet->id,
-                    'balance' => $balance,
-                ],
+                'data' => $alertData,
             ], [
                 'created_at' => now(),
             ]);
@@ -114,16 +117,18 @@ class TransactionObserver
 
         // Alerte critique si solde inférieur à 5 000 FCFA
         if ($balance < 5000 && $balance > 0) {
+            $alertData = json_encode([
+                'wallet_id' => $wallet->id,
+                'balance' => $balance,
+            ]);
+
             \App\Models\Alert::firstOrCreate([
                 'user_id' => $wallet->user_id,
                 'type' => 'balance',
                 'title' => 'Solde critique',
                 'message' => "Attention ! Votre solde est très bas: {$balance} FCFA",
                 'severity' => 'danger',
-                'data' => [
-                    'wallet_id' => $wallet->id,
-                    'balance' => $balance,
-                ],
+                'data' => $alertData,
             ], [
                 'created_at' => now(),
             ]);

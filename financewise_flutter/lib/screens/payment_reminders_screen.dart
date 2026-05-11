@@ -1,9 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
+import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 import 'payment_reminder_form_screen.dart';
 
 class PaymentRemindersScreen extends StatefulWidget {
@@ -163,7 +169,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => PaymentReminderFormScreen(paymentReminder: Map<String, dynamic>.from(reminder)))).then((_) => _load());
+                      context.push('/payment-reminder-form', extra: Map<String, dynamic>.from(reminder)).then((_) => _load());
                     },
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text('Modifier'),
@@ -384,8 +390,7 @@ class _PaymentRemindersScreenState extends State<PaymentRemindersScreen> {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentReminderFormScreen()));
-          _load();
+          context.push('/payment-reminder-form').then((_) => _load());
         },
         icon: const Icon(Icons.add),
         label: const Text('Rappel'),

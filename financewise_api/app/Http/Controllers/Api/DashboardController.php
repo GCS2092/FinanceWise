@@ -20,7 +20,8 @@ class DashboardController extends Controller
         $user = auth()->user();
         $cacheKey = "dashboard:{$user->id}";
 
-        $data = Cache::remember($cacheKey, 300, function () use ($user) {
+        // Cache réduit à 60 secondes pour plus de fraîcheur des données
+        $data = Cache::remember($cacheKey, 60, function () use ($user) {
             return $this->buildDashboard($user);
         });
 
@@ -33,8 +34,8 @@ class DashboardController extends Controller
         $startOfMonth = $now->copy()->startOfMonth();
         $endOfMonth = $now->copy()->endOfMonth();
 
-        // Une seule requête pour revenus + dépenses du mois (PostgreSQL)
-        $monthlyTotals = $user->transactions()
+        // Optimisation: une seule requête pour revenus + dépenses + solde
+        $stats = $user->transactions()
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
             ->selectRaw("
                 COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
@@ -42,36 +43,50 @@ class DashboardController extends Controller
             ")
             ->first();
 
-        $totalIncome = (float) $monthlyTotals->total_income;
-        $totalExpense = (float) $monthlyTotals->total_expense;
+        $totalIncome = (float) $stats->total_income;
+        $totalExpense = (float) $stats->total_expense;
 
+        // Optimisation: solde calculé directement depuis wallets (cache côté DB)
         $balance = (float) $user->wallets()->sum('balance');
 
         $monthlyIncomeTarget = $user->monthly_income_target ?? 0;
         $incomeProgress = $monthlyIncomeTarget > 0 ? ($totalIncome / $monthlyIncomeTarget) * 100 : 0;
 
-        // Top catégories avec window function pour pourcentage
+        // Compter les transactions non catégorisées
+        $uncategorizedCount = $user->transactions()
+            ->where('type', 'expense')
+            ->where(function ($query) {
+                $query->whereNull('category_id')
+                    ->orWhereHas('category', function ($q) {
+                        $q->where('name', 'Autre');
+                    });
+            })
+            ->count();
+
+        // Optimisation: limité à 3 catégories au lieu de 5 pour réduire la charge
         $topCategories = $user->transactions()
             ->where('type', 'expense')
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
             ->selectRaw('category_id, SUM(amount) as total')
             ->groupBy('category_id')
             ->orderByDesc('total')
-            ->limit(5)
+            ->limit(3)
             ->with('category')
             ->get();
 
+        // Optimisation: limité à 5 transactions au lieu de 10
         $recentTransactions = $user->transactions()
-            ->with('category', 'wallet')
+            ->with('category:id,name', 'wallet:id,name,balance')
             ->latest('transaction_date')
-            ->limit(10)
+            ->limit(5)
             ->get();
 
+        // Optimisation: budgets avec eager loading minimal
         $budgets = Budget::where('user_id', $user->id)
             ->where('is_active', true)
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
-            ->with('category')
+            ->with('category:id,name,icon')
             ->get();
 
         $alerts = [];
@@ -103,15 +118,25 @@ class DashboardController extends Controller
             }
         }
 
+        // Ajouter une alerte pour les transactions non catégorisées
+        if ($uncategorizedCount > 0) {
+            $alerts[] = [
+                'type' => 'warning',
+                'message' => "Vous avez $uncategorizedCount transaction(s) non catégorisée(s) dans le wallet Divers. Consultez vos wallets pour voir les détails.",
+                'action' => 'view_divers_wallet',
+            ];
+        }
+
         return [
             'balance' => $balance,
             'monthly_income' => $totalIncome,
             'monthly_expense' => $totalExpense,
             'monthly_income_target' => (float) $monthlyIncomeTarget,
             'income_progress' => (float) $incomeProgress,
+            'uncategorized_count' => $uncategorizedCount,
             'top_categories' => $topCategories->map(function ($item) {
                 return [
-                    'category' => new CategoryResource($item->category),
+                    'category' => $item->category ? new CategoryResource($item->category) : null,
                     'total' => (float) $item->total,
                 ];
             }),

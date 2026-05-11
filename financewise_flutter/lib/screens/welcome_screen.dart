@@ -1,9 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import '../theme.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import 'home_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -108,10 +112,7 @@ class WelcomeScreen extends StatelessWidget {
                     children: [
                       FilledButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                          );
+                          context.push('/login');
                         },
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(double.infinity, 56),
@@ -132,10 +133,7 @@ class WelcomeScreen extends StatelessWidget {
                       const Gap(16),
                       OutlinedButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                          );
+                          context.push('/register');
                         },
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 56),

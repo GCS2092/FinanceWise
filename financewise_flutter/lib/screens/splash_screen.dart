@@ -1,10 +1,64 @@
-import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/auth_provider.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  static const Duration _minSplashDuration = Duration(milliseconds: 1200);
+  static const Duration _startupTimeout = Duration(seconds: 8);
+  bool _navigated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrapApp();
+  }
+
+  Future<void> _bootstrapApp() async {
+    final start = DateTime.now();
+    String targetRoute = '/welcome';
+
+    try {
+      final auth = context.read<AuthProvider>();
+      await auth.checkAuth().timeout(_startupTimeout);
+
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+
+      if (auth.isAuthenticated) {
+        targetRoute = onboardingCompleted ? '/home' : '/onboarding';
+      } else {
+        // Aucun profil détecté → rediriger vers login
+        targetRoute = '/login';
+      }
+    } on TimeoutException {
+      // Fallback sécurisé: ne pas bloquer l'utilisateur sur le splash.
+      targetRoute = '/welcome';
+    } catch (_) {
+      targetRoute = '/welcome';
+    }
+
+    final elapsed = DateTime.now().difference(start);
+    if (elapsed < _minSplashDuration) {
+      await Future.delayed(_minSplashDuration - elapsed);
+    }
+
+    if (!mounted || _navigated) return;
+    _navigated = true;
+    context.push(targetRoute);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,29 +109,28 @@ class SplashScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo glass
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(32),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(28),
+                  // Animation Lottie
+                  Lottie.asset(
+                    'assets/animations/splash.json',
+                    width: 150,
+                    height: 150,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 120,
+                        height: 120,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(32),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         child: const Icon(
                           Icons.account_balance_wallet_rounded,
-                          size: 64,
+                          size: 56,
                           color: Colors.white,
                         ),
-                      ),
-                    ),
-                  )
-                      .animate()
-                      .scale(begin: const Offset(0.5, 0.5), end: const Offset(1, 1), duration: 600.ms, curve: Curves.easeOutBack)
-                      .fadeIn(duration: 400.ms),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 32),
                   Text(
                     'FinanceWise',

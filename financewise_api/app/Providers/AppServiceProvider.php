@@ -87,5 +87,14 @@ class AppServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+
+        // IA : 20/min par user_id (contrôle des coûts d'appels LLM)
+        RateLimiter::for('ai', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id)->response(function () {
+                return response()->json([
+                    'message' => 'Limite de requêtes IA atteinte. Réessaye dans une minute.',
+                ], 429);
+            });
+        });
     }
 }

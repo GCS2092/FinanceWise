@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
 import 'services/api_service.dart';
 import 'services/offline_sync_service.dart';
+import 'services/sms_listener_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'config/router.dart';
 import 'theme.dart';
 
 class FadePageRoute extends PageRouteBuilder {
@@ -54,6 +58,9 @@ void main() async {
   // Initialiser le service de sync offline
   OfflineSyncService().startListening();
   
+  // Initialiser le MethodChannel SMS pour les notifications
+  _initSmsMethodChannel();
+  
   runApp(
     MultiProvider(
       providers: [
@@ -63,6 +70,22 @@ void main() async {
       child: const AppInitializer(),
     ),
   );
+}
+
+void _initSmsMethodChannel() {
+  const channel = MethodChannel('com.example.financewise_flutter/sms');
+  channel.setMethodCallHandler((call) async {
+    if (call.method == 'onSmsActionAdd') {
+      print('=== onSmsActionAdd (global) ===');
+      final smsData = call.arguments as Map<dynamic, dynamic>;
+      final sender = smsData['sender'] as String;
+      final body = smsData['body'] as String;
+      print('Sender: $sender');
+      print('Body: $body');
+      // Stocker le SMS en attente pour traitement ultérieur
+      // Le traitement sera fait quand le dashboard sera initialisé
+    }
+  });
 }
 
 class AppInitializer extends StatefulWidget {
@@ -86,34 +109,13 @@ class _AppInitializerState extends State<AppInitializer> {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) {
-        return MaterialApp(
+        return MaterialApp.router(
           title: 'FinanceWise',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          home: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              if (auth.isLoading) {
-                return const SplashScreen();
-              }
-              if (!auth.isAuthenticated) {
-                return const WelcomeScreen();
-              }
-              return FutureBuilder<bool>(
-                future: _checkOnboarding(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SplashScreen();
-                  }
-                  if (snapshot.data == false) {
-                    return const OnboardingScreen();
-                  }
-                  return const BiometricCheckScreen(child: HomeScreen());
-                },
-              );
-            },
-          ),
+          routerConfig: router,
         );
       },
     );

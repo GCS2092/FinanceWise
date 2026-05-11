@@ -41,7 +41,7 @@ class CheckPaymentReminders extends Command
                 'user_id' => $reminder->user_id,
                 'type' => 'payment_reminder',
                 'title' => 'Rappel de paiement dans 3 jours',
-                'message' => "Rappel '{$reminder->name}' de {$reminder->amount} XOF est dû dans 3 jours ({$reminder->due_date->format('d/m/Y')})",
+                'message' => "Rappel '{$reminder->name}' de " . number_format($reminder->amount, 0, ',', ' ') . " FCFA est dû dans 3 jours ({$reminder->due_date->format('d/m/Y')})",
                 'data' => ['reminder_id' => $reminder->id],
                 'is_read' => false,
             ]);
@@ -57,7 +57,7 @@ class CheckPaymentReminders extends Command
                 'user_id' => $reminder->user_id,
                 'type' => 'payment_reminder',
                 'title' => 'Paiement dû aujourd\'hui',
-                'message' => "Rappel '{$reminder->name}' de {$reminder->amount} XOF est dû aujourd'hui !",
+                'message' => "Rappel '{$reminder->name}' de " . number_format($reminder->amount, 0, ',', ' ') . " FCFA est dû aujourd'hui !",
                 'data' => ['reminder_id' => $reminder->id],
                 'is_read' => false,
             ]);
@@ -73,7 +73,7 @@ class CheckPaymentReminders extends Command
                 'user_id' => $reminder->user_id,
                 'type' => 'payment_reminder',
                 'title' => 'Paiement en retard',
-                'message' => "Rappel '{$reminder->name}' de {$reminder->amount} XOF est en retard depuis {$reminder->due_date->diffForHumans()} !",
+                'message' => "Rappel '{$reminder->name}' de " . number_format($reminder->amount, 0, ',', ' ') . " FCFA est en retard depuis {$reminder->due_date->diffForHumans()} !",
                 'data' => ['reminder_id' => $reminder->id],
                 'is_read' => false,
             ]);

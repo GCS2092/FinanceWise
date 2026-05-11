@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -14,11 +17,11 @@ class StatisticsScreen extends StatefulWidget {
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
-  final ApiService _api = ApiService();
+  final _api = ApiService();
+  Map<String, dynamic>? _stats;
+  List<Map<String, dynamic>> _categoryStats = [];
   bool _loading = true;
-  Map<String, dynamic>? _data;
-  List<dynamic> _transactions = [];
-  String? _error;
+  int _selectedPeriod = 0; // 0: Ce mois, 1: 3 mois, 2: 6 mois
 
   @override
   void initState() {
@@ -27,39 +30,24 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() => _loading = true);
+    
     try {
-      final dashboardResult = await _api.get('/dashboard');
-      final transactionsResult = await _api.get('/transactions');
+      final stats = await _api.get('/dashboard');
+      final categories = await _api.get('/transactions/categories/stats');
       
-      final tData = transactionsResult is Map ? (transactionsResult['data'] ?? transactionsResult) : transactionsResult;
-      
-      setState(() {
-        _data = dashboardResult is Map<String, dynamic> ? dashboardResult : {};
-        _transactions = tData is List ? tData : [];
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _stats = stats as Map<String, dynamic>?;
+          _categoryStats = (categories as List?)?.cast<Map<String, dynamic>>() ?? [];
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  Map<String, double> _getCategorySpending() {
-    final Map<String, double> categorySpending = {};
-    for (final t in _transactions) {
-      if (t['type'] == 'expense' && t['category'] is Map) {
-        final name = t['category']['name'] ?? 'Autre';
-        final amount = double.tryParse((t['amount'] ?? 0).toString()) ?? 0;
-        categorySpending[name] = (categorySpending[name] ?? 0) + amount;
+      if (mounted) {
+        setState(() => _loading = false);
       }
     }
-    return categorySpending;
   }
 
   @override
@@ -67,472 +55,409 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistiques'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+            tooltip: 'Actualiser',
+          ),
+        ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
-                      const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: AppTheme.error)),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ── Résumé ──
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: AppTheme.softShadow,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Résumé du mois', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                              const Gap(16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatItem(
-                                      label: 'Balance',
-                                      value: _formatAmount(_data?['balance']),
-                                      color: AppTheme.secondary,
-                                      icon: Icons.account_balance_wallet_rounded,
-                                    ),
-                                  ),
-                                  const Gap(10),
-                                  Expanded(
-                                    child: _StatItem(
-                                      label: 'Revenus',
-                                      value: _formatAmount(_data?['monthly_income']),
-                                      color: AppTheme.success,
-                                      icon: Icons.trending_up_rounded,
-                                    ),
-                                  ),
-                                  const Gap(10),
-                                  Expanded(
-                                    child: _StatItem(
-                                      label: 'Dépenses',
-                                      value: _formatAmount(_data?['monthly_expense']),
-                                      color: AppTheme.error,
-                                      icon: Icons.trending_down_rounded,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0, duration: 400.ms),
-                        const Gap(20),
-
-                        // ── Dépenses par catégorie ──
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: AppTheme.softShadow,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Dépenses par catégorie', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                              const Gap(16),
-                              SizedBox(
-                                height: 300,
-                                child: _buildCategoryChart(),
-                              ),
-                            ],
-                          ),
-                        ).animate().fadeIn(delay: 100.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 100.ms, duration: 400.ms),
-                        const Gap(20),
-
-                        // ── Graphique à barres ──
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: AppTheme.softShadow,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Répartition (barres)', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                              const Gap(16),
-                              SizedBox(
-                                height: 250,
-                                child: _buildBarChart(),
-                              ),
-                            ],
-                          ),
-                        ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 200.ms, duration: 400.ms),
-                        const Gap(20),
-
-                        // ── Évolution dans le temps (ligne) ──
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: AppTheme.softShadow,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Évolution des dépenses', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                              const Gap(16),
-                              SizedBox(
-                                height: 250,
-                                child: _buildLineChart(),
-                              ),
-                            ],
-                          ),
-                        ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 300.ms, duration: 400.ms),
-                        const Gap(20),
-
-                        // ── Top dépenses ──
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: AppTheme.softShadow,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Top dépenses', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                              const Gap(16),
-                              ...(_transactions
-                                  .where((t) => t['type'] == 'expense')
-                                  .toList()
-                                ..sort((a, b) => ((b['amount'] ?? 0) as num).compareTo((a['amount'] ?? 0) as num))
-                              ).take(5).map((t) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                                          child: const Icon(Icons.north_east_rounded, color: AppTheme.error, size: 16),
-                                        ),
-                                        const Gap(12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(t['description'] ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
-                                              Text(t['category'] is Map ? t['category']['name'] : '', style: GoogleFonts.inter(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                            ],
-                                          ),
-                                        ),
-                                        Text(_formatAmount(t['amount']), style: GoogleFonts.poppins(color: AppTheme.error, fontWeight: FontWeight.w700, fontSize: 13)),
-                                      ],
-                                    ),
-                                  )),
-                            ],
-                          ),
-                        ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0, delay: 300.ms, duration: 400.ms),
-                      ],
-                    ),
-                  ),
-                ),
+          ? const ListSkeleton(itemCount: 6)
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildPeriodSelector(),
+                  const Gap(16),
+                  _buildBalanceCard(),
+                  const Gap(16),
+                  _buildIncomeExpenseChart(),
+                  const Gap(16),
+                  _buildCategoryBreakdown(),
+                  const Gap(16),
+                  _buildTrendCard(),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildCategoryChart() {
-    final categorySpending = _getCategorySpending();
-    if (categorySpending.isEmpty) {
-      return const Center(child: Text('Aucune donnée de dépense'));
+  Widget _buildPeriodSelector() {
+    final periods = ['Ce mois', '3 mois', '6 mois'];
+    return SegmentedButton<int>(
+      segments: periods.asMap().entries.map((entry) {
+        return ButtonSegment(
+          value: entry.key,
+          label: Text(entry.value),
+        );
+      }).toList(),
+      selected: {_selectedPeriod},
+      onSelectionChanged: (Set<int> newSelection) {
+        setState(() => _selectedPeriod = newSelection.first);
+        _loadData();
+      },
+    );
+  }
+
+  Widget _buildBalanceCard() {
+    final balance = _stats?['balance'] ?? 0;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Solde actuel',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Gap(8),
+            Text(
+              AppTheme.formatCurrency(balance),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: balance >= 0 ? AppTheme.primary : AppTheme.error,
+              ),
+            ).animate().fadeIn().slideX(begin: -0.1),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIncomeExpenseChart() {
+    final income = _stats?['monthly_income'] ?? 0;
+    final expense = _stats?['monthly_expense'] ?? 0;
+    final total = income + expense;
+    
+    if (total == 0) {
+      return const SizedBox.shrink();
     }
 
-    final colors = [
-      AppTheme.primary, AppTheme.error, Colors.green, Colors.orange, AppTheme.tertiary,
-      Colors.pink, Colors.teal, Colors.amber, Colors.cyan, Colors.indigo,
-    ];
-
-    final total = categorySpending.values.reduce((a, b) => a + b);
-    final entries = categorySpending.entries.toList();
-    
-    return Column(
-      children: [
-        SizedBox(
-          height: 200,
-          child: PieChart(
-            PieChartData(
-              sections: entries.asMap().entries.map((entry) {
-                final index = entry.key;
-                final category = entry.value;
-                final value = category.value;
-                final percentage = (value / total * 100).toStringAsFixed(1);
-                return PieChartSectionData(
-                  value: value,
-                  title: '$percentage%',
-                  color: colors[index % colors.length],
-                  radius: 55,
-                  titleStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                );
-              }).toList(),
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Revenus vs Dépenses',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            const Gap(20),
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sections: [
+                    PieChartSectionData(
+                      value: income.toDouble(),
+                      color: AppTheme.primary,
+                      title: '${AppTheme.formatCurrency(income)}',
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    PieChartSectionData(
+                      value: expense.toDouble(),
+                      color: AppTheme.error,
+                      title: '${AppTheme.formatCurrency(expense)}',
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                ),
+              ),
+            ),
+            const Gap(16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildLegendItem(AppTheme.primary, 'Revenus', income),
+                _buildLegendItem(AppTheme.error, 'Dépenses', expense),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn().slideY(begin: 0.1);
+  }
+
+  Widget _buildLegendItem(Color color, String label, num value) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: entries.asMap().entries.map((entry) {
-            final index = entry.key;
-            final category = entry.value;
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: colors[index % colors.length],
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(category.key, style: Theme.of(context).textTheme.bodySmall),
-              ],
-            );
-          }).toList(),
+        const Gap(8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Text(
+              AppTheme.formatCurrency(value),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildBarChart() {
-    final categorySpending = _getCategorySpending();
-    if (categorySpending.isEmpty) {
-      return const Center(child: Text('Aucune donnée de dépense'));
-    }
-
-    final colors = [
-      AppTheme.primary, AppTheme.error, Colors.green, Colors.orange, AppTheme.tertiary,
-      Colors.pink, Colors.teal, Colors.amber, Colors.cyan, Colors.indigo,
-    ];
-
-    final entries = categorySpending.entries.toList();
-    final maxValue = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: maxValue * 1.2,
-        barGroups: entries.asMap().entries.map((entry) {
-          final index = entry.key;
-          final category = entry.value;
-          return BarChartGroupData(
-            x: index,
-            barRods: [
-              BarChartRodData(
-                toY: category.value,
-                color: colors[index % colors.length],
-                width: 20,
-                borderRadius: BorderRadius.circular(4),
+  Widget _buildCategoryBreakdown() {
+    if (_categoryStats.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.pie_chart_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const Gap(16),
+              Text(
+                'Aucune donnée disponible',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const Gap(8),
+              Text(
+                'Commence par ajouter des transactions',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
-          );
-        }).toList(),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                if (value.toInt() >= entries.length) return const SizedBox.shrink();
-                final categoryName = entries[value.toInt()].key;
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    categoryName.length > 8 ? '${categoryName.substring(0, 8)}...' : categoryName,
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                );
-              },
-              reservedSize: 30,
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          rightTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
           ),
         ),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(show: false),
-      ),
-    );
-  }
-
-  Widget _buildLineChart() {
-    final expensesByDate = <String, double>{};
-    for (final t in _transactions) {
-      if (t['type'] == 'expense') {
-        final dateStr = t['date'] != null 
-            ? DateTime.parse(t['date']).toString().split(' ')[0]
-            : 'Inconnu';
-        final amount = double.tryParse((t['amount'] ?? 0).toString()) ?? 0;
-        expensesByDate[dateStr] = (expensesByDate[dateStr] ?? 0) + amount;
-      }
+      );
     }
 
-    if (expensesByDate.isEmpty) {
-      return const Center(child: Text('Aucune donnée de dépense'));
-    }
-
-    final sortedDates = expensesByDate.keys.toList()..sort();
-    final dataPoints = sortedDates.map((date) => expensesByDate[date] ?? 0).toList();
-    final maxValue = dataPoints.reduce((a, b) => a > b ? a : b);
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: maxValue / 4,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
-            strokeWidth: 1,
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-              getTitlesWidget: (value, meta) {
-                if (value.toInt() >= sortedDates.length) return const SizedBox.shrink();
-                final dateStr = sortedDates[value.toInt()];
-                final shortDate = dateStr.length > 5 ? dateStr.substring(5) : dateStr;
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(shortDate, style: const TextStyle(fontSize: 10)),
-                );
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                if (value == 0) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Text(
-                    _formatAmount(value),
-                    style: const TextStyle(fontSize: 9),
-                  ),
-                );
-              },
-            ),
-          ),
-          topTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          rightTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: (sortedDates.length - 1).toDouble(),
-        minY: 0,
-        maxY: maxValue * 1.1,
-        lineBarsData: [
-          LineChartBarData(
-            spots: List.generate(sortedDates.length, (index) {
-              return FlSpot(index.toDouble(), dataPoints[index]);
-            }),
-            isCurved: true,
-            gradient: LinearGradient(
-              colors: [AppTheme.primary.withOpacity(0.8), AppTheme.secondary],
-            ),
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 4,
-                  color: AppTheme.primary,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.primary.withOpacity(0.2),
-                  AppTheme.primary.withOpacity(0.0),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dépenses par catégorie',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
             ),
+            const Gap(16),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: _categoryStats.isEmpty
+                      ? 100
+                      : _categoryStats
+                          .map((e) => e['amount'] as num)
+                          .reduce((a, b) => a > b ? a : b)
+                          .toDouble() *
+                          1.2,
+                  barGroups: _categoryStats.take(5).map((cat) {
+                    return BarChartGroupData(
+                      x: _categoryStats.indexOf(cat),
+                      barRods: [
+                        BarChartRodData(
+                          toY: (cat['amount'] as num).toDouble(),
+                          color: AppTheme.primary,
+                          width: 16,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() >= _categoryStats.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final category = _categoryStats[value.toInt()];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              _shortenCategory(category['category'] ?? ''),
+                              style: const TextStyle(fontSize: 10),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                        reservedSize: 60,
+                      ),
+                    ),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                ),
+              ),
+            ),
+            const Gap(16),
+            ...(_categoryStats.take(5).map((cat) => _buildCategoryItem(cat))),
+            if (_categoryStats.length > 5)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Center(
+                  child: Text(
+                    '+ ${_categoryStats.length - 5} autres catégories',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn().slideY(begin: 0.1);
+  }
+
+  String _shortenCategory(String category) {
+    if (category.length <= 8) return category;
+    return '${category.substring(0, 6)}...';
+  }
+
+  Widget _buildCategoryItem(Map<String, dynamic> category) {
+    final amount = category['amount'] as num;
+    final percentage = category['percentage'] as num? ?? 0;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  category['category'] ?? '',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const Gap(4),
+                LinearProgressIndicator(
+                  value: percentage / 100,
+                  backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                  valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
+                  minHeight: 4,
+                ),
+              ],
+            ),
+          ),
+          const Gap(12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                AppTheme.formatCurrency(amount),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '${percentage.toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  String _formatAmount(dynamic value) => AppTheme.formatCurrency(value);
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final IconData icon;
-
-  const _StatItem({required this.label, required this.value, required this.color, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
+  Widget _buildTrendCard() {
+    final savings = (_stats?['monthly_income'] as num? ?? 0) - (_stats?['monthly_expense'] as num? ?? 0);
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Épargne du mois',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Gap(16),
+            Row(
+              children: [
+                Icon(
+                  savings >= 0 ? Icons.trending_up : Icons.trending_down,
+                  color: savings >= 0 ? AppTheme.primary : AppTheme.error,
+                  size: 32,
+                ),
+                const Gap(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppTheme.formatCurrency(savings.abs()),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: savings >= 0 ? AppTheme.primary : AppTheme.error,
+                        ),
+                      ),
+                      Text(
+                        savings >= 0 ? 'Épargne positive' : 'Dépassement',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const Gap(8),
-          Text(value, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: color), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
-          const Gap(2),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
+    ).animate().fadeIn().slideY(begin: 0.1);
   }
 }

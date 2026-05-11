@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lottie/lottie.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'home_screen.dart';
@@ -333,15 +334,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: step.color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(60),
+            if (step.title == 'Bienvenue sur FinanceWise')
+              Lottie.asset(
+                'assets/animations/welcome.json',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+              )
+            else
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: step.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(60),
+                ),
+                child: Icon(step.icon, size: 60, color: step.color),
               ),
-              child: Icon(step.icon, size: 60, color: step.color),
-            ),
             const SizedBox(height: 48),
             Text(
               step.title,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import '../services/sms_native_service.dart';
 import '../theme.dart';
@@ -10,15 +11,15 @@ import 'wallets_screen.dart';
 import 'budgets_screen.dart';
 import 'categories_screen.dart';
 import 'sms_parser_screen.dart';
-import 'notifications_screen.dart';
 import 'export_screen.dart';
-import 'statistics_screen.dart';
 import 'settings_screen.dart';
 import 'financial_goals_screen.dart';
 import 'payment_reminders_screen.dart';
-import 'recommendations_screen.dart';
 import 'profile_screen.dart';
 import 'alerts_screen.dart';
+import 'assistant_screen.dart';
+import 'recommendations_screen.dart';
+import 'statistics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -110,13 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   children: [
-                    _buildOptionTile(sheetCtx, Icons.bar_chart_rounded, AppTheme.primary, 'Statistiques', 'Graphiques et analyses', const StatisticsScreen()),
+                    _buildOptionTile(sheetCtx, Icons.auto_awesome_rounded, AppTheme.primary, 'Assistant IA', 'Pose tes questions financières', const AssistantScreen()),
+                    _buildOptionTile(sheetCtx, Icons.lightbulb_outline_rounded, AppTheme.tertiary, 'Recommandations', 'Conseils personnalisés', const RecommendationsScreen()),
+                    _buildOptionTile(sheetCtx, Icons.bar_chart_rounded, AppTheme.secondary, 'Statistiques', 'Analyse de tes finances', const StatisticsScreen()),
                     _buildOptionTile(sheetCtx, Icons.notifications_active_rounded, AppTheme.warning, 'Alertes', 'Alertes budget et revenus', const AlertsScreen()),
-                    _buildOptionTile(sheetCtx, Icons.lightbulb_rounded, AppTheme.tertiary, 'Recommandations', 'Conseils personnalisés', const RecommendationsScreen()),
                     _buildOptionTile(sheetCtx, Icons.alarm_rounded, AppTheme.error, 'Rappels', 'Ne manquez aucun paiement', const PaymentRemindersScreen()),
                     _buildOptionTile(sheetCtx, Icons.category_rounded, AppTheme.secondary, 'Catégories', 'Gérer vos catégories', const CategoriesScreen()),
                     _buildOptionTile(sheetCtx, Icons.pie_chart_rounded, AppTheme.primary, 'Budgets', 'Contrôlez vos dépenses', const BudgetsScreen()),
-                    _buildOptionTile(sheetCtx, Icons.notifications_outlined, AppTheme.warning, 'Notifications', 'Historique', const NotificationsScreen()),
                     _buildOptionTile(sheetCtx, Icons.file_download_outlined, AppTheme.tertiary, 'Exporter', 'Exporter vos données', const ExportScreen()),
                     _buildOptionTile(sheetCtx, Icons.sms_outlined, AppTheme.primary, 'Parser SMS', 'Détecter les transactions', const SmsParserScreen()),
                     _buildOptionTile(sheetCtx, Icons.settings_rounded, AppTheme.outline, 'Paramètres', 'Configuration de l\'app', const SettingsScreen()),
@@ -181,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).navigationBarTheme.backgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -189,41 +191,74 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _onItemTapped,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded),
-              label: 'Dashboard',
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: MediaQuery.of(context).textScaler.clamp(
+                minScaleFactor: 0.85,
+                maxScaleFactor: 0.92,
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.swap_horiz_outlined),
-              selectedIcon: Icon(Icons.swap_horiz_rounded),
-              label: 'Transactions',
+            child: NavigationBarTheme(
+              data: NavigationBarTheme.of(context).copyWith(
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  final isSelected = states.contains(WidgetState.selected);
+                  return GoogleFonts.poppins(
+                    fontSize: 9.2,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: -0.1,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                  );
+                }),
+                iconTheme: WidgetStateProperty.resolveWith((states) {
+                  final isSelected = states.contains(WidgetState.selected);
+                  return IconThemeData(
+                    size: 20,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                  );
+                }),
+              ),
+              child: NavigationBar(
+                height: 78,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onItemTapped,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.dashboard_outlined),
+                    selectedIcon: Icon(Icons.dashboard_rounded),
+                    label: 'Dashboard',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.swap_horiz_outlined),
+                    selectedIcon: Icon(Icons.swap_horiz_rounded),
+                    label: 'Transactions',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.account_balance_wallet_outlined),
+                    selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                    label: 'Wallets',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.flag_outlined),
+                    selectedIcon: Icon(Icons.flag_rounded),
+                    label: 'Objectifs',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline_rounded),
+                    selectedIcon: Icon(Icons.person_rounded),
+                    label: 'Profil',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.grid_view_outlined),
+                    selectedIcon: Icon(Icons.grid_view_rounded),
+                    label: 'Plus',
+                  ),
+                ],
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-              label: 'Wallets',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.flag_outlined),
-              selectedIcon: Icon(Icons.flag_rounded),
-              label: 'Objectifs',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profil',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.grid_view_outlined),
-              selectedIcon: Icon(Icons.grid_view_rounded),
-              label: 'Plus',
-            ),
-          ],
+          ),
         ),
       ),
     );

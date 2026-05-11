@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/sms_parser_service.dart';
 import '../services/api_service.dart';
+import '../services/ai_service.dart';
 import '../theme.dart';
 
 class SmsConfirmationDialog extends StatefulWidget {
@@ -22,10 +24,14 @@ class SmsConfirmationDialog extends StatefulWidget {
 
 class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
   final ApiService _api = ApiService();
+  final AiService _ai = AiService();
   List<dynamic> _categories = [];
   bool _loading = true;
   bool _submitting = false;
+  bool _aiSuggesting = false;
   String? _selectedCategoryId;
+  String? _aiSuggestedCategoryId;
+  String? _aiSuggestedCategoryName;
   int? _defaultWalletId;
   String? _errorMessage;
 
@@ -70,11 +76,42 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
             _selectedCategoryId = matchingCategory?['id']?.toString();
           }
         });
+        // Demander une suggestion IA en arrière-plan
+        _requestAiSuggestion();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<void> _requestAiSuggestion() async {
+    final desc = widget.transaction.originalSms ?? widget.transaction.description;
+    if (desc.isEmpty) return;
+
+    setState(() => _aiSuggesting = true);
+    final suggestion = await _ai.suggestCategory(
+      description: desc,
+      type: widget.transaction.type,
+    );
+    if (!mounted) return;
+
+    if (suggestion?.categoryId != null) {
+      final id = suggestion!.categoryId!.toString();
+      // Vérifier que la catégorie existe dans la liste chargée
+      final exists = _categories.any((c) => c['id']?.toString() == id);
+      setState(() {
+        _aiSuggesting = false;
+        if (exists) {
+          _aiSuggestedCategoryId = id;
+          _aiSuggestedCategoryName = suggestion.categoryName;
+          // Pré-sélectionner si rien de mieux
+          _selectedCategoryId ??= id;
+        }
+      });
+    } else {
+      setState(() => _aiSuggesting = false);
     }
   }
 
@@ -113,7 +150,9 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
             color: widget.transaction.type == 'income' ? AppTheme.primary : AppTheme.error,
           ),
           const SizedBox(width: 8),
-          const Text('Transaction détectée'),
+          Expanded(
+            child: const Text('Transaction détectée'),
+          ),
         ],
       ),
       content: _loading
@@ -158,9 +197,38 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Catégorie',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      const Text(
+                        'Catégorie',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      if (_aiSuggesting)
+                        const SizedBox(
+                          width: 12, height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        )
+                      else if (_aiSuggestedCategoryName != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.auto_awesome_rounded, size: 11, color: AppTheme.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'IA : $_aiSuggestedCategoryName',
+                                style: TextStyle(fontSize: 10.5, color: AppTheme.primary, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
@@ -258,7 +326,18 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
       data['wallet_id'] = _defaultWalletId;
       
       await _api.post('/transactions', data);
-      
+
+      // Apprentissage IA : si l'utilisateur a changé la catégorie suggérée, l'enregistrer
+      if (_aiSuggestedCategoryId != null &&
+          _selectedCategoryId != null &&
+          _aiSuggestedCategoryId != _selectedCategoryId) {
+        final desc = widget.transaction.originalSms ?? widget.transaction.description;
+        final catId = int.tryParse(_selectedCategoryId!);
+        if (catId != null && desc.isNotEmpty) {
+          unawaited(_ai.learnCorrection(description: desc, categoryId: catId));
+        }
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

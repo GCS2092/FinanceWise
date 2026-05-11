@@ -72,32 +72,51 @@ class SmsParserService
         $content = strtolower($content);
         $result = [];
 
+        // Détection du type - patterns plus larges
         if ($provider === 'wave') {
-            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert envoye') || str_contains($content, 'transfert envoyé')) {
+            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert envoye') || str_contains($content, 'transfert envoyé') || str_contains($content, 'achat') || str_contains($content, 'paye') || str_contains($content, 'payé') || str_contains($content, 'dépense') || str_contains($content, 'depense')) {
                 $result['type'] = 'expense';
-            } elseif (str_contains($content, 'depot') || str_contains($content, 'dépôt') || str_contains($content, 'transfert recu') || str_contains($content, 'transfert reçu') || str_contains($content, 'vous avez recu') || str_contains($content, 'vous avez reçu')) {
+            } elseif (str_contains($content, 'depot') || str_contains($content, 'dépôt') || str_contains($content, 'transfert recu') || str_contains($content, 'transfert reçu') || str_contains($content, 'vous avez recu') || str_contains($content, 'vous avez reçu') || str_contains($content, 'reception') || str_contains($content, 'crédité') || str_contains($content, 'credite')) {
                 $result['type'] = 'income';
             }
         } elseif ($provider === 'orange_money') {
-            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert effectue') || str_contains($content, 'transfert effectué')) {
+            if (str_contains($content, 'retrait') || str_contains($content, 'paiement') || str_contains($content, 'transfert effectue') || str_contains($content, 'transfert effectué') || str_contains($content, 'achat') || str_contains($content, 'paye') || str_contains($content, 'payé') || str_contains($content, 'dépense') || str_contains($content, 'depense')) {
                 $result['type'] = 'expense';
-            } elseif (str_contains($content, 'depot') || str_contains($content, 'dépôt') || str_contains($content, 'transfert recu') || str_contains($content, 'transfert reçu') || str_contains($content, 'vous avez recu') || str_contains($content, 'vous avez reçu')) {
+            } elseif (str_contains($content, 'depot') || str_contains($content, 'dépôt') || str_contains($content, 'transfert recu') || str_contains($content, 'transfert reçu') || str_contains($content, 'vous avez recu') || str_contains($content, 'vous avez reçu') || str_contains($content, 'reception') || str_contains($content, 'crédité') || str_contains($content, 'credite')) {
                 $result['type'] = 'income';
             }
         }
 
-        if (preg_match('/(\d{1,3}(?:\s?\d{3})*)\s*fcfa/i', $content, $matches)) {
-            $amount = str_replace(' ', '', $matches[1]);
+        // Détection du montant - patterns plus flexibles
+        // Format: "12 500 FCFA", "12500 FCFA", "12,500 FCFA", etc.
+        if (preg_match('/(\d{1,3}(?:[,\s]\d{3})*)\s*fcfa/i', $content, $matches)) {
+            $amount = str_replace([',', ' '], '', $matches[1]);
             $result['amount'] = (float) $amount;
         } elseif (preg_match('/(\d+(?:\.\d{1,2})?)\s*fcfa/i', $content, $matches)) {
             $result['amount'] = (float) $matches[1];
+        } elseif (preg_match('/(\d{1,3}(?:[,\s]\d{3})*)\s*f/i', $content, $matches)) {
+            $amount = str_replace([',', ' '], '', $matches[1]);
+            $result['amount'] = (float) $amount;
+        } elseif (preg_match('/(\d+(?:\.\d{1,2})?)\s*f/i', $content, $matches)) {
+            $result['amount'] = (float) $matches[1];
         }
 
+        // Détection de la date - patterns plus larges
         if (preg_match('/(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/', $content, $dateMatch)) {
             $result['date'] = \DateTime::createFromFormat('d/m/Y H:i', $dateMatch[1]) ?: now();
+        } elseif (preg_match('/(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2})/', $content, $dateMatch)) {
+            $result['date'] = \DateTime::createFromFormat('d-m-Y H:i', $dateMatch[1]) ?: now();
+        } elseif (preg_match('/(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2})/', $content, $dateMatch)) {
+            $result['date'] = \DateTime::createFromFormat('Y/m/d H:i', $dateMatch[1]) ?: now();
         }
 
         $result['description'] = 'Auto: ' . substr($content, 0, 100);
+
+        Log::info('SMS parsed', [
+            'provider' => $provider,
+            'content' => substr($content, 0, 200),
+            'result' => $result,
+        ]);
 
         return $result;
     }

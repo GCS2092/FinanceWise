@@ -17,7 +17,7 @@ class PaymentReminderObserver
             'user_id' => $paymentReminder->user_id,
             'type' => 'payment_reminder',
             'title' => 'Rappel de paiement créé',
-            'message' => "Rappel '{$paymentReminder->name}' de {$paymentReminder->amount} XOF créé pour le {$paymentReminder->due_date}",
+            'message' => "Rappel '{$paymentReminder->name}' de " . number_format($paymentReminder->amount, 0, ',', ' ') . " FCFA créé pour le {$paymentReminder->due_date}",
             'data' => ['reminder_id' => $paymentReminder->id],
             'is_read' => false,
         ]);

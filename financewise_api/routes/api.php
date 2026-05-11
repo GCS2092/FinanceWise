@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\GoalHistoryController;
@@ -30,16 +31,20 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/user/onboarding', [OnboardingController::class, 'store']);
     Route::get('/user/onboarding/status', [OnboardingController::class, 'checkStatus']);
 
-    Route::apiResource('/wallets', WalletController::class);
+    // Routes spécifiques avant la resource pour éviter les conflits de route binding
     Route::get('/wallets/default', [WalletController::class, 'getDefault']);
     Route::post('/wallets/{wallet}/set-default', [WalletController::class, 'setDefault']);
+    Route::apiResource('/wallets', WalletController::class);
     Route::apiResource('/categories', CategoryController::class);
     Route::apiResource('/transactions', TransactionController::class);
     Route::apiResource('/budgets', BudgetController::class);
-    Route::apiResource('/financial-goals', FinancialGoalController::class);
-    Route::get('/financial-goals/categories', [FinancialGoalController::class, 'categories']);
+    
+    // Routes spécifiques avant la resource pour éviter les conflits de route binding
+    Route::get('/financial-goals/category-list', [FinancialGoalController::class, 'categories'])->name('financial-goals.categories');
+    Route::get('/financial-goals/suggestions', [FinancialGoalController::class, 'suggestions'])->name('financial-goals.suggestions');
+    Route::apiResource('/financial-goals', FinancialGoalController::class)->except(['index']);
+    Route::get('/financial-goals', [FinancialGoalController::class, 'index'])->name('financial-goals.index');
     Route::post('/financial-goals/{financial_goal}/add-amount', [FinancialGoalController::class, 'addAmount']);
-    Route::get('/financial-goals/suggestions', [FinancialGoalController::class, 'suggestions']);
     Route::get('/financial-goals/{financial_goal}/monthly-savings', [FinancialGoalController::class, 'monthlySavingsRecommendation']);
     Route::get('/financial-goals/{financial_goal}/history', [GoalHistoryController::class, 'index']);
     Route::post('/goal-histories/{goal_history}/revert', [GoalHistoryController::class, 'revert']);
@@ -60,5 +65,25 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/sms/parse', [SmsParserController::class, 'store']);
         Route::post('/sms/batch', [SmsParserController::class, 'batch']);
         Route::get('/sms/parse/{parsedSms}', [SmsParserController::class, 'show']);
+    });
+
+    // IA - Assistant financier
+    Route::prefix('ai')->group(function () {
+        Route::get('/status', [AiController::class, 'status']);
+
+        // Chat (rate-limit dédié pour contrôler les coûts)
+        Route::middleware('throttle:ai')->group(function () {
+            Route::post('/chat', [AiController::class, 'chat']);
+            Route::post('/categorize', [AiController::class, 'categorize']);
+        });
+
+        Route::get('/conversations', [AiController::class, 'conversations']);
+        Route::get('/conversations/{id}', [AiController::class, 'conversationMessages']);
+        Route::delete('/conversations/{id}', [AiController::class, 'deleteConversation']);
+
+        Route::get('/insights/monthly', [AiController::class, 'monthlyInsight']);
+        Route::post('/insights/monthly/read', [AiController::class, 'markInsightRead']);
+
+        Route::post('/categorize/learn', [AiController::class, 'learnCorrection']);
     });
 });

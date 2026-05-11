@@ -1,13 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../services/offline_goal_service.dart';
 import '../theme.dart';
 import 'financial_goal_form_screen.dart';
-import 'goal_history_screen.dart';
-import 'goal_comparison_screen.dart';
+import 'statistics_screen.dart';
 
 class FinancialGoalsScreen extends StatefulWidget {
   const FinancialGoalsScreen({super.key});
@@ -56,7 +58,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
 
   Future<void> _loadCategories() async {
     try {
-      final result = await _api.get('/financial-goals/categories');
+      final result = await _api.get('/financial-goals/category-list');
       if (mounted && result is Map && result['data'] is List) {
         setState(() {
           _categories = result['data'];
@@ -436,7 +438,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => FinancialGoalFormScreen(financialGoal: Map<String, dynamic>.from(goal)))).then((_) => _load());
+                      context.push('/financial-goal-form', extra: Map<String, dynamic>.from(goal)).then((_) => _load());
                     },
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text('Modifier'),
@@ -699,7 +701,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => GoalComparisonScreen(goals: _goals)),
+                  MaterialPageRoute(builder: (_) => const StatisticsScreen()),
                 );
               },
               tooltip: 'Comparer les objectifs',
@@ -849,10 +851,11 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                   Center(
                                     child: FilledButton.icon(
                                       onPressed: () async {
-                                        final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialGoalFormScreen()));
-                                        if (result == true) {
-                                          _load();
-                                        }
+                                        context.push('/financial-goal-form').then((result) {
+                                          if (result == true) {
+                                            _load();
+                                          }
+                                        });
                                       },
                                       icon: const Icon(Icons.add),
                                       label: const Text('Créer un objectif'),
@@ -884,23 +887,19 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                       final icon = _goalIcon(name);
 
                                       return Padding(
-                                        padding: const EdgeInsets.only(bottom: 14),
+                                        padding: const EdgeInsets.only(bottom: 16),
                                         child: Dismissible(
                                           key: Key(goal['id'].toString()),
                                           direction: DismissDirection.endToStart,
                                           background: Container(
                                             alignment: Alignment.centerRight,
                                             padding: const EdgeInsets.only(right: 24),
-                                            margin: const EdgeInsets.only(bottom: 14),
+                                            margin: const EdgeInsets.only(bottom: 16),
                                             decoration: BoxDecoration(
                                               color: AppTheme.error,
-                                              borderRadius: BorderRadius.circular(14),
+                                              borderRadius: BorderRadius.circular(20),
                                             ),
-                                            child: Icon(
-                                              goal['category'] != null ? _getIconForCategory(goal['category']['icon']) : Icons.category,
-                                              color: Colors.white, 
-                                              size: 20
-                                            ),
+                                            child: const Icon(Icons.delete, color: Colors.white, size: 24),
                                           ),
                                           confirmDismiss: (_) async {
                                             final confirm = await showDialog<bool>(
@@ -919,90 +918,112 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                                           },
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius: BorderRadius.circular(18),
+                                              gradient: LinearGradient(
+                                                colors: [color, color.withValues(alpha: 0.8)],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              borderRadius: BorderRadius.circular(20),
                                               boxShadow: AppTheme.softShadow,
                                             ),
                                             child: InkWell(
-                                              borderRadius: BorderRadius.circular(18),
+                                              borderRadius: BorderRadius.circular(20),
                                               onTap: () => _showGoalDetail(goal),
                                               child: Padding(
-                                                padding: const EdgeInsets.all(16),
-                                                child: Row(
+                                                padding: const EdgeInsets.all(20),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
-                                                    // Progress circulaire gauche
-                                                    SizedBox(
-                                                      width: 56, height: 56,
-                                                      child: Stack(
-                                                        alignment: Alignment.center,
-                                                        children: [
-                                                          CircularProgressIndicator(
-                                                            value: (progress / 100).clamp(0, 1),
-                                                            strokeWidth: 6,
-                                                            backgroundColor: cs.surfaceContainerHighest,
-                                                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                                                          ),
-                                                          Text('${progress.toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 16),
-                                                    // Info centrale
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                          Row(
-                                                            children: [
-                                                              Icon(icon, size: 16, color: color),
-                                                              const SizedBox(width: 6),
-                                                              Text(
-                                                                name,
-                                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Container(
+                                                              padding: const EdgeInsets.all(10),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.white.withValues(alpha: 0.2),
+                                                                borderRadius: BorderRadius.circular(12),
                                                               ),
-                                                            ],
-                                                          ),
-                                                          const SizedBox(height: 6),
-                                                          Wrap(
-                                                            spacing: 8,
-                                                            crossAxisAlignment: WrapCrossAlignment.center,
-                                                            children: [
-                                                              Text(
-                                                                'Épargné: ${_formatAmount(currentAmount)}',
-                                                                style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w700, fontSize: 14),
-                                                              ),
-                                                              Text(
-                                                                'Reste: ${_formatAmount(remaining > 0 ? remaining : 0)}',
-                                                                style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 12),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          const SizedBox(height: 4),
-                                                          Text(
-                                                            'Objectif: ${_formatAmount(targetAmount)}',
-                                                            style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 11),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    // Bouton d'action
-                                                    Material(
-                                                      color: Colors.transparent,
-                                                      child: InkWell(
-                                                        onTap: () => _showAddAmountDialog(goal),
-                                                        borderRadius: BorderRadius.circular(12),
-                                                        child: Container(
-                                                          padding: const EdgeInsets.all(10),
+                                                              child: Icon(icon, color: Colors.white, size: 22),
+                                                            ),
+                                                            const SizedBox(width: 12),
+                                                            Text(
+                                                              name,
+                                                              style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                                           decoration: BoxDecoration(
-                                                            color: cs.primaryContainer,
+                                                            color: Colors.white.withValues(alpha: 0.2),
                                                             borderRadius: BorderRadius.circular(12),
                                                           ),
-                                                          child: Icon(Icons.add, size: 20, color: cs.primary),
+                                                          child: Text(
+                                                            '${progress.toStringAsFixed(0)}%',
+                                                            style: GoogleFonts.poppins(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                                          ),
                                                         ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    Text(
+                                                      _formatAmount(currentAmount),
+                                                      style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'sur ${_formatAmount(targetAmount)} cible',
+                                                      style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    ClipRRect(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      child: LinearProgressIndicator(
+                                                        value: (progress / 100).clamp(0, 1),
+                                                        backgroundColor: Colors.white.withValues(alpha: 0.3),
+                                                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                                        minHeight: 6,
                                                       ),
                                                     ),
-                                                    Icon(Icons.chevron_right, color: cs.outlineVariant, size: 18),
+                                                    const SizedBox(height: 12),
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: Text(
+                                                            'Reste: ${_formatAmount(remaining > 0 ? remaining : 0)}',
+                                                            style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Material(
+                                                          color: Colors.transparent,
+                                                          child: InkWell(
+                                                            onTap: () => _showAddAmountDialog(goal),
+                                                            borderRadius: BorderRadius.circular(12),
+                                                            child: Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.white.withValues(alpha: 0.2),
+                                                                borderRadius: BorderRadius.circular(12),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                children: [
+                                                                  const Icon(Icons.add, color: Colors.white, size: 18),
+                                                                  const SizedBox(width: 4),
+                                                                  Text(
+                                                                    'Ajouter',
+                                                                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ],
                                                 ),
                                               ),
@@ -1019,12 +1040,12 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           print('Ouverture formulaire création objectif');
-          final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialGoalFormScreen()));
-          print('Résultat formulaire: $result');
-          if (result == true) {
-            print('Rechargement liste objectifs');
-            _load();
-          }
+          context.push('/financial-goal-form').then((result) {
+            print('Résultat formulaire: $result');
+            if (result == true) {
+              _load();
+            }
+          });
         },
         icon: const Icon(Icons.add),
         label: const Text('Objectif'),

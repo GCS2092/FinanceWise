@@ -1,108 +1,1047 @@
-📱💰 FinanceWise
+Je vais explorer la structure du projet pour comprendre le backend et le frontend, puis te donner une description complète.
 
-👉 Application de gestion budgétaire intelligente (Sénégal)
+Je vais explorer les deux parties du projet pour comprendre l'application.
 
-🎯 Vision de FinanceWise
 
-FinanceWise est une application mobile ultra simple qui aide les utilisateurs à comprendre et contrôler leur argent sans effort, adaptée au contexte sénégalais (FCFA, Wave, Orange Money, revenus irréguliers).
 
-👉 Objectif :
 
-“Ouvrir l’app → voir où va ton argent en 3 secondes”
 
-⚡ Fonctionnalités clés de FinanceWise
-🟢 1. Dashboard principal (cœur de l’app)
 
-Flutter
 
-C’est l’écran unique principal :
 
-💰 Solde actuel
-📉 Dépenses du mois
-💸 Revenus du mois
-📊 Top catégories de dépenses
-⚠️ alertes budget dépassé
 
-👉 Aucun menu complexe
-👉 Tout est visible immédiatement
 
-🧠 2. Détection automatique des dépenses (zéro effort)
-Lecture des SMS Wave / Orange Money
-Analyse des notifications
-Ajout automatique des transactions
 
-👉 L’utilisateur ne saisit presque rien
+# FinanceWise - Description Complète de l'Application
 
-🏷️ 3. Catégorisation intelligente
+FinanceWise est une **application mobile de gestion budgétaire intelligente** conçue spécifiquement pour le marché sénégalais, avec une architecture client-serveur moderne.
 
-Les dépenses sont automatiquement classées :
+---
 
-🍲 Nourriture (street food, restaurants)
-🚖 Transport (car rapide, taxi, Yango)
-📶 Internet / data mobile
-💰 Mobile money / transferts
-🎁 dépenses personnelles
-🏫 école / université
-📊 4. Gestion de budget simple
-budget mensuel par catégorie
-suivi automatique
-barres de progression
-alertes si dépassement
-📥 5. Ajout manuel minimal
-bouton “Ajouter une dépense”
-2 champs max :
-montant
-catégorie
+## 🎯 Vision et Objectif
 
-👉 rapide et optionnel
+**FinanceWise** aide les utilisateurs à comprendre et contrôler leur argent sans effort, adaptée au contexte sénégalais (FCFA, Wave, Orange Money, revenus irréguliers).
 
-🔔 6. Notifications intelligentes
-budget dépassé
-dépenses anormales
-résumé hebdomadaire
-alertes économies possibles
-☁️ 7. Synchronisation backend
+**Objectif principal :** "Ouvrir l'app → voir où va ton argent en 3 secondes"
 
-Laravel
+---
 
-stockage sécurisé
-calcul automatique des budgets
-traitement des SMS
-génération des statistiques
-🔒 8. Sécurité et confidentialité
-données chiffrées
-authentification sécurisée (token)
-option mode offline
-aucune dépendance externe visible pour l’utilisateur
-📱 Expérience utilisateur (UX de FinanceWise)
+## 🏗️ Architecture Technique
 
-👉 L’utilisateur fait seulement 3 actions :
+### Backend (API REST Laravel)
+- **Framework :** Laravel 12 (PHP 8.2)
+- **Base de données :** SQLite (par défaut)
+- **Authentification :** Laravel Sanctum (tokens API stateless)
+- **Pattern :** MVC amélioré avec couche Service pour la logique métier
+- **Tests :** PHPUnit 11.5 avec couverture de code
 
-Installer FinanceWise 📲
-Se connecter 🔐
-Consulter son argent 💰
+**Rôles principaux du backend :**
+- Gestion des utilisateurs (inscription/connexion/token)
+- Gestion des portefeuilles, catégories, transactions et budgets
+- Parsing automatique des SMS Wave & Orange Money
+- Calcul automatique des budgets et statistiques
+- Génération du dashboard agrégé
 
-👉 Tout le reste est automatique.
+### Frontend (Application Mobile Flutter)
+- **Framework :** Flutter (SDK 3.11.3+)
+- **Navigation :** go_router (routing déclaratif)
+- **State Management :** Provider
+- **Stockage local :** SharedPreferences
+- **Graphiques :** fl_chart
+- **Notifications :** flutter_local_notifications
+- **Auth biométrique :** local_auth
+- **Gestion SMS :** permission_handler + sms_listener
 
-🚀 Valeur unique de FinanceWise
+**Dépendances clés :**
+- UI : google_fonts, flutter_animate, shimmer, flutter_staggered_grid_view, lottie
+- Réseau : http, connectivity_plus, network_info_plus
+- Offline : shared_preferences, offline_queue_service
 
-✔️ Ultra simple
-✔️ Automatique (zéro saisie)
-✔️ Adaptée Sénégal (FCFA + mobile money)
-✔️ Compréhension financière instantanée
-✔️ Compatible revenus irréguliers
+---
 
-🧠 Résumé en une phrase
+## 📱 Fonctionnalités Principales
 
-FinanceWise est une application qui transforme automatiquement les transactions Wave et Orange Money en un tableau de bord simple permettant de comprendre et contrôler son argent sans effort.
-💡 Positionnement produit
+### 1. Dashboard Principal (Cœur de l'application)
+- **Solde total** de tous les portefeuilles
+- **Revenus du mois** en cours
+- **Dépenses du mois** en cours
+- **Alertes budget** (dépassement, avertissements)
+- **Objectif de revenu** avec barre de progression
+- **Actions rapides** : Ajouter transaction, Importer SMS
+- **Section "Voir tout"** pour accéder aux fonctionnalités secondaires
 
-FinanceWise n’est pas :
-❌ une app compliquée de finance
-❌ un tableur déguisé
-❌ une app bancaire
+### 2. Détection Automatique des Transactions (Zéro Effort)
+- **Lecture des SMS** Wave / Orange Money
+- **Analyse des notifications** bancaires
+- **Ajout automatique** des transactions parsées
+- **Catégorisation intelligente** par mots-clés
+- L'utilisateur ne saisit presque rien
 
-👉 C’est :
-✔️ un assistant financier automatique
-✔️ simple comme Wave
-✔️ intelligent en arrière-plan
+### 3. Gestion des Portefeuilles (Wallets)
+- Création de multiples portefeuilles (Wave, Orange Money, Banque, Espèces)
+- Wallet "Principal" créé automatiquement à l'inscription
+- Suivi des soldes par portefeuille
+
+### 4. Catégorisation Intelligente
+**Catégories système :**
+- Nourriture (street food, restaurants)
+- Transport (car rapide, taxi, Yango)
+- Internet / Data mobile
+- Mobile Money / Transferts
+- Dépenses personnelles
+- École / Université
+- Santé
+
+**Catégories personnalisées** possibles par utilisateur
+
+### 5. Gestion de Budget
+- Budget mensuel par catégorie
+- Suivi automatique des dépenses
+- Barres de progression visuelles
+- Alertes si dépassement (>80% avertissement, >100% danger)
+- Calcul automatique du reste à dépenser
+
+### 6. Transactions
+- CRUD complet des transactions
+- Types : income (revenu), expense (dépense), transfer
+- Filtres : par type, catégorie, plage de dates
+- Source : manual, sms_wave, sms_orange_money
+- Pagination (20 items/page)
+
+### 7. Objectifs Financiers
+- Définition d'objectifs d'épargne
+- Suivi de progression
+- Comparaison entre objectifs
+- Historique des objectifs
+
+### 8. Rappels de Paiement
+- Création de rappels pour factures récurrentes
+- Notifications automatiques
+- Gestion des échéances
+
+### 9. Mode Offline (Fonctionnalité Critique)
+- **Cache des données** : transactions, dashboard, budgets
+- **Queue de synchronisation** : requêtes POST/PUT/DELETE stockées
+- **Sync silencieuse** : reprise automatique à la reconnexion
+- **Fonctionnement complet** : consultation, ajout de transactions
+
+### 10. Sécurité
+- **Chiffrement AES-256** des données sensibles
+- **Authentification biométrique** (empreinte, visage)
+- **Tokens API** avec Sanctum
+- **Session expiry** configurable
+- **Aucun secret** en dur dans le code
+
+---
+
+## 🔄 Flux de Données
+
+### Flux Typique : Création de Transaction
+```
+App Mobile → ApiService → Requête HTTP
+    ↓
+Backend Laravel → Route api.php
+    ↓
+Middleware auth:sanctum → Vérification token
+    ↓
+Form Request → Validation
+    ↓
+Controller → TransactionController@store
+    ↓
+Service → TransactionService::create()
+    ↓
+Transaction DB :
+  - Crée la transaction
+  - Met à jour le solde du wallet
+  - Met à jour le spent du budget
+    ↓
+Resource → TransactionResource (formatage JSON)
+    ↓
+Réponse HTTP 201 → App Mobile
+```
+
+### Flux SMS Parsing
+```
+App Mobile → Réception SMS
+    ↓
+SmsListenerService → Détection SMS Wave/Orange Money
+    ↓
+SmsParserService → Extraction (montant, type, date)
+    ↓
+Catégorisation → Mots-clés automatiques
+    ↓
+ApiService → POST /api/sms/parse
+    ↓
+Backend → SmsParserService
+    ↓
+TransactionService → Création transaction automatique
+    ↓
+Dashboard → Mise à jour automatique
+```
+
+---
+
+## 🎨 Interface Utilisateur
+
+### Standards UX (Mémoire Produit)
+- **Devise :** Format "12 500 FCFA" (jamais "XOF 12500")
+- **Langue :** Français, ton direct/chaleureux
+- **Cible :** Android mid-range (4GB RAM, 5.5" screen), 3G
+- **Navigation :** Pas de hamburger menu - tout en 2 taps max
+- **Dashboard :** 1 info primaire, 2-3 secondaires, reste derrière "Voir tout"
+- **Listes :** Infinite scroll (20 items), skeleton loaders
+- **Filtres :** Search bar visible, filtres avancés en bottom sheet
+- **Feedback :** <100ms, messages d'erreur en français
+
+### Écrans Principaux
+- **Splash Screen** : Animation Lottie + chargement
+- **Welcome/Login/Register** : Authentification
+- **Onboarding** : Première découverte de l'app
+- **Dashboard** : Vue d'ensemble financière
+- **Transactions** : Liste avec filtres
+- **Budgets** : Gestion et suivi
+- **Wallets** : Gestion des comptes
+- **Objectifs** : Suivi des objectifs financiers
+- **Rappels** : Gestion des échéances
+- **Profile/Settings** : Configuration utilisateur
+
+---
+
+## 🔌 Endpoints API Principaux
+
+| Méthode | Endpoint | Auth | Description |
+|---------|----------|------|-------------|
+| POST | `/api/register` | Non | Crée utilisateur + wallet Principal |
+| POST | `/api/login` | Non | Retourne token |
+| POST | `/api/logout` | Oui | Révoque tous les tokens |
+| GET | `/api/user` | Oui | Infos utilisateur |
+| GET | `/api/dashboard` | Oui | Résumé complet |
+| GET/POST/PUT/DELETE | `/api/wallets` | Oui | CRUD wallets |
+| GET/POST/PUT/DELETE | `/api/categories` | Oui | CRUD catégories |
+| GET/POST/PUT/DELETE | `/api/transactions` | Oui | CRUD transactions |
+| GET/POST/PUT/DELETE | `/api/budgets` | Oui | CRUD budgets |
+| POST | `/api/sms/parse` | Oui | Parsing SMS |
+
+---
+
+## 💡 Points Forts Uniques
+
+1. **Ultra simple** : 3 actions seulement (installer, connecter, consulter)
+2. **Automatique** : Zéro saisie grâce au parsing SMS
+3. **Adaptée Sénégal** : FCFA + mobile money (Wave, Orange Money)
+4. **Compréhension instantanée** : Dashboard en 3 secondes
+5. **Compatible revenus irréguliers** : Pas d' hypothèses de revenus fixes
+6. **Mode offline robuste** : Fonctionne sans connexion
+7. **Sécurité native** : Biométrie + chiffrement
+
+---
+
+## 📊 Modèle de Données
+
+```
+User
+ ├── hasMany Wallet
+ ├── hasMany Transaction
+ ├── hasMany Budget
+ ├── hasMany Category
+ └── hasMany ParsedSms
+
+Wallet → belongsTo User
+       → hasMany Transaction
+
+Category → belongsTo User (nullable)
+         → hasMany Transaction
+         → hasMany Budget
+
+Transaction → belongsTo User
+            → belongsTo Wallet
+            → belongsTo Category
+            → hasOne ParsedSms
+
+Budget → belongsTo User
+       → belongsTo Category
+```
+
+---
+# Présentation Complète du Backend FinanceWise
+
+## 1. Architecture Globale
+
+Le backend FinanceWise est une **API REST Laravel 12** (PHP 8.2) suivant un pattern **MVC amélioré avec couche Service**.
+
+```
+Requête HTTP
+    ↓
+Routes (api.php) + Middleware (auth:sanctum, throttle)
+    ↓
+Form Request Validation (app/Http/Requests)
+    ↓
+Controller (app/Http/Controllers/Api)
+    ↓
+Service (app/Services) ← Logique métier complexe
+    ↓
+Model Eloquent (app/Models)
+    ↓
+Resource (app/Http/Resources) ← Formatage JSON
+    ↓
+Réponse HTTP
+```
+
+**Pourquoi cette architecture ?**
+- **Controllers légers** : Délèguent la logique aux services
+- **Services isolés** : Logique métier testable unitairement
+- **Form Requests** : Validation centralisée et réutilisable
+- **Resources** : Formatage JSON cohérent, indépendant du modèle
+
+---
+
+## 2. Stack Technique
+
+- **Framework :** Laravel 12 (PHP 8.2)
+- **Base de données :** SQLite (par défaut) - facilement migrable vers PostgreSQL/MySQL
+- **Authentification :** Laravel Sanctum (tokens API stateless)
+- **ORM :** Eloquent
+- **Cache :** Laravel Cache (dashboard, categories, wallets)
+- **Queue :** Laravel Queue (Jobs asynchrones)
+- **Tests :** PHPUnit 11.5
+
+---
+
+## 3. Modèle de Données
+
+### Relations entre entités
+
+```
+User
+ ├── hasMany Wallet
+ ├── hasMany Transaction
+ ├── hasMany Budget
+ ├── hasMany Category (personnalisées)
+ ├── hasMany FinancialGoal
+ ├── hasMany ParsedSms
+ ├── hasMany PaymentReminder
+ └── hasMany Alert
+
+Wallet → belongsTo User
+       → hasMany Transaction
+
+Category → belongsTo User (nullable, système si null)
+         → hasMany Transaction
+         → hasMany Budget
+
+Transaction → belongsTo User
+            → belongsTo Wallet
+            → belongsTo Category
+            → hasOne ParsedSms
+
+Budget → belongsTo User
+       → belongsTo Category
+
+FinancialGoal → belongsTo User
+              → belongsTo Category
+              → hasMany GoalHistory
+              → hasMany GoalReminder
+```
+
+### Modèles principaux
+
+**User.php** : Utilisateur avec `HasApiTokens` (Sanctum), `monthly_income_target`, `onboarding_completed`. Hash automatique du password.
+
+**Wallet.php** : Portefeuilles avec `balance` (decimal:2), `type` (cash/mobile_money/bank), `is_default`. Wallet "Principal" créé automatiquement à l'inscription.
+
+**Transaction.php** : Transactions avec `type` (income/expense/transfer), `amount`, `source` (manual/sms_wave/sms_orange_money/api), `status` (pending/completed/cancelled).
+
+**Category.php** : Catégories avec `is_system` (booléen), `type` (income/expense). 27 catégories système pré-seeded (spécifiques Sénégal : Wave, Orange Money, Free Money, Wari, Proximo, Jumia, Sénélec, SDE, etc.).
+
+**Budget.php** : Budgets avec `amount`, `spent`, `period`, `start_date`, `end_date`. Accessors calculés : `remaining` (amount - spent), `percentage` (spent/amount * 100).
+
+**FinancialGoal.php** : Objectifs avec `target_amount`, `current_amount`, `target_date`, `status` (pending/in_progress/completed). Accessors : `progress`, `remaining_amount`, `days_remaining`, `is_overdue`, `is_near_deadline`.
+
+**ParsedSms.php** : SMS bruts avec `provider` (wave/orange_money), `raw_content`, `parsed_amount`, `parsed_type`, `status` (pending/processed/failed/ignored), `transaction_id` (nullable).
+
+**Alert.php** : Alertes utilisateurs avec `type`, `title`, `message`, `data` (JSON), `is_read`.
+
+---
+
+## 4. Services - Cœur de la Logique Métier
+
+### TransactionService.php - Cœur Financier
+
+Ce service gère toutes les opérations transactionnelles de manière **atomique** :
+
+```php
+public function create(array $data, int $userId): Transaction
+{
+    return DB::transaction(function () use ($data, $userId) {
+        // 1. Crée la transaction
+        $transaction = Transaction::create($data);
+        
+        // 2. Met à jour le solde du wallet (lockForUpdate)
+        $this->updateWalletBalance($transaction);
+        
+        // 3. Met à jour le spent du budget
+        $this->updateBudgetSpent($transaction);
+        
+        // 4. Invalide le cache
+        $this->invalidateCache($userId);
+        
+        // 5. Déclenche les alertes budget (Job asynchrone)
+        BudgetAlertJob::dispatch($transaction->id);
+        
+        return $transaction;
+    });
+}
+```
+
+**Points clés :**
+- **Transaction DB** : Garantit l'intégrité (tout ou rien)
+- **LockForUpdate** : Évite les race conditions sur les soldes (important pour PostgreSQL)
+- **Réversion automatique** : En cas d'update, l'ancien solde est restauré avant d'appliquer le nouveau
+- **Cache invalidation** : Dashboard recalculé uniquement quand nécessaire
+- **Job asynchrone** : Alertes budget non bloquantes
+
+### SmsParserService.php - Parsing Intelligent
+
+Transforme les SMS Wave/Orange Money en transactions automatiques :
+
+```php
+protected function extractData(string $content, string $provider): array
+{
+    // Détection du type par mots-clés
+    if (str_contains($content, 'retrait') || str_contains($content, 'paiement')) {
+        $result['type'] = 'expense';
+    } elseif (str_contains($content, 'depot') || str_contains($content, 'transfert recu')) {
+        $result['type'] = 'income';
+    }
+    
+    // Extraction du montant avec regex
+    if (preg_match('/(\d{1,3}(?:\s?\d{3})*)\s*fcfa/i', $content, $matches)) {
+        $amount = str_replace(' ', '', $matches[1]);
+        $result['amount'] = (float) $amount;
+    }
+    
+    // Extraction de la date
+    if (preg_match('/(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/', $content, $dateMatch)) {
+        $result['date'] = DateTime::createFromFormat('d/m/Y H:i', $dateMatch[1]);
+    }
+    
+    return $result;
+}
+```
+
+**Catégorisation automatique par mapping de mots-clés :**
+```php
+$mapping = [
+    'nourriture' => ['nourriture', 'food', 'restaurant', 'alimentation'],
+    'transport' => ['transport', 'taxi', 'yango', 'car rapide'],
+    'internet / data' => ['internet', 'data', 'pass'],
+    'mobile money' => ['transfert', 'wave', 'orange money', 'depot'],
+    'école / université' => ['ecole', 'universite', 'scolarite'],
+    'santé' => ['sante', 'hopital', 'pharmacie'],
+];
+```
+
+### GoalReminderService.php - Rappels Intelligents
+
+Programme des rappels pour les objectifs financiers :
+
+**Rappels de deadline :**
+- 7 jours avant : "Votre objectif arrive à échéance dans 7 jours"
+- 3 jours avant : "Votre objectif arrive à échéance dans 3 jours"
+- Jour J : "C'est le jour J pour votre objectif !"
+- En retard : "Votre objectif est en retard de X jours"
+
+**Rappels réguliers :**
+- Hebdomadaires, bi-hebdomadaires, mensuels
+- "N'oubliez pas d'ajouter à votre objectif ! Il vous reste X FCFA"
+
+**Rappels de review général :**
+- Mensuels ou bi-hebdomadaires
+- "C'est le moment de faire le point sur vos objectifs financiers ! Progression globale : X%"
+
+### RecommendationService.php - Recommandations Contextuelles
+
+Analyse les données utilisateur pour générer des recommandations :
+
+```php
+public function generateRecommendations($userId)
+{
+    // 1. Analyser les dépenses par catégorie
+    $categorySpending = $this->getCategorySpending($userId);
+    $recommendations = array_merge($recommendations, $this->analyzeCategorySpending($categorySpending));
+    
+    // 2. Analyser les tendances mensuelles
+    $monthlyTrends = $this->getMonthlyTrends($userId);
+    $recommendations = array_merge($recommendations, $this->analyzeMonthlyTrends($monthlyTrends));
+    
+    // 3. Détecter les anomalies
+    $anomalies = $this->detectAnomalies($userId);
+    $recommendations = array_merge($recommendations, $this->analyzeAnomalies($anomalies));
+    
+    // 4. Recommandations d'économie
+    $recommendations = array_merge($recommendations, $this->generateSavingsRecommendations($userId));
+    
+    return array_unique($recommendations);
+}
+```
+
+**Types de recommandations :**
+- Warning : Catégorie >30% du total des dépenses
+- Alert : Catégorie >100 000 XOF
+- Info : Transaction importante détectée
+- Suggestion : "Tu vas souvent au restaurant. Cuisiner à la maison pourrait t'économiser."
+
+---
+
+## 5. Contrôleurs API - Points d'Entrée
+
+### AuthController.php
+- `register` : Crée utilisateur + wallet Principal automatiquement, retourne token Sanctum
+- `login` : Vérifie identifiants, retourne token
+- `logout` : Révoque tous les tokens
+- `me` : Retourne utilisateur connecté
+
+### DashboardController.php
+Point unique `/dashboard` qui agrège tout avec **cache 5 minutes** :
+
+```php
+protected function buildDashboard($user): array
+{
+    // Une seule requête pour revenus + dépenses du mois
+    $monthlyTotals = $user->transactions()
+        ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+        ->selectRaw("
+            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
+        ")
+        ->first();
+    
+    // Solde total des wallets
+    $balance = $user->wallets()->sum('balance');
+    
+    // Top 5 catégories de dépenses
+    $topCategories = $user->transactions()
+        ->where('type', 'expense')
+        ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+        ->selectRaw('category_id, SUM(amount) as total')
+        ->groupBy('category_id')
+        ->orderByDesc('total')
+        ->limit(5)
+        ->with('category')
+        ->get();
+    
+    // Budgets actifs avec alertes
+    $budgets = Budget::where('user_id', $user->id)
+        ->where('is_active', true)
+        ->where('start_date', '<=', $now)
+        ->where('end_date', '>=', $now)
+        ->with('category')
+        ->get();
+    
+    // Génération des alertes
+    $alerts = [];
+    foreach ($budgets as $budget) {
+        if ($budget->percentage >= 100) {
+            $alerts[] = ['type' => 'danger', 'message' => "Budget {$budget->category->name} dépassé"];
+        } elseif ($budget->percentage >= 80) {
+            $alerts[] = ['type' => 'warning', 'message' => "Budget {$budget->category->name} à {$budget->percentage}%"];
+        }
+    }
+    
+    return [
+        'balance' => $balance,
+        'monthly_income' => $totalIncome,
+        'monthly_expense' => $totalExpense,
+        'top_categories' => $topCategories,
+        'recent_transactions' => TransactionResource::collection($recentTransactions),
+        'budgets' => BudgetResource::collection($budgets),
+        'alerts' => $alerts,
+    ];
+}
+```
+
+### TransactionController.php
+CRUD complet avec **filtres avancés** :
+- `type` : income/expense/transfer
+- `category_id` : Filtrer par catégorie
+- [category](cci:1://file:///c:/FinanceWise/financewise_api/app/Models/Budget.php:38:4-41:5) : Recherche par nom de catégorie
+- `start_date` / `end_date` : Plage de dates
+- `min_amount` / `max_amount` : Plage de montants
+- Pagination : `cursorPaginate(20)`
+
+### FinancialGoalController.php
+Gestion complète des objectifs financiers :
+
+- [store](cci:1://file:///c:/FinanceWise/financewise_api/app/Http/Controllers/Api/BudgetController.php:30:4-42:5) : Crée objectif + programme rappels deadline + rappels réguliers
+- [addAmount](cci:1://file:///c:/FinanceWise/financewise_api/app/Http/Controllers/Api/FinancialGoalController.php:159:4-213:5) : Ajoute montant + crée entrée historique + met à jour statut automatiquement
+- [revertHistory](cci:1://file:///c:/FinanceWise/financewise_api/app/Http/Controllers/Api/FinancialGoalController.php:226:4-271:5) : Annule un ajout (réversible) + crée entrée d'ajustement
+- [monthlySavingsRecommendation](cci:1://file:///c:/FinanceWise/financewise_api/app/Http/Controllers/Api/FinancialGoalController.php:337:4-386:5) : Calcule l'épargne mensuelle recommandée pour atteindre l'objectif
+
+### OnboardingController.php
+Configuration initiale en **une seule requête** :
+
+```php
+public function store(Request $request): JsonResponse
+{
+    // Sauvegarde revenu mensuel cible
+    $user->update([
+        'monthly_income_target' => $validated['monthly_income_target'] ?? 0,
+        'onboarding_completed' => true,
+    ]);
+    
+    // Crée les wallets par défaut
+    foreach ($validated['wallets'] as $walletData) {
+        Wallet::create([...]);
+    }
+    
+    // Crée les budgets
+    foreach ($validated['budgets'] as $budgetData) {
+        Budget::create([...]);
+    }
+    
+    // Crée les objectifs financiers
+    foreach ($validated['goals'] as $goalData) {
+        FinancialGoal::create([...]);
+    }
+}
+```
+
+---
+
+## 6. Jobs Asynchrones - Traitement en Arrière-plan
+
+### BudgetAlertJob.php
+Déclenché après chaque création de transaction dépense :
+
+```php
+public function handle(): void
+{
+    $transaction = Transaction::find($this->transactionId);
+    
+    $budget = Budget::where('category_id', $transaction->category_id)
+        ->where('user_id', $transaction->user_id)
+        ->where('is_active', true)
+        ->where('start_date', '<=', $transaction->transaction_date)
+        ->where('end_date', '>=', $transaction->transaction_date)
+        ->first();
+    
+    $percentage = $budget->percentage;
+    
+    if ($percentage >= 100) {
+        $this->createAlert($userId, 'danger', "Budget dépassé", "Votre budget est à {$percentage}%");
+    } elseif ($percentage >= 80) {
+        $this->createAlert($userId, 'warning', "Budget bientôt épuisé", "Votre budget est à {$percentage}%");
+    }
+}
+```
+
+**Configuration :**
+- `tries = 2` : 2 tentatives max
+- `timeout = 15` : 15 secondes max
+- Log des erreurs en cas d'échec
+
+### ParseSmsJob.php
+Parsing SMS en queue pour ne pas bloquer la réponse HTTP :
+
+```php
+public function handle(SmsParserService $service): void
+{
+    $sms = ParsedSms::find($this->smsId);
+    
+    try {
+        $service->processExistingSms($sms, $this->data, $this->userId);
+    } catch (\Exception $e) {
+        Log::error('ParseSmsJob failed', [...]);
+        throw $e;
+    }
+}
+```
+
+**Configuration :**
+- `tries = 3` : 3 tentatives max
+- `timeout = 30` : 30 secondes max
+- Mise à jour du statut SMS en cas d'échec permanent
+
+---
+
+## 7. Routes et API
+
+### Structure (routes/api.php)
+
+```php
+// Routes publiques avec throttle spécifique
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+// Routes protégées (auth:sanctum + throttle:api)
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    Route::get('/user', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    
+    // Onboarding
+    Route::post('/user/onboarding', [OnboardingController::class, 'store']);
+    Route::get('/user/onboarding/status', [OnboardingController::class, 'checkStatus']);
+    
+    // CRUD standard
+    Route::apiResource('/wallets', WalletController::class);
+    Route::apiResource('/categories', CategoryController::class);
+    Route::apiResource('/transactions', TransactionController::class);
+    Route::apiResource('/budgets', BudgetController::class);
+    Route::apiResource('/financial-goals', FinancialGoalController::class);
+    Route::apiResource('/payment-reminders', PaymentReminderController::class);
+    Route::apiResource('/alerts', AlertController::class)->only(['index']);
+    
+    // Endpoints spéciaux
+    Route::post('/sms/parse', [SmsParserController::class, 'store'])->middleware('throttle:sms');
+    Route::post('/sms/batch', [SmsParserController::class, 'batch'])->middleware('throttle:sms');
+    Route::get('/recommendations', [RecommendationController::class, 'index']);
+});
+```
+
+### Rate Limiting
+- `register` : 5 requêtes/minute
+- `login` : 5 requêtes/minute
+- `api` : 60 requêtes/minute par utilisateur
+- `sms` : 30 requêtes/minute par utilisateur
+
+---
+
+## 8. Sécurité
+
+### Mécanismes de sécurité
+
+| Mécanisme | Implémentation |
+|-----------|----------------|
+| **Authentification** | Laravel Sanctum (tokens API stateless) |
+| **Autorisation** | Vérification manuelle `abort_if($model->user_id !== auth()->id(), 403)` |
+| **Validation** | FormRequest avec règles custom (ownership) |
+| **Protection données** | `$hidden = ['password', 'remember_token']` dans User.php |
+| **Hash mot de passe** | `bcrypt` via cast `password => hashed` |
+| **Rate Limiting** | Throttle par endpoint |
+| **Transactions DB** | Garantit l'intégrité des données financières |
+| **LockForUpdate** | Évite les race conditions sur les soldes |
+| **CORS** | Configuré dans config/cors.php |
+
+### Validation Ownership
+
+Exemple dans StoreTransactionRequest :
+
+```php
+'wallet_id' => [
+    'required',
+    'exists:wallets,id',
+    function ($attribute, $value, $fail) {
+        if (Wallet::where('id', $value)->where('user_id', auth()->id())->doesntExist()) {
+            $fail('Le portefeuille n\'appartient pas à l\'utilisateur.');
+        }
+    },
+],
+```
+
+---
+
+## 9. Performance et Optimisation
+
+### Cache Laravel
+
+**Dashboard** : Cache 5 minutes
+```php
+$data = Cache::remember("dashboard:{$user->id}", 300, function () use ($user) {
+    return $this->buildDashboard($user);
+});
+```
+
+**Categories** : Cache 1 heure
+```php
+return Cache::remember("categories:user:{$userId}", 3600, function () use ($userId) {
+    return Category::where('is_system', true)->orWhere('user_id', $userId)->get();
+});
+```
+
+**Wallets** : Cache 30 secondes
+```php
+$wallets = Cache::remember("wallets:user:{$userId}", 30, function () {
+    return auth()->user()->wallets;
+});
+```
+
+### Invalidation automatique
+
+Le cache est invalidé lors des modifications :
+- TransactionService::invalidateCache()
+- CategoryService::clearCache()
+- WalletController::clearCache()
+
+### Requêtes SQL optimisées
+
+Dashboard utilise des **requêtes agrégées** pour éviter le N+1 :
+
+```php
+$monthlyTotals = $user->transactions()
+    ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+    ->selectRaw("
+        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
+    ")
+    ->first();
+```
+
+Une seule requête pour obtenir revenus + dépenses du mois.
+
+---
+
+## 10. Base de Données
+
+### Migrations principales
+
+**users** : id, name, email, password (hashed), monthly_income_target, onboarding_completed
+
+**wallets** : id, user_id (FK), name, balance (decimal:2), currency (XOF), type (cash/mobile_money/bank), is_default
+
+**categories** : id, name, icon, color, type (income/expense), is_system, user_id (FK nullable)
+
+**transactions** : id, user_id (FK), category_id (FK nullable), wallet_id (FK), type (income/expense/transfer), amount (decimal:2), description, transaction_date, source (manual/sms_wave/sms_orange_money/api), external_id (index), status (pending/completed/cancelled)
+
+**budgets** : id, user_id (FK), category_id (FK), amount (decimal:2), period (daily/weekly/monthly/yearly), start_date, end_date, spent (decimal:2), is_active
+
+**financial_goals** : id, user_id (FK), name, description, target_amount (decimal:2), current_amount (decimal:2), target_date, icon, color, status (pending/in_progress/completed), category_id (FK), reminder_frequency, last_reminder_sent_at
+
+**parsed_sms** : id, user_id (FK), provider, raw_content, parsed_amount (decimal:2), parsed_phone, parsed_type, transaction_id (FK nullable), status (pending/processed/failed/ignored), error_message, parsed_at
+
+**alerts** : id, user_id (FK), type, title, message, data (JSON), is_read, read_at
+
+### Seeders
+
+**CategorySeeder** : 27 catégories système spécifiques au Sénégal (Wave, Orange Money, Free Money, Wari, Proximo, Jumia, Sénélec, SDE, Canal+, etc.)
+
+**UserSeeder** : 2 utilisateurs de démo avec wallets pré-remplis
+
+---
+
+## 11. Points Forts Techniques
+
+1. **Architecture propre** : Séparation des responsabilités (MVC + Service)
+2. **Intégrité des données** : Transactions DB + lockForUpdate
+3. **Performance** : Cache Laravel + requêtes SQL optimisées
+4. **Sécurité** : Sanctum + rate limiting + validation ownership
+5. **Testabilité** : Services isolés, tests unitaires et d'intégration
+6. **Extensibilité** : Facile d'ajouter de nouveaux endpoints
+7. **Parsing intelligent** : SMS Wave/Orange Money automatiquement catégorisés
+8. **Alertes asynchrones** : Jobs non bloquants pour les notifications
+9. **Rappels programmés** : Système complet de rappels pour objectifs
+10. **Recommandations contextuelles** : Analyse des tendances et anomalies
+
+---
+
+## Conclusion
+
+Le backend FinanceWise est une **API REST moderne et robuste** qui gère toute la logique métier de l'application. Son architecture MVC amélioré avec couche Service permet une maintenance aisée, une testabilité optimale et une évolutivité sans compromis sur la performance ou la sécurité. L'intégration du parsing SMS, des alertes intelligentes et des recommandations contextuelles en fait un backend adapté spécifiquement au marché sénégalais.
+
+FinanceWise est un **assistant financier automatique** simple comme Wave, intelligent en arrière-plan, qui transforme les transactions mobile money en tableau de bord compréhensible sans effort de saisie.
+
+---
+
+# Les Écrans de FinanceWise - Explication Simple
+
+Dans cette section, je vais expliquer chaque écran de l'application comme si je vous l'expliquais en face à face, sans termes techniques.
+
+## 1. Écran de Démarrage (SplashScreen)
+
+**C'est quoi ?** C'est la première chose que vous voyez quand vous ouvrez l'application. Il y a une animation avec le logo FinanceWise et le texte "Gérez vos finances intelligemment".
+
+**À quoi ça sert ?** Pendant que vous regardez cette animation (environ 1-2 secondes), l'application travaille en arrière-plan : elle vérifie si vous êtes déjà connecté, si vous avez déjà fait la configuration initiale, et elle prépare tout pour vous diriger vers le bon endroit.
+
+**Comment ça marche ?** Imaginez que c'est comme le "pré-générique" d'un film. Le temps que le film démarre, le projecteur se chauffe et le son se prépare. Ici, l'application charge vos informations et décide : si c'est votre première fois, elle vous envoie vers l'inscription. Si vous êtes déjà inscrit, elle vous envoie directement vers votre tableau de bord.
+
+**Pourquoi c'est important ?** Sans cet écran, l'application pourrait s'ouvrir n'importe comment ou vous montrer des erreurs pendant que les informations chargent. C'est une transition douce pour que tout soit prêt quand vous arrivez.
+
+---
+
+## 2. Écran de Connexion (LoginScreen)
+
+**C'est quoi ?** C'est l'écran où vous entrez votre email et votre mot de passe pour accéder à votre compte.
+
+**À quoi ça sert ?** Il vérifie que c'est bien vous et vous donne accès à toutes vos données financières.
+
+**Comment ça marche ?** Vous tapez votre email et votre mot de passe, puis vous cliquez sur "Se connecter". L'application envoie ces informations au serveur qui vérifie si elles correspondent à ce qui est enregistré. Si c'est correct, le serveur vous donne un "badge" (un jeton d'accès) que vous gardez sur votre téléphone pour ne pas avoir à vous reconnecter à chaque fois.
+
+**Pourquoi c'est important ?** C'est la porte de sécurité de votre application. Sans connexion, n'importe qui pourrait voir vos finances. Cet écran protège vos données personnelles.
+
+**Bonus :** Si vous avez activé la biométrie (empreinte ou visage), vous pouvez vous connecter juste en posant votre doigt sur le capteur, sans taper votre mot de passe. C'est comme utiliser votre doigt comme clé.
+
+---
+
+## 3. Écran d'Inscription (RegisterScreen)
+
+**C'est quoi ?** C'est l'écran où vous créez votre compte pour la première fois.
+
+**À quoi ça sert ?** Il enregistre vos informations dans le système pour que vous puissiez commencer à utiliser l'application.
+
+**Comment ça marche ?** Vous entrez votre nom complet, votre email et un mot de passe (minimum 6 caractères). L'application vérifie que l'email n'est pas déjà utilisé par quelqu'un d'autre, puis elle crée votre compte et vous envoie vers la configuration initiale.
+
+**Pourquoi c'est important ?** C'est votre première interaction avec l'application. Elle doit être simple et rapide pour ne pas vous décourager. Une fois inscrit, vous avez votre propre espace sécurisé pour vos finances.
+
+---
+
+## 4. Écran de Configuration Initiale (OnboardingScreen)
+
+**C'est quoi ?** C'est un écran avec plusieurs étapes (comme un questionnaire) qui apparaît après votre première inscription. Il y a 7 étapes au total.
+
+**À quoi ça sert ?** Il configure l'application selon vos besoins pour qu'elle soit vraiment utile dès le début.
+
+**Comment ça marche ?** Vous passez par 7 étapes :
+
+1. **Bienvenue** : Une présentation rapide de l'application
+2. **Revenu mensuel** : Vous entrez combien vous gagnez en moyenne par mois (par exemple 300 000 FCFA). Ça aide l'application à comparer vos revenus réels avec vos objectifs.
+3. **Portefeuilles** : Vous ajoutez vos comptes (Wave, Orange Money, Banque, Espèces). Vous pouvez en ajouter plusieurs avec leur solde de départ.
+4. **Budgets (optionnel)** : Vous pouvez créer des budgets par catégorie (par exemple 50 000 FCFA pour la nourriture par mois). C'est optionnel, vous pouvez le faire plus tard.
+5. **Objectifs (optionnel)** : Vous définissez vos objectifs d'épargne (par exemple 500 000 FCFA pour une voiture). C'est aussi optionnel.
+6. **Notifications** : Vous activez les notifications pour recevoir des alertes sur vos budgets et objectifs.
+7. **Biométrie** : Vous pouvez activer la connexion par empreinte ou visage pour plus de sécurité.
+
+**Pourquoi c'est important ?** Sans cette configuration, l'application serait vide et vous ne sauriez pas par où commencer. Cette étape personnalise l'application pour vous, en une seule fois, pour que tout soit prêt à l'usage.
+
+---
+
+## 5. Écran Principal (HomeScreen)
+
+**C'est quoi ?** C'est l'écran principal qui contient 5 onglets en bas : Dashboard, Transactions, Wallets, Objectifs, et Profil, plus un bouton "Plus".
+
+**À quoi ça sert ?** C'est le centre de commande de l'application. Tous les écrans importants sont accessibles en un seul clic.
+
+**Comment ça marche ?** Il y a une barre de navigation en bas avec 5 icônes. Vous cliquez sur une icône pour aller à l'écran correspondant :
+- **Dashboard** : Votre tableau de bord principal
+- **Transactions** : La liste de toutes vos dépenses et revenus
+- **Wallets** : Vos différents comptes (Wave, Orange Money, etc.)
+- **Objectifs** : Vos objectifs d'épargne
+- **Profil** : Vos informations personnelles et paramètres
+- **Plus** : Un menu avec toutes les autres fonctionnalités (Statistiques, Alertes, Catégories, Budgets, etc.)
+
+**Pourquoi c'est important ?** C'est comme le menu principal d'un restaurant. Tout est regroupé au même endroit pour que vous trouviez rapidement ce que vous cherchez. Pas besoin de chercher dans des menus cachés.
+
+---
+
+## 6. Écran Tableau de Bord (DashboardScreen)
+
+**C'est quoi ?** C'est l'écran le plus important de l'application. C'est la première chose que vous voyez après vous connecter.
+
+**À quoi ça sert ?** Il vous donne une vue d'ensemble instantanée de votre situation financière en un coup d'œil.
+
+**Comment ça marche ?** L'écran affiche :
+- **Une carte bancaire** avec votre solde total (somme de tous vos comptes), vos revenus du mois, et vos dépenses du mois. Vous pouvez cacher le montant en cliquant sur l'icône œil (utile si quelqu'un regarde par-dessus votre épaule).
+- **Deux boutons d'action rapide** : "Transaction" pour ajouter une dépense/revenu, et "Importer SMS" pour coller un SMS de Wave/Orange Money.
+- **Une alerte** si un budget est presque épuisé ou dépassé (maximum 1 alerte visible pour ne pas encombrer).
+- **Une section "Voir tout"** qui regroupe l'accès aux budgets, transactions, et objectifs.
+
+**Pourquoi c'est important ?** C'est l'écran qui répond à la question "Où en suis-je financièrement ?" en moins de 3 secondes. C'est le cœur de l'application. Sans lui, vous devriez cliquer partout pour savoir combien vous avez.
+
+**Bonus :** L'écran écoute aussi vos SMS en arrière-plan. Si vous recevez un SMS de Wave ou Orange Money, il peut automatiquement détecter la transaction et vous demander de la confirmer.
+
+---
+
+## 7. Écran Transactions (TransactionsScreen)
+
+**C'est quoi ?** C'est l'écran qui liste toutes vos transactions (dépenses et revenus) avec la possibilité de les filtrer et de les rechercher.
+
+**À quoi ça sert ?** Il vous permet de voir l'historique complet de vos dépenses et revenus, de trouver une transaction spécifique, et de gérer vos transactions.
+
+**Comment ça marche ?** 
+- **La liste** : Chaque transaction apparaît avec sa description, sa catégorie, le portefeuille concerné, le montant (en vert pour les revenus, en rouge pour les dépenses), et la date.
+- **La recherche** : Une barre de recherche en haut vous permet de taper un mot-clé pour trouver une transaction (par exemple "restaurant").
+- **Les filtres** : Un bouton "Filtres" ouvre un menu où vous pouvez filtrer par type (revenus/dépenses), par catégorie, par période de dates, ou par montant.
+- **Les actions** : Vous pouvez cliquer sur une transaction pour voir ses détails, la modifier, ou la supprimer. Vous pouvez aussi glisser vers la gauche pour modifier, ou glisser vers la droite pour supprimer.
+- **L'ajout** : Un bouton "+" en bas à droite permet d'ajouter une nouvelle transaction.
+
+**Pourquoi c'est important ?** C'est votre historique financier. Si vous voulez savoir "Combien j'ai dépensé au restaurant ce mois ?", c'est ici que vous trouvez la réponse. Les filtres vous permettent de voir exactement ce que vous cherchez sans devoir tout lire.
+
+---
+
+## 8. Écran Portefeuilles (WalletsScreen)
+
+**C'est quoi ?** C'est l'écran qui liste tous vos comptes (Wave, Orange Money, Banque, Espèces, etc.).
+
+**À quoi ça sert ?** Il vous permet de gérer vos différents comptes et de voir le solde de chacun.
+
+**Comment ça marche ?** 
+- Chaque compte apparaît comme une carte avec un design différent selon son type (bleu pour Wave, orange pour Orange Money, vert pour la banque, etc.).
+- La carte montre le nom du compte, son type, et son solde actuel.
+- Vous pouvez cliquer sur une carte pour voir les détails, modifier le nom ou le solde, ou supprimer le compte.
+- Un bouton "+" en bas permet d'ajouter un nouveau compte.
+
+**Pourquoi c'est important ?** Beaucoup de gens ont plusieurs comptes (Wave pour les transferts, Orange Money pour les paiements, espèces pour le quotidien). Cet écran vous permet de voir tout d'un coup et de savoir combien vous avez au total.
+
+---
+
+## 9. Écran Objectifs Financiers (FinancialGoalsScreen)
+
+**C'est quoi ?** C'est l'écran où vous gérez vos objectifs d'épargne (voiture, maison, voyage, etc.).
+
+**À quoi ça sert ?** Il vous aide à suivre vos progrès vers vos objectifs financiers et à rester motivé.
+
+**Comment ça marche ?** 
+- **En haut** : Une carte montre votre épargne totale (somme de tous vos objectifs), le pourcentage global atteint, et combien d'objectifs sont atteints ou en cours.
+- **Les filtres** : Vous pouvez filtrer pour voir "Tous les objectifs", "En cours", ou "Atteints".
+- **La liste** : Chaque objectif apparaît avec une barre de progression circulaire montrant combien vous avez épargné par rapport à votre cible.
+- **Les actions** : Vous pouvez cliquer sur un objectif pour voir les détails, ajouter de l'argent, voir l'historique de vos ajouts, ou modifier l'objectif.
+- **L'ajout** : Un bouton "+" permet de créer un nouvel objectif.
+
+**Pourquoi c'est important ?** Épargner sans objectif, c'est difficile. Cet écran rend vos objectifs visibles et concrets. Vous voyez votre progression, ce qui vous motive à continuer. C'est comme un thermomètre qui montre à quel point vous êtes proche de votre but.
+
+**Bonus intelligent** : L'application peut calculer combien vous devez épargner chaque mois pour atteindre votre objectif à temps, et vous le dire.
+
+---
+
+## 10. Écran Profil (ProfileScreen)
+
+**C'est quoi ?** C'est l'écran qui affiche vos informations personnelles et des statistiques rapides.
+
+**À quoi ça sert ?** Il vous permet de voir qui vous êtes dans l'application, vos statistiques financières, et d'accéder aux paramètres.
+
+**Comment ça marche ?** 
+- **Votre avatar** : Un cercle avec vos initiales (par exemple "AD" pour Amadou Diop).
+- **Vos informations** : Votre nom et email.
+- **Vos statistiques** : Une carte montre votre solde total, vos revenus du mois, et vos dépenses du mois.
+- **Actions rapides** : Trois boutons pour aller aux Statistiques, Exporter vos données, ou Paramètres.
+- **Déconnexion** : Un bouton rouge pour vous déconnecter de votre compte.
+
+**Pourquoi c'est important ?** C'est votre espace personnel. Vous pouvez vérifier vos informations, voir un résumé rapide de vos finances, et accéder aux réglages importants. La déconnexion est aussi ici pour que vous puissiez quitter l'application en sécurité.
+
+---
+
+## 11. Écran Paramètres (SettingsScreen)
+
+**C'est quoi ?** C'est l'écran où vous configurez toutes les options de l'application.
+
+**À quoi ça sert ?** Il vous permet de personnaliser l'application selon vos préférences.
+
+**Comment ça marche ?** Il y a plusieurs sections :
+- **Apparence** : Un bouton pour activer ou désactiver le mode sombre (thème noir).
+- **Sécurité** : Un bouton pour activer l'authentification biométrique (empreinte ou visage) pour vous connecter sans mot de passe.
+- **Automatisation des transactions** : 
+  - Un bouton pour activer la détection automatique des SMS (l'application lit vos SMS Wave/Orange Money et propose de les ajouter automatiquement).
+  - Un bouton pour activer la confirmation automatique (les transactions SMS sont ajoutées sans vous demander de confirmer).
+- **Rappels** : Un bouton pour activer les rappels bi-hebdomadaires (tous les 15 jours, l'application vous rappelle de faire le point sur vos dépenses).
+- **Configuration** : Un bouton pour relancer l'onboarding (refaire la configuration initiale).
+
+**Pourquoi c'est important ?** Chaque personne a des préférences différentes. Certains aiment le mode sombre, d'autres le mode clair. Certains veulent que tout soit automatique, d'autres préfèrent confirmer chaque action. Cet écran vous donne le contrôle.
+
+---
+
+## Résumé Simple
+
+FinanceWise a été conçu pour être **simple comme Wave** mais **intelligent en arrière-plan**. Chaque écran a un rôle précis :
+
+1. **SplashScreen** : Prépare l'application pendant que vous attendez
+2. **LoginScreen** : Vérifie que c'est bien vous
+3. **RegisterScreen** : Crée votre compte
+4. **OnboardingScreen** : Configure l'application pour vous en une seule fois
+5. **HomeScreen** : Le menu principal pour tout trouver rapidement
+6. **DashboardScreen** : La réponse à "Où en suis-je financièrement ?"
+7. **TransactionsScreen** : L'historique de tout ce que vous avez dépensé/gagné
+8. **WalletsScreen** : Vos différents comptes en un coup d'œil
+9. **FinancialGoalsScreen** : Vos rêves financiers avec leur progression
+10. **ProfileScreen** : Votre espace personnel et statistiques rapides
+11. **SettingsScreen** : Vos préférences pour personnaliser l'app
+
+L'idée est que vous ouvriez l'application, vous voyiez votre tableau de bord en 3 secondes, et tout le reste (parsing SMS, calculs, alertes) se passe automatiquement en arrière-plan. Vous ne faites presque rien, l'application fait tout pour vous.

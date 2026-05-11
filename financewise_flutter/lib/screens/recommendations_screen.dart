@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import '../services/api_service.dart';
+import '../services/logger_service.dart';
 import '../theme.dart';
+import '../widgets/skeleton_loader.dart';
+import 'assistant_screen.dart';
 
+/// Écran Recommandations — consomme `/recommendations` du backend
+/// (analyses heuristiques) et propose un raccourci vers l'assistant IA
+/// pour des questions plus précises.
 class RecommendationsScreen extends StatefulWidget {
   const RecommendationsScreen({super.key});
 
@@ -13,8 +18,9 @@ class RecommendationsScreen extends StatefulWidget {
 }
 
 class _RecommendationsScreenState extends State<RecommendationsScreen> {
-  final _api = ApiService();
-  List<dynamic> _recommendations = [];
+  final ApiService _api = ApiService();
+  final LoggerService _logger = LoggerService();
+  List<Map<String, dynamic>> _recos = [];
   bool _loading = true;
   String? _error;
 
@@ -25,148 +31,201 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final result = await _api.get('/recommendations');
-    if (mounted) {
-      setState(() {
-        _loading = false;
-        if (result is Map && result.containsKey('data')) {
-          _recommendations = result['data'] as List;
-        } else if (result is List) {
-          _recommendations = result;
-        } else {
-          _error = result?['message'] ?? 'Erreur';
-        }
-      });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final res = await _api.get('/recommendations');
+      if (res is Map && res['data'] is List) {
+        _recos = List<Map<String, dynamic>>.from(
+          (res['data'] as List).map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+      } else {
+        _recos = [];
+      }
+    } catch (e) {
+      _logger.error('Recommendations load error: $e');
+      _error = 'Impossible de charger les recommandations.';
     }
-  }
-
-  Color _getTypeColor(String? type) {
-    switch (type) {
-      case 'alert':
-        return AppTheme.error;
-      case 'warning':
-        return Colors.orange;
-      case 'suggestion':
-        return AppTheme.tertiary;
-      case 'info':
-        return AppTheme.onSurfaceVariant;
-      default:
-        return AppTheme.tertiary;
-    }
-  }
-
-  IconData _getTypeIcon(String? type) {
-    switch (type) {
-      case 'alert':
-        return Icons.warning;
-      case 'warning':
-        return Icons.report_problem;
-      case 'suggestion':
-        return Icons.lightbulb;
-      case 'info':
-        return Icons.info;
-      default:
-        return Icons.info;
-    }
+    if (mounted) setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recommandations financières'),
+        title: Text('Recommandations', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loading ? null : _load,
+          ),
+        ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: _error != null
-                  ? ListView(
-                      children: [
-                        const SizedBox(height: 100),
-                        const Icon(Icons.error_outline, size: 48, color: AppTheme.error),
-                        const SizedBox(height: 12),
-                        Center(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
-                      ],
-                    )
-                  : _recommendations.isEmpty
-                      ? ListView(
-                          children: [
-                            const SizedBox(height: 100),
-                            Icon(Icons.lightbulb_outline, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-                            const SizedBox(height: 16),
-                            Center(child: Text('Aucune recommandation pour le moment', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
-                            const SizedBox(height: 8),
-                            Center(child: Text('Continuez à utiliser l\'app pour recevoir des conseils', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
-                          ],
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _recommendations.length,
-                          itemBuilder: (_, i) {
-                            final recommendation = _recommendations[i];
-                            final type = recommendation['type'] ?? 'info';
-                            final color = _getTypeColor(type);
-                            final delayMs = (60 * i).clamp(0, 500);
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: _loading
+            ? ListView(
+                padding: const EdgeInsets.all(16),
+                children: List.generate(4, (_) => const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: SkeletonLoader(height: 80),
+                    )),
+              )
+            : _error != null
+                ? _buildError(cs)
+                : _recos.isEmpty
+                    ? _buildEmpty(cs)
+                    : ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          _buildAssistantBanner(cs),
+                          const Gap(16),
+                          ..._recos.map((r) => _buildRecoCard(r, cs)),
+                        ],
+                      ),
+      ),
+    );
+  }
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: AppTheme.softShadow,
-                                border: Border.all(color: color.withValues(alpha: 0.15)),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: color.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Icon(_getTypeIcon(type), color: color, size: 22),
-                                    ),
-                                    const Gap(14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            recommendation['message'] ?? 'Recommandation',
-                                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-                                          ),
-                                          if (recommendation['category'] != null) ...[
-                                            const Gap(6),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: color.withValues(alpha: 0.08),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                recommendation['category'],
-                                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: color),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                                .animate()
-                                .fadeIn(delay: Duration(milliseconds: delayMs), duration: 300.ms)
-                                .slideX(begin: 0.03, end: 0, delay: Duration(milliseconds: delayMs), duration: 300.ms);
-                          },
-                        ),
+  Widget _buildAssistantBanner(ColorScheme cs) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AssistantScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
             ),
+            const Gap(12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Pose ta question à l\'assistant',
+                      style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text('Analyse personnalisée par IA',
+                      style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecoCard(Map<String, dynamic> r, ColorScheme cs) {
+    final type = (r['type'] ?? 'info').toString();
+    final message = (r['message'] ?? '').toString();
+    final (icon, color) = _styleForType(type, cs);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.inter(fontSize: 13.5, height: 1.4, color: cs.onSurface),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  (IconData, Color) _styleForType(String type, ColorScheme cs) {
+    switch (type) {
+      case 'alert':
+      case 'danger':
+        return (Icons.error_outline_rounded, cs.error);
+      case 'warning':
+        return (Icons.warning_amber_rounded, AppTheme.warning);
+      case 'suggestion':
+        return (Icons.lightbulb_outline_rounded, AppTheme.tertiary);
+      case 'success':
+        return (Icons.check_circle_outline_rounded, AppTheme.success);
+      default:
+        return (Icons.info_outline_rounded, cs.primary);
+    }
+  }
+
+  Widget _buildEmpty(ColorScheme cs) {
+    return ListView(
+      padding: const EdgeInsets.all(32),
+      children: [
+        const Gap(60),
+        Icon(Icons.lightbulb_outline_rounded, size: 64, color: cs.outline),
+        const Gap(16),
+        Text(
+          'Aucune recommandation pour le moment',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+        const Gap(8),
+        Text(
+          'Continue d\'enregistrer tes transactions, des conseils personnalisés apparaîtront ici.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(fontSize: 13, color: cs.onSurfaceVariant),
+        ),
+        const Gap(24),
+        FilledButton.icon(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AssistantScreen()));
+          },
+          icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+          label: const Text('Demander à l\'assistant'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildError(ColorScheme cs) {
+    return ListView(
+      padding: const EdgeInsets.all(32),
+      children: [
+        const Gap(60),
+        Icon(Icons.cloud_off_rounded, size: 64, color: cs.outline),
+        const Gap(16),
+        Text(_error ?? 'Erreur',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        const Gap(16),
+        FilledButton(onPressed: _load, child: const Text('Réessayer')),
+      ],
     );
   }
 }

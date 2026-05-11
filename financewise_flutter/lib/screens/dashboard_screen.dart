@@ -3,19 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/sms_listener_service.dart';
 import '../services/pending_sms_service.dart';
 import '../services/pending_transaction_retry_service.dart';
 import '../services/expense_reminder_service.dart';
+import '../services/offline_cache_service.dart';
+import '../services/connectivity_service.dart';
 import '../widgets/onboarding_tooltip.dart';
+import '../widgets/connectivity_banner.dart';
 import '../theme.dart';
 import '../widgets/skeleton_loader.dart';
 import 'transaction_form_screen.dart';
 import 'transactions_screen.dart';
 import 'budgets_screen.dart';
 import 'sms_parser_screen.dart';
+import 'alerts_screen.dart';
+import '../widgets/ai_insight_card.dart';
+import 'assistant_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,8 +34,12 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _api = ApiService();
+  final _cache = OfflineCacheService();
+  final _connectivity = ConnectivityService();
   bool _loading = true;
   bool _balanceHidden = false;
+  bool _isOffline = false;
+  bool _hideSeeAll = false; // Option pour masquer "voir tout"
   Map<String, dynamic>? _data;
   String? _error;
   final Set<int> _dismissedAlerts = {};
@@ -39,8 +51,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDashboard();
     _initSmsListener();
-    _retryPendingTransactions();
-    _initExpenseReminder();
+    _checkPendingSms(); // Appeler directement pour traiter les SMS en attente
+    // Services déplacés en background pour ne pas bloquer le chargement
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _retryPendingTransactions();
+      _initExpenseReminder();
+    });
   }
 
   void _initExpenseReminder() {
@@ -64,7 +80,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _checkPendingSms() async {
     // Vérifier s'il y a un SMS en attente (quand l'app s'ouvre depuis une notification)
-    await PendingSmsService.showPendingSmsDialog(context);
+    print('DashboardScreen: _checkPendingSms appelé');
+    await PendingSmsService.showPendingSmsDialog(context, onTransactionAdded: _loadDashboard);
   }
 
   @override
@@ -74,30 +91,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadDashboard() async {
+    if (!mounted) return;
+    
     setState(() {
       _loading = true;
       _error = null;
+      _isOffline = false;
     });
 
-    final result = await _api.get('/dashboard');
+    // Vérifier la connexion
+    final isConnected = await _connectivity.isConnected;
 
-    if (result is Map<String, dynamic>) {
-      setState(() {
-        _data = result;
-        _loading = false;
-      });
+    if (isConnected) {
+      // Essayer de charger depuis l'API
+      final result = await _api.get('/dashboard');
 
-      // Les alertes budget sont affichées dans le dashboard, pas besoin de notifications automatiques
-    } else if (result is Map && result.containsKey('message')) {
-      setState(() {
-        _error = result['message'];
-        _loading = false;
-      });
+      if (result is Map<String, dynamic>) {
+        // Succès : mettre à jour le cache
+        await _cache.cacheDashboard(result);
+        if (mounted) {
+          setState(() {
+            _data = result;
+            _loading = false;
+            _isOffline = false;
+          });
+        }
+      } else if (result is Map && result.containsKey('message')) {
+        // Erreur API : essayer le cache
+        final cachedData = await _cache.getCachedDashboard();
+        if (cachedData != null) {
+          if (mounted) {
+            setState(() {
+              _data = cachedData;
+              _loading = false;
+              _isOffline = true;
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              _error = result['message'];
+              _loading = false;
+              _isOffline = false;
+            });
+          }
+        }
+      } else {
+        // Erreur inconnue : essayer le cache
+        final cachedData = await _cache.getCachedDashboard();
+        if (cachedData != null) {
+          if (mounted) {
+            setState(() {
+              _data = cachedData;
+              _loading = false;
+              _isOffline = true;
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              _error = 'Erreur lors du chargement';
+              _loading = false;
+              _isOffline = false;
+            });
+          }
+        }
+      }
     } else {
-      setState(() {
-        _error = 'Erreur lors du chargement';
-        _loading = false;
-      });
+      // Offline : charger depuis le cache
+      final cachedData = await _cache.getCachedDashboard();
+      if (cachedData != null) {
+        if (mounted) {
+          setState(() {
+            _data = cachedData;
+            _loading = false;
+            _isOffline = true;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _error = 'Pas de connexion et aucune donnée en cache';
+            _loading = false;
+            _isOffline = true;
+          });
+        }
+      }
     }
   }
 
@@ -166,7 +245,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Text('Bonjour 👋', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.normal)),
             const SizedBox(height: 2),
-            const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Row(
+              children: [
+                const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                if (_isOffline) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cloud_off, size: 12, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Text('Hors ligne', style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
         actions: [
@@ -177,91 +279,159 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: OnboardingTooltip(
-        key: _tooltipKey,
-        screenName: 'dashboard',
-        title: 'Bienvenue sur votre Dashboard',
-        description: 'C\'est votre vue d\'ensemble de vos finances. Ici vous pouvez voir votre solde, vos revenus et dépenses du mois.',
-        additionalTips: [
-          TooltipItem(
-            icon: Icons.account_balance_wallet,
-            title: 'Solde Total',
-            description: 'La somme de tous vos portefeuilles (Wave, Orange Money, Banque, Espèces)',
-          ),
-          TooltipItem(
-            icon: Icons.trending_up,
-            title: 'Revenus',
-            description: 'Total des revenus enregistrés ce mois',
-          ),
-          TooltipItem(
-            icon: Icons.trending_down,
-            title: 'Dépenses',
-            description: 'Total des dépenses enregistrées ce mois',
-          ),
-          TooltipItem(
-            icon: Icons.add,
-            title: 'Ajouter Transaction',
-            description: 'Cliquez pour ajouter une nouvelle dépense ou revenu',
-          ),
-          TooltipItem(
-            icon: Icons.sms,
-            title: 'Parser SMS',
-            description: 'Collez vos SMS Wave/Orange Money pour les ajouter automatiquement',
+      body: Column(
+        children: [
+          ConnectivityBanner(),
+          Expanded(
+            child: OnboardingTooltip(
+              key: _tooltipKey,
+              screenName: 'dashboard',
+              title: 'Bienvenue sur votre Dashboard',
+              description: 'C\'est votre vue d\'ensemble de vos finances. Ici vous pouvez voir votre solde, vos revenus et dépenses du mois.',
+              additionalTips: [
+                TooltipItem(
+                  icon: Icons.account_balance_wallet,
+                  title: 'Solde Total',
+                  description: 'La somme de tous vos portefeuilles (Wave, Orange Money, Banque, Espèces)',
+                ),
+                TooltipItem(
+                  icon: Icons.trending_up,
+                  title: 'Revenus',
+                  description: 'Total des revenus enregistrés ce mois',
+                ),
+                TooltipItem(
+                  icon: Icons.trending_down,
+                  title: 'Dépenses',
+                  description: 'Total des dépenses enregistrées ce mois',
+                ),
+                TooltipItem(
+                  icon: Icons.add,
+                  title: 'Ajouter Transaction',
+                  description: 'Cliquez pour ajouter une nouvelle dépense ou revenu',
+                ),
+                TooltipItem(
+                  icon: Icons.sms,
+                  title: 'Parser SMS',
+                  description: 'Collez vos SMS Wave/Orange Money pour les ajouter automatiquement',
+                ),
+              ],
+            child: RefreshIndicator(
+              onRefresh: _loadDashboard,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Carte bancaire (héro) ──
+                    _buildBankCard(balance, income, expense),
+                    const SizedBox(height: 16),
+
+                    // ── Actions rapides (compactes) ──
+                    StaggeredGrid.count(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 0,
+                      children: [
+                        _buildQuickChip(Icons.add, 'Transaction', () async {
+                          context.push('/transaction-form');
+                          _loadDashboard();
+                        }),
+                        const SizedBox(width: 8),
+                        _buildQuickChip(Icons.sms_outlined, 'Importer SMS', () async {
+                          await Navigator.push(context, MaterialPageRoute(builder: (_) => const SmsParserScreen()));
+                          _loadDashboard();
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── Brief mensuel IA (s'affiche seulement si dispo) ──
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 0),
+                      child: AiInsightCard(),
+                    ),
+
+                    // ── Alertes (max 1, le reste derrière Voir tout) ──
+                    ...alerts.asMap().entries
+                        .where((e) => !_dismissedAlerts.contains(e.key))
+                        .take(1)
+                        .map((e) => _buildAlert(e.value, e.key)),
+                    if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).length > 1 && !_hideSeeAll)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const AlertsScreen()),
+                            );
+                          },
+                          child: Text('Voir toutes les alertes (${alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).length})'),
+                        ),
+                      ),
+                    if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  for (var i = 0; i < alerts.length; i++) {
+                                    _dismissedAlerts.add(i);
+                                  }
+                                });
+                              },
+                              child: const Text('Tout masquer', style: TextStyle(fontSize: 12)),
+                            ),
+                            Row(
+                              children: [
+                                if (_dismissedAlerts.isNotEmpty)
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _dismissedAlerts.clear();
+                                      });
+                                    },
+                                    child: const Text('Réinitialiser', style: TextStyle(fontSize: 12)),
+                                  ),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _hideSeeAll = !_hideSeeAll;
+                                    });
+                                  },
+                                  child: Text(_hideSeeAll ? 'Afficher Voir tout' : 'Masquer Voir tout', style: TextStyle(fontSize: 12)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).isNotEmpty)
+                      const SizedBox(height: 12),
+
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
+            ),
+            ),
           ),
         ],
-      child: RefreshIndicator(
-        onRefresh: _loadDashboard,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Carte bancaire (héro) ──
-              _buildBankCard(balance, income, expense),
-              const SizedBox(height: 16),
-
-              // ── Actions rapides (compactes) ──
-              Row(
-                children: [
-                  _buildQuickChip(Icons.add, 'Transaction', () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionFormScreen()));
-                    _loadDashboard();
-                  }),
-                  const SizedBox(width: 8),
-                  _buildQuickChip(Icons.sms_outlined, 'Importer SMS', () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const SmsParserScreen()));
-                    _loadDashboard();
-                  }),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // ── Alertes (max 1, le reste derrière Voir tout) ──
-              ...alerts.asMap().entries
-                  .where((e) => !_dismissedAlerts.contains(e.key))
-                  .take(1)
-                  .map((e) => _buildAlert(e.value, e.key)),
-              if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: TextButton(
-                    onPressed: () {
-                      // Naviguer vers écran complet des alertes
-                    },
-                    child: Text('Voir toutes les alertes (${alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).length})'),
-                  ),
-                ),
-              if (alerts.where((a) => !_dismissedAlerts.contains(alerts.indexOf(a))).isNotEmpty)
-                const SizedBox(height: 12),
-
-              // ── Voir tout (accès au reste) ──
-              _buildSeeAllSection(incomeTarget > 0, income, incomeTarget, incomeProgress),
-              const SizedBox(height: 80),
-            ],
-        ),
       ),
-      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AssistantScreen()),
+          );
+        },
+        icon: const Icon(Icons.auto_awesome),
+        label: const Text('Assistant IA'),
+        backgroundColor: AppTheme.primary,
       ),
     );
   }
@@ -401,36 +571,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ── Chip action rapide ──
   Widget _buildQuickChip(IconData icon, String label, VoidCallback onTap) {
     final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.softShadow,
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: AppTheme.softShadow,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, size: 16, color: cs.primary),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const Gap(10),
-                  Text(label, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
-                ],
-              ),
+                  child: Icon(icon, size: 16, color: cs.primary),
+                ),
+                const Gap(10),
+                Text(label, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
+              ],
             ),
           ),
         ),
@@ -528,9 +697,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                alert['message'] ?? '',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w500),
+              child: GestureDetector(
+                onTap: () {
+                  final action = alert['action'];
+                  if (action == 'view_divers_wallet') {
+                    Navigator.pushNamed(context, '/wallets');
+                  }
+                },
+                child: Text(
+                  alert['message'] ?? '',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w500),
+                ),
               ),
             ),
             GestureDetector(
@@ -695,7 +872,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final category = t['category'];
           final catName = category is Map ? (category['name']?.toString() ?? '') : '';
           final date = t['transaction_date']?.toString() ?? '';
-          final shortDate = date.length >= 10 ? '${date.substring(8, 10)}/${date.substring(5, 7)}' : '';
+          final shortDate = (date.isNotEmpty && date.length >= 10) ? '${date.substring(8, 10)}/${date.substring(5, 7)}' : '';
           return Column(
             children: [
               Padding(
@@ -771,10 +948,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               runSpacing: 8,
               children: [
                 _buildQuickActionChip(Icons.account_balance_wallet, 'Budgets', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen()));
+                  context.push('/budgets');
                 }),
                 _buildQuickActionChip(Icons.receipt_long, 'Transactions', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen()));
+                  context.push('/transactions');
                 }),
                 if (hasIncomeGoal)
                   _buildQuickActionChip(Icons.trending_up, 'Objectif revenu', () {
@@ -795,9 +972,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: AppTheme.softShadow,
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Material(
         color: Colors.transparent,

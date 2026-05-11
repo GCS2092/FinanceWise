@@ -35,15 +35,33 @@ class AutoTransactionService {
 
   /// Détecte le fournisseur depuis le sender du SMS
   String? detectProvider(String sender) {
-    if (sender.toLowerCase().contains('wave')) return 'wave';
-    if (sender.toLowerCase().contains('orange')) return 'orange_money';
+    final lowerSender = sender.toLowerCase();
+    if (lowerSender.contains('wave')) return 'wave';
+    if (lowerSender.contains('orange')) return 'orange_money';
+    if (lowerSender.contains('yango')) return 'yango';
+    if (lowerSender.contains('taxi')) return 'taxi';
+    if (lowerSender.contains('bolt')) return 'bolt';
+    if (lowerSender.contains('uber')) return 'uber';
+    if (lowerSender.contains('free')) return 'free';
+    if (lowerSender.contains('expresso')) return 'expresso';
+    if (lowerSender.contains('wari')) return 'wari';
+    if (lowerSender.contains('jonah')) return 'jonah';
     return null;
   }
 
   /// Vérifie si le SMS contient un montant (filtre rapide avant d'envoyer au backend)
   bool hasAmount(String smsBody) {
-    final amountRegex = RegExp(r'(\d+[.,]?\d*)\s*(?:FCFA|XOF|F|CFA)', caseSensitive: false);
-    return amountRegex.hasMatch(smsBody);
+    // Pattern pour montants avec devise (gère espaces, virgules et points)
+    final amountRegexWithCurrency = RegExp(r'(\d{1,3}(?:[ ,.]\d{3})*(?:[.,]\d+)?)\s*(?:FCFA|XOF|F|CFA)');
+    if (amountRegexWithCurrency.hasMatch(smsBody)) return true;
+    
+    // Pattern pour grands nombres sans séparateurs avec devise
+    final amountRegexLarge = RegExp(r'(\d{4,})\s*(?:FCFA|XOF|F|CFA)');
+    if (amountRegexLarge.hasMatch(smsBody)) return true;
+    
+    // Pattern pour montants sans devise (nombres entre 3 et 7 chiffres)
+    final amountRegexWithoutCurrency = RegExp(r'\b(\d{3,7})\b');
+    return amountRegexWithoutCurrency.hasMatch(smsBody);
   }
 
   /// Envoie le SMS au backend pour parsing async via la queue

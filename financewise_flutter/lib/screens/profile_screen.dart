@@ -1,9 +1,17 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
+import '../services/biometric_service.dart';
+import '../services/notification_service.dart';
 import '../services/api_service.dart';
-import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
+import '../widgets/onboarding_tooltip.dart';
 import '../widgets/skeleton_loader.dart';
 import 'settings_screen.dart';
 import 'export_screen.dart';
@@ -181,32 +189,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Quick actions
                     Text('Actions rapides', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        Expanded(
-                          child: _buildQuickAction(
-                            icon: Icons.bar_chart,
-                            label: 'Statistiques',
-                            color: AppTheme.primary,
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatisticsScreen())),
+                        _buildQuickAction(
+                          icon: Icons.bar_chart,
+                          label: 'Statistiques',
+                          color: AppTheme.primary,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const StatisticsScreen()),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildQuickAction(
-                            icon: Icons.file_download_outlined,
-                            label: 'Exporter',
-                            color: AppTheme.tertiary,
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExportScreen())),
+                        _buildQuickAction(
+                          icon: Icons.file_download_outlined,
+                          label: 'Exporter',
+                          color: AppTheme.tertiary,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ExportScreen()),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildQuickAction(
-                            icon: Icons.settings,
-                            label: 'Paramètres',
-                            color: AppTheme.onSurfaceVariant,
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                        _buildQuickAction(
+                          icon: Icons.settings,
+                          label: 'Paramètres',
+                          color: AppTheme.onSurfaceVariant,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
                           ),
                         ),
                       ],
@@ -248,6 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                         if (confirm == true && mounted) {
                           await context.read<AuthProvider>().logout();
+                          context.go('/login');
                         }
                       },
                     ),
@@ -307,29 +319,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+    return SizedBox(
+      width: (MediaQuery.of(context).size.width - 56) / 3,
+      child: Card(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
                 ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

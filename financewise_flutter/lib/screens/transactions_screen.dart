@@ -5,6 +5,8 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/offline_cache_service.dart';
+import '../services/connectivity_service.dart';
 import '../widgets/onboarding_tooltip.dart';
 import '../theme.dart';
 import '../widgets/skeleton_loader.dart';
@@ -19,11 +21,14 @@ class TransactionsScreen extends StatefulWidget {
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
   final _api = ApiService();
+  final _cache = OfflineCacheService();
+  final _connectivity = ConnectivityService();
   List<dynamic> _transactions = [];
   List<dynamic> _filteredTransactions = [];
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _isOffline = false;
   String? _nextCursor;
   String? _error;
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
@@ -75,25 +80,66 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       _nextCursor = null;
       _hasMore = true;
       _transactions = [];
+      _isOffline = false;
     });
-    
-    final result = await _api.get('/transactions${_buildQueryString()}');
-    
-    if (mounted) {
-      setState(() {
-        _loading = false;
-        if (result is Map && result.containsKey('data')) {
-          _transactions = result['data'] as List;
-          _nextCursor = result['next_cursor']?.toString();
-          _hasMore = _nextCursor != null;
-        } else if (result is List) {
-          _transactions = result;
-          _hasMore = false;
-        } else {
-          _error = result?['message'] ?? 'Erreur';
-        }
-        _applyFilters();
-      });
+
+    // Vérifier la connexion
+    final isConnected = await _connectivity.isConnected;
+
+    if (isConnected) {
+      // Essayer de charger depuis l'API
+      final result = await _api.get('/transactions${_buildQueryString()}');
+
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          if (result is Map && result.containsKey('data')) {
+            _transactions = result['data'] as List;
+            _nextCursor = result['next_cursor']?.toString();
+            _hasMore = _nextCursor != null;
+            // Mettre à jour le cache
+            _cache.cacheTransactions(_transactions);
+          } else if (result is List) {
+            _transactions = result;
+            _hasMore = false;
+            _cache.cacheTransactions(_transactions);
+          } else {
+            // Erreur API : essayer le cache
+            _cache.getCachedTransactions().then((cachedTransactions) {
+              if (mounted) {
+                setState(() {
+                  if (cachedTransactions.isNotEmpty) {
+                    _transactions = cachedTransactions;
+                    _isOffline = true;
+                    _hasMore = false;
+                  } else {
+                    _error = result?['message'] ?? 'Erreur';
+                  }
+                });
+              }
+            });
+            return;
+          }
+          _applyFilters();
+        });
+      }
+    } else {
+      // Offline : charger depuis le cache
+      final cachedTransactions = await _cache.getCachedTransactions();
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          if (cachedTransactions.isNotEmpty) {
+            _transactions = cachedTransactions;
+            _isOffline = true;
+            _hasMore = false;
+          } else {
+            _error = 'Pas de connexion et aucune transaction en cache';
+            _isOffline = true;
+          }
+          _applyFilters();
+        });
+      }
     }
   }
 
@@ -218,9 +264,32 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Transactions',
-          overflow: TextOverflow.ellipsis,
+        title: Row(
+          children: [
+            const Text(
+              'Transactions',
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (_isOffline) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.cloud_off, size: 12, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    Text('Hors ligne', style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           IconButton(

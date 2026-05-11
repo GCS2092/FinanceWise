@@ -38,6 +38,8 @@ class CategorySeeder extends Seeder
             ['name' => 'Bus Rapide', 'icon' => 'directions_bus', 'color' => '#3B82F6', 'type' => 'expense'],
             ['name' => 'Clando', 'icon' => 'directions_car', 'color' => '#F97316', 'type' => 'expense'],
             ['name' => 'Transferts famille', 'icon' => 'family_restroom', 'color' => '#10B981', 'type' => 'expense'],
+            // Catégorie par défaut pour dépenses non catégorisées
+            ['name' => 'Autre', 'icon' => 'category', 'color' => '#9CA3AF', 'type' => 'expense'],
             // Catégories générales
             ['name' => 'Revenus', 'icon' => 'income', 'color' => '#10B981', 'type' => 'income'],
             ['name' => 'Salaire', 'icon' => 'work', 'color' => '#3B82F6', 'type' => 'income'],

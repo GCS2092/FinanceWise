@@ -12,22 +12,28 @@ class RecommendationService
     {
         $recommendations = [];
 
-        // Analyser les dépenses par catégorie
         $categorySpending = $this->getCategorySpending($userId);
         $recommendations = array_merge($recommendations, $this->analyzeCategorySpending($categorySpending));
 
-        // Analyser les tendances mensuelles
         $monthlyTrends = $this->getMonthlyTrends($userId);
         $recommendations = array_merge($recommendations, $this->analyzeMonthlyTrends($monthlyTrends));
 
-        // Détecter les anomalies
         $anomalies = $this->detectAnomalies($userId);
         $recommendations = array_merge($recommendations, $this->analyzeAnomalies($anomalies));
 
-        // Recommandations d'économie
         $recommendations = array_merge($recommendations, $this->generateSavingsRecommendations($userId));
 
-        return array_unique($recommendations);
+        // Dédupliquer un tableau de tableaux par message
+        $seen = [];
+        $unique = [];
+        foreach ($recommendations as $r) {
+            $key = $r['message'] ?? json_encode($r);
+            if (!isset($seen[$key])) {
+                $seen[$key] = true;
+                $unique[] = $r;
+            }
+        }
+        return $unique;
     }
 
     private function getCategorySpending($userId)
@@ -43,26 +49,27 @@ class RecommendationService
     private function analyzeCategorySpending($categorySpending)
     {
         $recommendations = [];
-        $totalSpending = $categorySpending->sum('total');
+        $totalSpending = (float) $categorySpending->sum('total');
+        if ($totalSpending <= 0) return $recommendations;
 
         foreach ($categorySpending as $spending) {
+            if (!$spending->category) continue;
             $percentage = ($spending->total / $totalSpending) * 100;
+            $catName = $spending->category->name;
 
-            // Catégories avec dépenses élevées
             if ($percentage > 30) {
                 $recommendations[] = [
                     'type' => 'warning',
-                    'message' => "Tu dépenses beaucoup en {$spending->category->name} ({$percentage}% du total). Essaie de réduire.",
-                    'category' => $spending->category->name,
+                    'message' => "Tu dépenses beaucoup en {$catName} (" . number_format($percentage, 0) . "% du total). Essaie de réduire.",
+                    'category' => $catName,
                 ];
             }
 
-            // Catégories avec dépenses très élevées
             if ($spending->total > 100000) {
                 $recommendations[] = [
                     'type' => 'alert',
-                    'message' => "Tes dépenses en {$spending->category->name} dépassent 100 000 XOF. Considère de réduire.",
-                    'category' => $spending->category->name,
+                    'message' => "Tes dépenses en {$catName} dépassent " . number_format($spending->total, 0, ',', ' ') . " FCFA. Considère de réduire.",
+                    'category' => $catName,
                 ];
             }
         }
@@ -93,12 +100,12 @@ class RecommendationService
         $previousMonth = $monthlyTrends[1];
 
         // Comparaison avec le mois précédent
-        if ($currentMonth->total > $previousMonth->total) {
+        if ($previousMonth->total > 0 && $currentMonth->total > $previousMonth->total) {
             $increase = (($currentMonth->total - $previousMonth->total) / $previousMonth->total) * 100;
             if ($increase > 20) {
                 $recommendations[] = [
                     'type' => 'warning',
-                    'message' => "Tes dépenses ont augmenté de {$increase}% par rapport au mois dernier.",
+                    'message' => "Tes dépenses ont augmenté de " . number_format($increase, 0) . "% par rapport au mois dernier.",
                 ];
             }
         }
@@ -148,7 +155,7 @@ class RecommendationService
         foreach ($anomalies as $anomaly) {
             $recommendations[] = [
                 'type' => 'info',
-                'message' => "Transaction importante détectée: {$anomaly->description} ({$anomaly->amount} XOF). Vérifie si c'est normal.",
+                'message' => "Transaction importante détectée: {$anomaly->description} (" . number_format($anomaly->amount, 0, ',', ' ') . " FCFA). Vérifie si c'est normal.",
             ];
         }
 

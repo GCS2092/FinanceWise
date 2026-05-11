@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../services/ai_service.dart';
 import '../services/notification_service.dart';
 import '../services/logger_service.dart';
 import '../theme.dart';
@@ -16,6 +18,7 @@ class TransactionFormScreen extends StatefulWidget {
 
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _api = ApiService();
+  final _ai = AiService();
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
@@ -31,6 +34,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   String _type = 'expense';
   DateTime _date = DateTime.now();
 
+  // IA - suggestion de catégorie
+  Timer? _aiDebounce;
+  bool _aiSuggesting = false;
+  int? _aiSuggestedCategoryId;
+  String? _aiSuggestedCategoryName;
+  String _aiLastQueriedDescription = '';
+
   bool get _isEdit => widget.transaction != null;
 
   @override
@@ -38,6 +48,41 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     super.initState();
     initializeDateFormatting('fr_FR');
     _loadData();
+    _descCtrl.addListener(_onDescriptionChanged);
+  }
+
+  void _onDescriptionChanged() {
+    if (_isEdit) return; // pas de suggestion en édition
+    _aiDebounce?.cancel();
+    _aiDebounce = Timer(const Duration(milliseconds: 800), _requestAiSuggestion);
+  }
+
+  Future<void> _requestAiSuggestion() async {
+    final desc = _descCtrl.text.trim();
+    if (desc.length < 3 || desc == _aiLastQueriedDescription) return;
+    _aiLastQueriedDescription = desc;
+
+    setState(() => _aiSuggesting = true);
+    final s = await _ai.suggestCategory(description: desc, type: _type);
+    if (!mounted) return;
+
+    if (s?.categoryId != null && _categories.any((c) => c['id'] == s!.categoryId)) {
+      setState(() {
+        _aiSuggesting = false;
+        _aiSuggestedCategoryId = s!.categoryId;
+        _aiSuggestedCategoryName = s.categoryName;
+        // Pré-remplir si l'utilisateur n'a pas encore choisi manuellement
+        _categoryId ??= s.categoryId;
+      });
+    } else {
+      setState(() => _aiSuggesting = false);
+    }
+  }
+
+  void _applyAiSuggestion() {
+    if (_aiSuggestedCategoryId != null) {
+      setState(() => _categoryId = _aiSuggestedCategoryId);
+    }
   }
 
   Future<void> _loadData() async {
@@ -49,9 +94,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _categories = (c is Map && c.containsKey('data')) ? c['data'] : (c is List ? c : []);
       _loading = false;
 
-      if (_wallets.isNotEmpty && _walletId == null) _walletId = _wallets.first['id'];
-      if (_categories.isNotEmpty && _categoryId == null) _categoryId = _categories.first['id'];
-
       if (_isEdit) {
         final t = widget.transaction!;
         _amountCtrl.text = t['amount'].toString();
@@ -61,6 +103,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         _type = t['type'] ?? 'expense';
         final d = DateTime.tryParse(t['transaction_date']?.toString() ?? '');
         if (d != null) _date = d;
+      } else {
+        // Valeurs par défaut uniquement pour la création
+        if (_wallets.isNotEmpty && _walletId == null) _walletId = _wallets.first['id'];
+        if (_categories.isNotEmpty && _categoryId == null) _categoryId = _categories.first['id'];
       }
     });
   }
@@ -86,6 +132,18 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     final result = _isEdit
         ? await _api.put('/transactions/${widget.transaction!['id']}', body)
         : await _api.post('/transactions', body);
+
+    // Apprentissage IA : l'utilisateur a changé la catégorie suggérée
+    if (!_isEdit &&
+        _aiSuggestedCategoryId != null &&
+        _categoryId != null &&
+        _aiSuggestedCategoryId != _categoryId &&
+        _descCtrl.text.trim().isNotEmpty) {
+      unawaited(_ai.learnCorrection(
+        description: _descCtrl.text.trim(),
+        categoryId: _categoryId!,
+      ));
+    }
 
     setState(() => _saving = false);
     if (result != null && result is Map && (result.containsKey('data') || result.containsKey('id'))) {
@@ -183,11 +241,45 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       decoration: InputDecoration(
                         labelText: 'Catégorie',
                         prefixIcon: const Icon(Icons.category),
+                        suffixIcon: _aiSuggesting
+                            ? const Padding(
+                                padding: EdgeInsets.all(14),
+                                child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5)),
+                              )
+                            : null,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       items: _categories.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(value: c['id'] as int, child: Text(c['name']))).toList(),
                       onChanged: (v) => setState(() => _categoryId = v),
                     ),
+                    if (_aiSuggestedCategoryName != null && _categoryId != _aiSuggestedCategoryId) ...[
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: _applyAiSuggestion,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.auto_awesome_rounded, size: 16, color: AppTheme.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Suggestion IA : $_aiSuggestedCategoryName',
+                                  style: TextStyle(fontSize: 12.5, color: AppTheme.primary, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              Text('Appliquer', style: TextStyle(fontSize: 11.5, color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Card(
                       child: ListTile(
@@ -225,6 +317,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   @override
   void dispose() {
+    _aiDebounce?.cancel();
+    _descCtrl.removeListener(_onDescriptionChanged);
     _amountCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();

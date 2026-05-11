@@ -189,10 +189,12 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
         ),
         color: Colors.white,
         surfaceTintColor: Colors.transparent,
+        shadowColor: const Color(0x14000000),
+        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -267,17 +269,20 @@ class AppTheme {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: primaryContainer,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: primary);
+            return GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: primary);
           }
-          return GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w400, color: outline);
+          return GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w400, color: outline);
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: primary, size: 24);
+            return const IconThemeData(color: primary, size: 22);
           }
-          return const IconThemeData(color: outline, size: 24);
+          return const IconThemeData(color: outline, size: 22);
         }),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -320,6 +325,7 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        iconColor: primary,
       ),
     );
   }
@@ -373,10 +379,12 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
         ),
         color: darkSurfaceContainer,
         surfaceTintColor: Colors.transparent,
+        shadowColor: const Color(0x33000000),
+        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -451,17 +459,20 @@ class AppTheme {
         backgroundColor: darkSurfaceContainer,
         surfaceTintColor: Colors.transparent,
         indicatorColor: darkPrimaryContainer,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF80CBC4));
+            return GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF80CBC4));
           }
-          return GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w400, color: darkOutline);
+          return GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w400, color: darkOutline);
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: Color(0xFF80CBC4), size: 24);
+            return const IconThemeData(color: Color(0xFF80CBC4), size: 22);
           }
-          return const IconThemeData(color: Color(0xFF8E9099), size: 24);
+          return const IconThemeData(color: Color(0xFF8E9099), size: 22);
         }),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -505,6 +516,7 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        iconColor: const Color(0xFF80CBC4),
       ),
     );
   }

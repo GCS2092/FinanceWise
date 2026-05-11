@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -251,10 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: GoogleFonts.inter(color: cs.onSurfaceVariant, fontSize: 14),
                       ),
                       GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                        ),
+                        onTap: () => context.push('/register'),
                         child: Text(
                           'S\'inscrire',
                           style: GoogleFonts.poppins(
