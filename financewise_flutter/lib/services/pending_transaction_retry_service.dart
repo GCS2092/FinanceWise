@@ -19,8 +19,8 @@ class PendingTransactionRetryService {
     return pendingList.map((item) {
       try {
         return Map<String, dynamic>.from(
-          (item as String).startsWith('{')
-            ? (item as String).split(',').asMap().entries.fold<Map<String, dynamic>>(
+          (item).startsWith('{')
+            ? (item).split(',').asMap().entries.fold<Map<String, dynamic>>(
                 {}, (map, entry) {
                   final key = entry.value.trim().split(':').first.replaceAll(RegExp(r"""[{}'"()]"""), '').trim();
                   final value = entry.value.trim().split(':').skip(1).join(':').replaceAll(RegExp(r"""[{}'"()]"""), '').trim();

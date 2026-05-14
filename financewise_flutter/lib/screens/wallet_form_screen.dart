@@ -122,7 +122,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _type,
+                initialValue: _type,
                 decoration: InputDecoration(
                   labelText: 'Type',
                   prefixIcon: const Icon(Icons.category),
@@ -137,7 +137,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _currency,
+                initialValue: _currency,
                 decoration: InputDecoration(
                   labelText: 'Devise',
                   prefixIcon: const Icon(Icons.currency_exchange),

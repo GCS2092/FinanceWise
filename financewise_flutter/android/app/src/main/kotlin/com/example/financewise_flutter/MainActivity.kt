@@ -1,8 +1,8 @@
 package com.example.financewise_flutter
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
@@ -13,138 +13,186 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
-    private val CHANNEL = "com.example.financewise_flutter/sms"
-    private val TAG = "MainActivity"
-    private val SMS_PERMISSION_CODE = 1001
+    private val channelName = "com.example.financewise_flutter/sms"
+    private val tag = "FinanceWise/MainActivity"
+    private val smsPermissionCode = 1001
+    private val notificationPermissionCode = 1002
+
+    private var smsMethodChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
-        // Demander les permissions SMS au démarrage
-        requestSmsPermission()
-        
-        // Vérifier s'il y a des données SMS en attente dans l'intent
+        Log.i(tag, "[SMS_RECEIVED] MainActivity onCreate")
+        requestSmsPermissionIfNeeded()
+        requestPostNotificationsIfNeeded()
         checkPendingSmsInIntent(intent)
     }
-    
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
+        Log.i(tag, "[SMS_RECEIVED] onNewIntent extras=${intent.extras?.keySet()}")
         checkPendingSmsInIntent(intent)
     }
-    
+
     private fun checkPendingSmsInIntent(intent: Intent?) {
-        intent?.let {
-            val sender = it.getStringExtra("pending_sms_sender")
-            val body = it.getStringExtra("pending_sms_body")
-            val userChoice = it.getBooleanExtra("pending_sms_user_choice", false)
-            val timestamp = it.getLongExtra("pending_sms_timestamp", 0L)
-            
-            if (sender != null && body != null && userChoice) {
-                Log.d(TAG, "Found pending SMS in intent: $sender")
-                
-                // Stocker dans SharedPreferences natif pour compatibilité
-                val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
-                val editor = prefs.edit()
-                editor.putString("sender", sender)
-                editor.putString("body", body)
-                editor.putLong("timestamp", timestamp)
-                editor.putBoolean("user_choice", userChoice)
-                editor.apply()
-                
-                Log.d(TAG, "SMS data stored in native SharedPreferences")
+        intent ?: return
+
+        val sender = intent.getStringExtra("pending_sms_sender")
+        val body = intent.getStringExtra("pending_sms_body")
+        val userChoice = intent.getBooleanExtra("pending_sms_user_choice", false)
+        val timestamp = intent.getLongExtra("pending_sms_timestamp", 0L)
+        val pendingFlag = intent.getBooleanExtra("pending_sms", false)
+
+        if (sender != null && body != null) {
+            Log.i(tag, "[SMS_PARSED] Intent pending SMS sender=$sender userChoice=$userChoice")
+            val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
+            val ed = prefs.edit()
+                .putString("sender", sender)
+                .putString("body", body)
+                .putLong("timestamp", if (timestamp > 0L) timestamp else System.currentTimeMillis())
+                .putBoolean("user_choice", userChoice)
+            if (pendingFlag) {
+                ed.putBoolean("opened_from_tap", true)
             }
+            ed.apply()
+            Log.d(tag, "[OFFLINE_QUEUE] pending_sms synced from intent")
+        } else if (pendingFlag) {
+            Log.d(tag, "[SMS_PARSED] pending_sms flag without extras — prefs inchangées (déjà remplies par SmsReceiver)")
         }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        
-        val methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
 
-        // Connecter le MethodChannel au SmsReceiver
+        val methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+        smsMethodChannel = methodChannel
+
         SmsReceiver.setMethodChannel(methodChannel)
-
-        // Connecter le MethodChannel au SmsActionReceiver
         SmsActionReceiver.setMethodChannel(methodChannel)
-        
-        // Handler pour les appels depuis Flutter
+
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "requestSmsPermission" -> {
-                    requestSmsPermission()
+                    requestSmsPermissionIfNeeded()
                     result.success(true)
                 }
                 "checkSmsPermission" -> {
-                    val hasPermission = checkSmsPermission()
-                    result.success(hasPermission)
+                    result.success(checkSmsPermission())
+                }
+                "requestNotificationPermission" -> {
+                    requestPostNotificationsIfNeeded()
+                    result.success(true)
+                }
+                "checkNotificationPermission" -> {
+                    result.success(checkNotificationPermission())
                 }
                 "getPendingSms" -> {
                     val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
-                    val sender = prefs.getString("sender", null)
-                    val body = prefs.getString("body", null)
-                    val timestamp = prefs.getLong("timestamp", 0L)
-                    val userChoice = prefs.getBoolean("user_choice", false)
-                    
-                    Log.d(TAG, "getPendingSms called: sender=$sender, body=$body, userChoice=$userChoice")
-                    
-                    if (sender != null && body != null) {
-                        result.success(mapOf(
-                            "sender" to sender,
-                            "body" to body,
-                            "timestamp" to timestamp,
-                            "user_choice" to userChoice
-                        ))
+                    val s = prefs.getString("sender", null)
+                    val b = prefs.getString("body", null)
+                    val ts = prefs.getLong("timestamp", 0L)
+                    val uc = prefs.getBoolean("user_choice", false)
+
+                    Log.d(tag, "[SMS_PARSED] getPendingSms sender=$s userChoice=$uc")
+
+                    if (s != null && b != null) {
+                        result.success(
+                            mapOf(
+                                "sender" to s,
+                                "body" to b,
+                                "timestamp" to ts,
+                                "user_choice" to uc,
+                            ),
+                        )
                     } else {
                         result.success(null)
                     }
                 }
                 "clearPendingSms" -> {
-                    val prefs = getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
-                    prefs.edit().clear().apply()
-                    Log.d(TAG, "Pending SMS cleared")
+                    getSharedPreferences("pending_sms", Context.MODE_PRIVATE).edit().clear().apply()
+                    Log.d(tag, "[OFFLINE_QUEUE] clearPendingSms")
                     result.success(true)
                 }
-                else -> {
-                    result.notImplemented()
-                }
+                else -> result.notImplemented()
             }
         }
+
+        Log.i(tag, "[SMS_CHANNEL] FlutterEngine configured MethodChannel=$channelName")
     }
 
     private fun checkSmsPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
         } else {
             true
         }
     }
 
-    private fun requestSmsPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!checkSmsPermission()) {
-                Log.d(TAG, "Requesting SMS permissions")
+    private fun checkNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    private fun requestSmsPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        if (!checkSmsPermission()) {
+            Log.i(tag, "[SMS_RECEIVED] requesting SMS runtime permissions")
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.RECEIVE_SMS,
+                    Manifest.permission.READ_SMS,
+                ),
+                smsPermissionCode,
+            )
+        } else {
+            Log.d(tag, "[SMS_RECEIVED] SMS permissions already granted")
+        }
+    }
+
+    private fun requestPostNotificationsIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.i(tag, "[SMS_RECEIVED] requesting POST_NOTIFICATIONS")
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(
-                        Manifest.permission.RECEIVE_SMS,
-                        Manifest.permission.READ_SMS
-                    ),
-                    SMS_PERMISSION_CODE
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    notificationPermissionCode,
                 )
-            } else {
-                Log.d(TAG, "SMS permissions already granted")
             }
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == SMS_PERMISSION_CODE) {
-            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                Log.d(TAG, "SMS permissions granted")
-            } else {
-                Log.d(TAG, "SMS permissions denied")
+        when (requestCode) {
+            smsPermissionCode -> {
+                val ok = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+                Log.i(tag, "[SMS_RECEIVED] SMS permission result granted=$ok")
+            }
+            notificationPermissionCode -> {
+                val ok = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                Log.i(tag, "[SMS_RECEIVED] POST_NOTIFICATIONS result granted=$ok")
             }
         }
+    }
+
+    override fun onDestroy() {
+        Log.i(tag, "[SMS_CHANNEL] MainActivity onDestroy — detach MethodChannel")
+        SmsReceiver.setMethodChannel(null)
+        SmsActionReceiver.setMethodChannel(null)
+        smsMethodChannel = null
+        super.onDestroy()
     }
 }

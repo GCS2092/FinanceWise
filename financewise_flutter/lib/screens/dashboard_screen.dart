@@ -6,8 +6,6 @@ import 'package:gap/gap.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
-import '../services/notification_service.dart';
-import '../services/sms_listener_service.dart';
 import '../services/pending_sms_service.dart';
 import '../services/pending_transaction_retry_service.dart';
 import '../services/expense_reminder_service.dart';
@@ -17,9 +15,6 @@ import '../widgets/onboarding_tooltip.dart';
 import '../widgets/connectivity_banner.dart';
 import '../theme.dart';
 import '../widgets/skeleton_loader.dart';
-import 'transaction_form_screen.dart';
-import 'transactions_screen.dart';
-import 'budgets_screen.dart';
 import 'sms_parser_screen.dart';
 import 'alerts_screen.dart';
 import '../widgets/ai_insight_card.dart';
@@ -27,6 +22,9 @@ import 'assistant_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  /// Rechargement dashboard depuis Home / SMS (évite dépendre du cycle de vie de cet onglet).
+  static VoidCallback? onRequestRefresh;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -44,15 +42,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _error;
   final Set<int> _dismissedAlerts = {};
   final GlobalKey<OnboardingTooltipState> _tooltipKey = GlobalKey<OnboardingTooltipState>();
-  SmsListenerService? _smsListener;
+
+  void _dashboardRefreshCallback() {
+    if (mounted) _loadDashboard();
+  }
 
   @override
   void initState() {
     super.initState();
+    DashboardScreen.onRequestRefresh = _dashboardRefreshCallback;
     _loadDashboard();
-    _initSmsListener();
-    _checkPendingSms(); // Appeler directement pour traiter les SMS en attente
-    // Services déplacés en background pour ne pas bloquer le chargement
+    // SMS en attente : traité depuis HomeScreen (évite double dialogue au démarrage)
     Future.delayed(const Duration(milliseconds: 500), () {
       _retryPendingTransactions();
       _initExpenseReminder();
@@ -70,23 +70,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _checkPendingSms();
   }
 
-  void _initSmsListener() {
-    _smsListener = SmsListenerService.getInstance(
-      context: context,
-      onTransactionAdded: _loadDashboard,
-    );
-    _smsListener?.startListening();
-  }
-
   Future<void> _checkPendingSms() async {
-    // Vérifier s'il y a un SMS en attente (quand l'app s'ouvre depuis une notification)
-    print('DashboardScreen: _checkPendingSms appelé');
     await PendingSmsService.showPendingSmsDialog(context, onTransactionAdded: _loadDashboard);
   }
 
   @override
   void dispose() {
-    _smsListener?.stopListening();
+    if (identical(DashboardScreen.onRequestRefresh, _dashboardRefreshCallback)) {
+      DashboardScreen.onRequestRefresh = null;
+    }
     super.dispose();
   }
 
@@ -757,8 +749,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final remaining = amount - spent;
         
         Color progressColor = AppTheme.primary;
-        if (percentage >= 90) progressColor = AppTheme.error;
-        else if (percentage >= 70) progressColor = Colors.orange;
+        if (percentage >= 90) {
+          progressColor = AppTheme.error;
+        } else if (percentage >= 70) progressColor = Colors.orange;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 8),

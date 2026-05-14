@@ -219,7 +219,7 @@ class _SmsParserScreenState extends State<SmsParserScreen> {
             ),
             const Gap(16),
             DropdownButtonFormField<String>(
-              value: _provider,
+              initialValue: _provider,
               decoration: InputDecoration(
                 labelText: 'Fournisseur',
                 prefixIcon: const Icon(Icons.phone_android),

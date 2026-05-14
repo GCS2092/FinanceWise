@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/sms_parser_service.dart';
 import '../services/api_service.dart';
 import '../services/ai_service.dart';
+import '../services/logger_service.dart';
 import '../theme.dart';
 
 class SmsConfirmationDialog extends StatefulWidget {
@@ -232,7 +233,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    initialValue: _selectedCategoryId,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -320,6 +321,8 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
       _errorMessage = null;
     });
 
+    LoggerService().debug('[TRANSACTION_DETECTED] dialogue: confirmation utilisateur — POST /transactions');
+
     try {
       final data = widget.transaction.toJson();
       data['category_id'] = int.tryParse(_selectedCategoryId!);
@@ -327,7 +330,9 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
       
       await _api.post('/transactions', data);
 
-      // Apprentissage IA : si l'utilisateur a changé la catégorie suggérée, l'enregistrer
+      LoggerService().debug('[SYNC] dialogue: POST /transactions OK');
+
+      // Apprentissage IA
       if (_aiSuggestedCategoryId != null &&
           _selectedCategoryId != null &&
           _aiSuggestedCategoryId != _selectedCategoryId) {
@@ -349,6 +354,7 @@ class _SmsConfirmationDialogState extends State<SmsConfirmationDialog> {
         widget.onConfirm();
       }
     } catch (e) {
+      LoggerService().debug('[OFFLINE_QUEUE] dialogue POST échec — sauvegarde locale: $e');
       // Sauvegarder en local pour retry plus tard
       await _savePendingTransaction();
       

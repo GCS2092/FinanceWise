@@ -87,13 +87,43 @@ class AiController extends Controller
     public function conversationMessages(Request $request, int $id): JsonResponse
     {
         $convo = AiConversation::where('user_id', $request->user()->id)->findOrFail($id);
-        $messages = $convo->messages()
+
+        $beforeId = $request->query('before_id');
+        $beforeId = is_numeric($beforeId) ? (int) $beforeId : null;
+        $limitParam = $request->query('limit');
+
+        // Compat : sans pagination explicite → même comportement qu’avant (tout l’historique).
+        if ($beforeId === null && $limitParam === null) {
+            $messages = $convo->messages()
+                ->whereIn('role', ['user', 'assistant'])
+                ->orderBy('id')
+                ->get(['id', 'role', 'content', 'meta', 'created_at']);
+
+            return response()->json([
+                'conversation' => $convo->only(['id', 'title']),
+                'messages' => $messages,
+                'has_more' => false,
+                'next_before_id' => null,
+            ]);
+        }
+
+        $limit = is_numeric($limitParam) ? (int) $limitParam : 50;
+        $limit = max(1, min(100, $limit));
+
+        $query = $convo->messages()
             ->whereIn('role', ['user', 'assistant'])
-            ->get(['id', 'role', 'content', 'created_at']);
+            ->orderByDesc('id')
+            ->when($beforeId, fn ($q) => $q->where('id', '<', $beforeId));
+
+        $rows = (clone $query)->limit($limit + 1)->get(['id', 'role', 'content', 'meta', 'created_at']);
+        $hasMore = $rows->count() > $limit;
+        $slice = $rows->take($limit)->sortBy('id')->values();
 
         return response()->json([
             'conversation' => $convo->only(['id', 'title']),
-            'messages' => $messages,
+            'messages' => $slice,
+            'has_more' => $hasMore,
+            'next_before_id' => $hasMore ? $slice->min('id') : null,
         ]);
     }
 

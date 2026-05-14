@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/user.dart';
@@ -146,21 +145,33 @@ class ApiService {
     final isOnline = await _connectivity.isConnected;
     
     if (!isOnline) {
-      // Mode offline - essayer de retourner du cache
+      // Mode offline - essayer de retourner du cache avec vérification TTL
       if (endpoint.contains('/transactions')) {
-        final cached = await _cache.getCachedTransactions();
-        if (cached.isNotEmpty) return {'data': cached, '_offline': true};
+        final isValid = await _cache.isCacheValid('transactions');
+        if (isValid) {
+          final cached = await _cache.getCachedTransactions();
+          if (cached.isNotEmpty) return {'data': cached, '_offline': true};
+        }
       } else if (endpoint.contains('/dashboard')) {
-        final cached = await _cache.getCachedDashboard();
-        if (cached != null) return {'data': cached, '_offline': true};
+        final isValid = await _cache.isCacheValid('dashboard');
+        if (isValid) {
+          final cached = await _cache.getCachedDashboard();
+          if (cached != null) return {'data': cached, '_offline': true};
+        }
       } else if (endpoint.contains('/budgets')) {
-        final cached = await _cache.getCachedBudgets();
-        if (cached.isNotEmpty) return {'data': cached, '_offline': true};
+        final isValid = await _cache.isCacheValid('budgets');
+        if (isValid) {
+          final cached = await _cache.getCachedBudgets();
+          if (cached.isNotEmpty) return {'data': cached, '_offline': true};
+        }
       } else if (endpoint.contains('/financial-goals')) {
-        final cached = await _cache.getCachedFinancialGoals();
-        if (cached.isNotEmpty) return {'data': cached, '_offline': true};
+        final isValid = await _cache.isCacheValid('goals');
+        if (isValid) {
+          final cached = await _cache.getCachedFinancialGoals();
+          if (cached.isNotEmpty) return {'data': cached, '_offline': true};
+        }
       }
-      return {'message': 'Mode hors ligne - données non disponibles', '_offline': true};
+      return {'message': 'Mode hors ligne - données non disponibles ou expirées', '_offline': true};
     }
     
     final response = await http.get(
@@ -256,9 +267,9 @@ class ApiService {
       return {'message': message, '_server_error': true};
     }
 
-    // Token expiré ou invalide → ne pas déconnecter automatiquement (connexion persistante)
+    // Token expiré ou invalide → déconnexion automatique
     if (response.statusCode == 401) {
-      // _handleSessionExpired();
+      _handleSessionExpired();
       return {'message': 'Session expirée. Veuillez vous reconnecter.', '_expired': true};
     }
 

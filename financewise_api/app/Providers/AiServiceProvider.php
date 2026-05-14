@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Ai\Contracts\AiProvider;
+use App\Services\Ai\Orchestrator\ProviderManager;
 use App\Services\Ai\Providers\FailoverAiProvider;
 use App\Services\Ai\Providers\GeminiProvider;
 use App\Services\Ai\Providers\GroqProvider;
@@ -13,14 +14,18 @@ class AiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(AiProvider::class, function () {
-            $configured = (string) config('services.ai.provider', 'groq');
+        $this->app->singleton(ProviderManager::class, function ($app) {
+            return new ProviderManager($app->make(AiProvider::class));
+        });
 
-            // 'auto' = tous les providers disponibles, dans l'ordre groq > gemini
-            // 'groq,gemini' = liste explicite (premier = primaire, suivants = fallback)
+        $this->app->singleton(AiProvider::class, function () {
+            $configured = (string) config('services.ai.provider', 'gemini,groq');
+
+            // 'auto' = tous les providers disponibles configurés, ordre : gemini puis groq
+            // 'gemini,groq' = liste explicite (premier = primaire, suivants = fallback)
             // 'groq' = un seul provider, pas de failover
             $names = $configured === 'auto'
-                ? ['groq', 'gemini']
+                ? ['gemini', 'groq']
                 : array_map('trim', explode(',', $configured));
 
             $providers = [];

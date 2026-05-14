@@ -130,8 +130,8 @@ class ListSkeleton extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (_, __) => Card(
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (_, _) => Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

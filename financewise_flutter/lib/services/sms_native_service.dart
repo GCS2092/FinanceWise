@@ -1,55 +1,30 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'auto_transaction_service.dart';
 
+import 'auto_transaction_service.dart';
+import 'logger_service.dart';
+
+/// Paramètres « envoi auto au backend » + demande SMS si l’auto est activée.
+/// L’écoute MethodChannel est centralisée dans [SmsListenerService] (plus d’écrasement ici).
 class SmsNativeService {
-  static const MethodChannel _channel = MethodChannel('com.example.financewise_flutter/sms');
   static final SmsNativeService _instance = SmsNativeService._internal();
   factory SmsNativeService() => _instance;
   SmsNativeService._internal();
 
   final AutoTransactionService _autoService = AutoTransactionService();
-  bool _isListening = false;
+  final LoggerService _log = LoggerService();
 
-  Future<void> initialize(BuildContext context) async {
+  Future<void> initialize() async {
     await _autoService.loadSettings();
-    
-    if (!_autoService.isEnabled) {
-      return;
-    }
+    _log.debug('[SMS_RECEIVED] SmsNativeService.initialize auto=${_autoService.isEnabled}');
 
-    // Demander les permissions SMS
-    final status = await Permission.sms.request();
-    if (!status.isGranted) {
-      return;
-    }
-
-    // Écouter les SMS depuis Android natif
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onSmsReceived') {
-        final smsData = call.arguments as Map<String, dynamic>;
-        _handleSms(smsData, context);
-      }
-    });
-
-    _isListening = true;
-  }
-
-  void _handleSms(Map<String, dynamic> smsData, BuildContext context) async {
     if (!_autoService.isEnabled) return;
 
-    final sender = smsData['sender'] ?? '';
-    final body = smsData['body'] ?? '';
-
-    // Envoyer au backend pour traitement async
-    await _autoService.handleAutoSms(body, sender, context);
+    final status = await Permission.sms.request();
+    _log.debug('[SMS_RECEIVED] SmsNativeService Permission.sms.request => $status');
   }
 
+  /// Conservé pour compatibilité avec [HomeScreen.dispose] ; le canal est géré par [SmsListenerService].
   void stopListening() {
-    _channel.setMethodCallHandler(null);
-    _isListening = false;
+    _log.debug('[FLUTTER_SMS_RECEIVED] SmsNativeService.stopListening (noop)');
   }
-
-  bool get isListening => _isListening;
 }

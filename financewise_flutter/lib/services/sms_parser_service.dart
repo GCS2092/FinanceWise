@@ -375,7 +375,7 @@ class SmsParserService {
     final lowerMessage = message.toLowerCase();
     
     // Mots-clés par catégorie pour la classification automatique
-    const Map<String, List<String>> _categoryKeywords = {
+    const Map<String, List<String>> categoryKeywords = {
       'Alimentation': ['restaurant', 'café', 'fast food', 'snack', 'manger', 'repas', 'food', 'aliment'],
       'Transport': ['taxi', 'bus', 'car', 'véhicule', 'transport', 'essence', 'carburant', 'gazoil'],
       'Téléphone': ['orange', 'wave', 'free', 'expresso', 'internet', 'data', 'appel', 'sms', 'credit'],
@@ -390,7 +390,7 @@ class SmsParserService {
     // Score pour chaque catégorie
     Map<String, int> scores = {};
 
-    for (final entry in _categoryKeywords.entries) {
+    for (final entry in categoryKeywords.entries) {
       final category = entry.key;
       final keywords = entry.value;
       

@@ -43,6 +43,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   double? _minAmount;
   double? _maxAmount;
 
+  // Tri
+  String _sortBy = 'date'; // 'date' ou 'amount'
+  String _sortOrder = 'desc'; // 'asc' ou 'desc'
+
   @override
   void initState() {
     super.initState();
@@ -176,7 +180,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         if (_searchQuery.isNotEmpty) {
           final description = (t['description'] ?? '').toLowerCase();
           final category = (t['category']?['name'] ?? '').toLowerCase();
-          if (!description.contains(_searchQuery.toLowerCase()) && 
+          if (!description.contains(_searchQuery.toLowerCase()) &&
               !category.contains(_searchQuery.toLowerCase())) {
             return false;
           }
@@ -216,6 +220,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
         return true;
       }).toList();
+
+      // Appliquer le tri
+      _filteredTransactions.sort((a, b) {
+        if (_sortBy == 'amount') {
+          final amountA = (a['amount'] ?? 0) as num;
+          final amountB = (b['amount'] ?? 0) as num;
+          return _sortOrder == 'asc' ? amountA.compareTo(amountB) : amountB.compareTo(amountA);
+        } else {
+          final dateA = DateTime.tryParse(a['transaction_date'] ?? '') ?? DateTime(0);
+          final dateB = DateTime.tryParse(b['transaction_date'] ?? '') ?? DateTime(0);
+          return _sortOrder == 'asc' ? dateA.compareTo(dateB) : dateB.compareTo(dateA);
+        }
+      });
     });
   }
 
@@ -228,6 +245,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       _endDate = null;
       _minAmount = null;
       _maxAmount = null;
+      _sortBy = 'date';
+      _sortOrder = 'desc';
     });
     _applyFilters();
   }
@@ -296,6 +315,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             icon: const Icon(Icons.help_outline),
             onPressed: () => _tooltipKey.currentState?.showTooltip(),
             tooltip: 'Aide',
+          ),
+          IconButton(
+            icon: Icon(_sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward),
+            onPressed: _showSortMenu,
+            tooltip: 'Trier',
           ),
           Stack(
             children: [
@@ -677,6 +701,83 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           const Spacer(),
           Flexible(child: Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13), textAlign: TextAlign.end, overflow: TextOverflow.ellipsis)),
         ],
+      ),
+    );
+  }
+
+  void _showSortMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Trier par', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Gap(16),
+            ListTile(
+              leading: Radio<String>(
+                value: 'date',
+                groupValue: _sortBy,
+                onChanged: (value) {
+                  setState(() => _sortBy = value!);
+                  Navigator.pop(ctx);
+                  _applyFilters();
+                },
+              ),
+              title: const Text('Date'),
+              trailing: Icon(Icons.calendar_today, size: 20),
+            ),
+            ListTile(
+              leading: Radio<String>(
+                value: 'amount',
+                groupValue: _sortBy,
+                onChanged: (value) {
+                  setState(() => _sortBy = value!);
+                  Navigator.pop(ctx);
+                  _applyFilters();
+                },
+              ),
+              title: const Text('Montant'),
+              trailing: Icon(Icons.payments_outlined, size: 20),
+            ),
+            const Divider(),
+            Text('Ordre', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Gap(8),
+            ListTile(
+              leading: Radio<String>(
+                value: 'desc',
+                groupValue: _sortOrder,
+                onChanged: (value) {
+                  setState(() => _sortOrder = value!);
+                  Navigator.pop(ctx);
+                  _applyFilters();
+                },
+              ),
+              title: const Text('Décroissant'),
+              trailing: Icon(Icons.arrow_downward, size: 20),
+            ),
+            ListTile(
+              leading: Radio<String>(
+                value: 'asc',
+                groupValue: _sortOrder,
+                onChanged: (value) {
+                  setState(() => _sortOrder = value!);
+                  Navigator.pop(ctx);
+                  _applyFilters();
+                },
+              ),
+              title: const Text('Croissant'),
+              trailing: Icon(Icons.arrow_upward, size: 20),
+            ),
+          ],
+        ),
       ),
     );
   }

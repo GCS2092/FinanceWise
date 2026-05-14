@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../services/biometric_service.dart';
 import '../theme.dart';
-import 'register_screen.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -60,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_email', _emailCtrl.text.trim());
       await prefs.setString('saved_password', _passwordCtrl.text);
-      
+
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
@@ -80,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
               savedPassword,
             );
 
-        if (success) {
+        if (success && mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const HomeScreen()),
           );

@@ -1,6 +1,4 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -8,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../services/offline_goal_service.dart';
 import '../theme.dart';
-import 'financial_goal_form_screen.dart';
 import 'statistics_screen.dart';
 
 class FinancialGoalsScreen extends StatefulWidget {
@@ -634,6 +631,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                 if (mounted) {
                   Navigator.pop(ctx);
                   _load();
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Montant ajouté avec succès'),
@@ -1095,6 +1093,7 @@ class _FinancialGoalsScreenState extends State<FinancialGoalsScreen> {
                 if (mounted) {
                   Navigator.pop(ctx);
                   _load();
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Montant mis à jour: ${_formatAmount(amount)}'),

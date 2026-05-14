@@ -43,7 +43,7 @@ class GroqProvider implements AiProvider
         $payload = [
             'model' => $this->model,
             'messages' => $this->convertMessages($messages, $options['system'] ?? null),
-            'temperature' => $options['temperature'] ?? 0.4,
+            'temperature' => $options['temperature'] ?? 0.25,
             'max_tokens' => $options['max_tokens'] ?? 1024,
         ];
 

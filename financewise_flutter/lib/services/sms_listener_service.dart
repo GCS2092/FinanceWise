@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'api_service.dart';
-import 'auto_transaction_service.dart';
-import 'sms_parser_service.dart';
+
 import '../widgets/sms_confirmation_dialog.dart';
 import '../theme.dart';
+import 'api_service.dart';
+import 'auto_transaction_service.dart';
+import 'logger_service.dart';
+import 'sms_parser_service.dart';
 
+/// Écoute unique du MethodChannel SMS (évite les écrasements entre services).
 class SmsListenerService {
   static const _channel = MethodChannel('com.example.financewise_flutter/sms');
   static SmsListenerService? _instance;
@@ -14,8 +19,8 @@ class SmsListenerService {
   final SmsParserService _parserService = SmsParserService();
   final AutoTransactionService _autoService = AutoTransactionService();
   final ApiService _api = ApiService();
+  final LoggerService _log = LoggerService();
 
-  // Pour éviter le double traitement
   static String? _lastProcessedSms;
   static DateTime? _lastProcessedTime;
 
@@ -27,13 +32,10 @@ class SmsListenerService {
     _loadWallets();
   }
 
-  // Cache des wallets
   List<dynamic> _wallets = [];
   String? _defaultWalletId;
 
-  // Correspondance mots-clés → types de wallets
   static const Map<String, String> _keywordToWalletType = {
-    // Transport
     'yango': 'transport',
     'taxi': 'transport',
     'bus': 'transport',
@@ -43,8 +45,6 @@ class SmsListenerService {
     'essence': 'transport',
     'carburant': 'transport',
     'gazoil': 'transport',
-    
-    // Alimentation
     'boutiquier': 'alimentation',
     'restaurant': 'alimentation',
     'café': 'alimentation',
@@ -56,8 +56,6 @@ class SmsListenerService {
     'aliment': 'alimentation',
     'supermarché': 'alimentation',
     'market': 'alimentation',
-    
-    // Téléphone
     'orange': 'téléphone',
     'wave': 'téléphone',
     'free': 'téléphone',
@@ -67,21 +65,16 @@ class SmsListenerService {
     'appel': 'téléphone',
     'sms': 'téléphone',
     'credit': 'téléphone',
-    
-    // Argent/Cash
     'cash': 'espèces',
     'espèces': 'espèces',
     'argent': 'espèces',
     'retrait': 'espèces',
-    
-    // Banque
     'banque': 'banque',
     'cb': 'banque',
     'carte': 'banque',
     'virement': 'banque',
   };
 
-  // Charger les wallets depuis l'API
   Future<void> _loadWallets() async {
     try {
       final result = await _api.get('/wallets');
@@ -90,55 +83,31 @@ class SmsListenerService {
       } else if (result is List) {
         _wallets = result;
       }
-
-      // Définir le wallet par défaut (le premier wallet ou celui avec le solde le plus élevé)
       if (_wallets.isNotEmpty) {
         _defaultWalletId = _wallets.first['id']?.toString();
       }
     } catch (e) {
-      print('Erreur lors du chargement des wallets: $e');
+      _log.debug('[OFFLINE_QUEUE] _loadWallets error: $e');
     }
   }
 
-  // Sélectionner le wallet selon les mots-clés du SMS
   String? _selectWalletFromKeywords(String smsBody) {
     final lowerBody = smsBody.toLowerCase();
-
-    print('SMS Body: $smsBody');
-    print('Wallets disponibles: $_wallets');
-    print('Wallet par défaut: $_defaultWalletId');
-
-    // Chercher le type de wallet correspondant
     String? walletType;
     for (final entry in _keywordToWalletType.entries) {
       if (lowerBody.contains(entry.key)) {
         walletType = entry.value;
-        print('Mot-clé trouvé: ${entry.key} -> Type wallet: $walletType');
         break;
       }
     }
-
-    if (walletType == null) {
-      // Aucun mot-clé trouvé, utiliser le wallet par défaut
-      print('Aucun mot-clé trouvé, utilisation wallet par défaut: $_defaultWalletId');
-      return _defaultWalletId;
-    }
-
-    // Chercher un wallet correspondant au type
+    if (walletType == null) return _defaultWalletId;
     for (final wallet in _wallets) {
       final walletTypeLower = (wallet['type'] ?? '').toString().toLowerCase();
       final walletNameLower = (wallet['name'] ?? '').toString().toLowerCase();
-
-      print('Vérification wallet: ${wallet['name']} (type: ${wallet['type']}) contre $walletType');
-
       if (walletTypeLower.contains(walletType) || walletNameLower.contains(walletType)) {
-        print('Wallet correspondant trouvé: ${wallet['id']}');
         return wallet['id']?.toString();
       }
     }
-
-    // Aucun wallet correspondant, utiliser le défaut
-    print('Aucun wallet correspondant, utilisation wallet par défaut: $_defaultWalletId');
     return _defaultWalletId;
   }
 
@@ -146,7 +115,6 @@ class SmsListenerService {
     required BuildContext context,
     VoidCallback? onTransactionAdded,
   }) {
-    // Toujours recréer l'instance pour s'assurer que le context est à jour
     _instance = SmsListenerService._(
       context: context,
       onTransactionAdded: onTransactionAdded,
@@ -155,128 +123,134 @@ class SmsListenerService {
   }
 
   void startListening() {
-    _channel.setMethodCallHandler(_handleSmsReceived);
+    _channel.setMethodCallHandler(_handleMethodCall);
+    _log.debug('[FLUTTER_SMS_RECEIVED] SmsListenerService: handler enregistré (canal unique)');
   }
 
   void stopListening() {
     _channel.setMethodCallHandler(null);
+    _log.debug('[FLUTTER_SMS_RECEIVED] SmsListenerService: handler retiré');
   }
 
-  Future<void> _handleSmsReceived(MethodCall call) async {
-    if (call.method == 'onSmsReceived') {
+  Future<void> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'onSmsReceived':
+        await _onInboundSms(call, source: 'sms_broadcast');
+        break;
+      case 'onBankNotification':
+        await _onInboundSms(call, source: 'notification_listener');
+        break;
+      case 'onSmsActionAdd':
+        await _onSmsActionAdd(call);
+        break;
+      default:
+        _log.debug('[FLUTTER_SMS_RECEIVED] méthode inconnue: ${call.method}');
+    }
+  }
+
+  Future<void> _onInboundSms(MethodCall call, {required String source}) async {
+    try {
       final smsData = call.arguments as Map<dynamic, dynamic>;
-      final sender = smsData['sender'] as String;
-      final body = smsData['body'] as String;
+      final sender = smsData['sender'] as String? ?? '';
+      final body = smsData['body'] as String? ?? '';
+      _log.debug('[FLUTTER_SMS_RECEIVED] $source sender=$sender bodyLen=${body.length}');
 
-      // Vérifier si c'est un SMS financier (Wave / Orange Money avec montant)
-      final provider = _autoService.detectProvider(sender);
-      if (provider == null || !_autoService.hasAmount(body)) return;
+      await _autoService.loadSettings();
+      if (_autoService.isEnabled && _context.mounted) {
+        unawaited(_autoService.handleAutoSms(body, sender, _context));
+        _log.debug('[TRANSACTION_DETECTED] auto backend activé — envoi parallèle');
+      }
 
-      // Parser le SMS localement
+      final provider = _autoService.detectProvider(sender, body);
+      if (provider == null || !_autoService.hasAmount(body)) {
+        _log.debug('[TRANSACTION_DETECTED] filtre Flutter: provider=$provider hasAmount=${_autoService.hasAmount(body)}');
+        return;
+      }
+      _log.debug('[TRANSACTION_DETECTED] candidat retenu provider=$provider');
+
       final transaction = await _parserService.parseSmsWithCategories(body, sender);
-
       if (transaction != null && _context.mounted) {
         final confirmed = await showSmsConfirmationDialog(_context, transaction);
-
         if (confirmed == true) {
           _onTransactionAdded?.call();
         }
+        try {
+          await _channel.invokeMethod('clearPendingSms');
+          _log.debug('[OFFLINE_QUEUE] clearPendingSms après dialogue SMS');
+        } catch (_) {}
       }
-    } else if (call.method == 'onSmsActionAdd') {
-      // L'utilisateur a cliqué sur "Ajouter" depuis la notification
+    } catch (e, st) {
+      _log.error('[FLUTTER_SMS_RECEIVED] _onInboundSms error: $e', e, st);
+    }
+  }
+
+  Future<void> _onSmsActionAdd(MethodCall call) async {
+    try {
       final smsData = call.arguments as Map<dynamic, dynamic>;
-      final sender = smsData['sender'] as String;
-      final body = smsData['body'] as String;
+      final sender = smsData['sender'] as String? ?? '';
+      final body = smsData['body'] as String? ?? '';
+      _log.debug('[FLUTTER_SMS_RECEIVED] onSmsActionAdd sender=$sender');
 
-      print('=== onSmsActionAdd ===');
-      print('Sender: $sender');
-      print('Body: $body');
-
-      // Vérifier si ce SMS a déjà été traité récemment (pour éviter le double traitement)
       final smsKey = '$sender|$body';
       final now = DateTime.now();
-      if (_lastProcessedSms == smsKey && 
-          _lastProcessedTime != null && 
+      if (_lastProcessedSms == smsKey &&
+          _lastProcessedTime != null &&
           now.difference(_lastProcessedTime!).inSeconds < 5) {
-        print('SMS déjà traité récemment, ignoré');
+        _log.debug('[FLUTTER_SMS_RECEIVED] doublon ignoré (<5s)');
         return;
       }
-
-      // Marquer ce SMS comme traité
       _lastProcessedSms = smsKey;
       _lastProcessedTime = now;
 
-      // Vérifier si c'est un SMS financier (Wave / Orange Money avec montant)
-      final provider = _autoService.detectProvider(sender);
-      print('Provider détecté: $provider');
-      
+      final provider = _autoService.detectProvider(sender, body);
       if (provider == null || !_autoService.hasAmount(body)) {
-        print('SMS non valide ou sans montant');
+        _log.debug('[TRANSACTION_DETECTED] onSmsActionAdd rejeté provider=$provider');
         return;
       }
 
-      // Parser le SMS localement
       final transaction = await _parserService.parseSmsWithCategories(body, sender);
-      print('Transaction parsée: $transaction');
+      if (transaction == null) return;
 
-      if (transaction != null) {
-        // Sélectionner le wallet selon les mots-clés
-        final walletId = _selectWalletFromKeywords(body);
-        print('Wallet ID sélectionné: $walletId');
+      final walletId = _selectWalletFromKeywords(body);
+      final transactionData = transaction.toJson();
+      if (walletId != null) {
+        transactionData['wallet_id'] = walletId;
+      }
 
-        // Créer directement la transaction via l'API
-        try {
-          final transactionData = transaction.toJson();
-          print('Données transaction avant ajout wallet_id=$transactionData');
-          
-          if (walletId != null) {
-            transactionData['wallet_id'] = walletId;
-            print('Wallet ID ajouté: $walletId');
-          } else {
-            print('ATTENTION: wallet_id est null!');
-          }
+      _log.debug('[OFFLINE_QUEUE] POST /transactions depuis notification action');
+      final result = await _api.post('/transactions', transactionData);
 
-          print('Données transaction finales=$transactionData');
-          final result = await _api.post('/transactions', transactionData);
-          print('Résultat API=$result');
-
-          if (result is Map<String, dynamic>) {
-            // Transaction créée avec succès
-            if (_context.mounted) {
-              ScaffoldMessenger.of(_context).showSnackBar(
-                const SnackBar(
-                  content: Text('Transaction ajoutée avec succès'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
-            }
-            // Rafraîchir le dashboard
-            _onTransactionAdded?.call();
-            // Effacer le SMS en attente
-            await _channel.invokeMethod('clearPendingSms');
-          } else {
-            // Erreur lors de la création
-            print('Erreur: résultat API n\'est pas une Map');
-            if (_context.mounted) {
-              ScaffoldMessenger.of(_context).showSnackBar(
-                const SnackBar(
-                  content: Text('Erreur lors de l\'ajout de la transaction'),
-                  backgroundColor: AppTheme.error,
-                ),
-              );
-            }
-          }
-        } catch (e) {
-          print('Erreur lors de la création de la transaction: $e');
-          if (_context.mounted) {
-            ScaffoldMessenger.of(_context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur: $e'),
-                backgroundColor: AppTheme.error,
-              ),
-            );
-          }
+      if (result is Map<String, dynamic>) {
+        if (result['_offline'] == true) {
+          _log.debug('[OFFLINE_QUEUE] transaction mise en file (_offline)');
         }
+        if (_context.mounted) {
+          ScaffoldMessenger.of(_context).showSnackBar(
+            const SnackBar(
+              content: Text('Transaction ajoutée avec succès'),
+              backgroundColor: AppTheme.success,
+            ),
+          );
+        }
+        _onTransactionAdded?.call();
+        await _channel.invokeMethod('clearPendingSms');
+      } else {
+        _log.warning('[SYNC] réponse inattendue: $result');
+        if (_context.mounted) {
+          ScaffoldMessenger.of(_context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur lors de l\'ajout de la transaction'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e, st) {
+      _log.error('[FLUTTER_SMS_RECEIVED] onSmsActionAdd error: $e', e, st);
+      if (_context.mounted) {
+        ScaffoldMessenger.of(_context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: AppTheme.error),
+        );
       }
     }
   }
@@ -295,6 +269,21 @@ class SmsListenerService {
       final result = await _channel.invokeMethod('checkSmsPermission');
       return result as bool? ?? false;
     } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<void> requestNotificationPermission() async {
+    try {
+      await _channel.invokeMethod('requestNotificationPermission');
+    } catch (_) {}
+  }
+
+  static Future<bool> checkNotificationPermission() async {
+    try {
+      final result = await _channel.invokeMethod('checkNotificationPermission');
+      return result as bool? ?? false;
+    } catch (_) {
       return false;
     }
   }

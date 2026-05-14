@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import '../services/api_service.dart';
+import '../services/pending_sms_service.dart';
+import '../services/permission_service.dart';
+import '../services/sms_listener_service.dart';
 import '../services/sms_native_service.dart';
 import '../theme.dart';
 import '../widgets/connectivity_banner.dart';
@@ -31,6 +34,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final SmsNativeService _smsService = SmsNativeService();
+  SmsListenerService? _smsListener;
 
   final List<Widget> _pages = const [
     DashboardScreen(),
@@ -47,14 +51,39 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedIndex >= _pages.length) {
       _selectedIndex = 0;
     }
-    // Initialiser l'écoute SMS après un court délai
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _smsService.initialize(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final rootContext = context;
+
+      await ApiService().init();
+      if (!mounted) return;
+
+      await PermissionService.instance.ensureSmsAndNotificationsForDetection(rootContext);
+      if (!mounted) return;
+
+      await SmsListenerService.requestNotificationPermission();
+
+      if (!mounted) return;
+      _smsListener = SmsListenerService.getInstance(
+        context: rootContext,
+        onTransactionAdded: () {
+          DashboardScreen.onRequestRefresh?.call();
+        },
+      )..startListening();
+
+      await _smsService.initialize();
+
+      if (!mounted) return;
+      await PendingSmsService.showPendingSmsDialog(
+        rootContext,
+        onTransactionAdded: () => DashboardScreen.onRequestRefresh?.call(),
+      );
     });
   }
 
   @override
   void dispose() {
+    _smsListener?.stopListening();
     _smsService.stopListening();
     super.dispose();
   }

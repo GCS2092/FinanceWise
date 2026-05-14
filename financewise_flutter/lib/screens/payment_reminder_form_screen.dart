@@ -164,7 +164,7 @@ class _PaymentReminderFormScreenState extends State<PaymentReminderFormScreen> {
             Text('Fréquence', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedFrequency,
+              initialValue: _selectedFrequency,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.repeat),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

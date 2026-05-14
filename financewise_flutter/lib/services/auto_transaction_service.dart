@@ -33,19 +33,21 @@ class AutoTransactionService {
   bool get isEnabled => _isEnabled;
   bool get autoConfirm => _autoConfirm;
 
-  /// Détecte le fournisseur depuis le sender du SMS
-  String? detectProvider(String sender) {
-    final lowerSender = sender.toLowerCase();
-    if (lowerSender.contains('wave')) return 'wave';
-    if (lowerSender.contains('orange')) return 'orange_money';
-    if (lowerSender.contains('yango')) return 'yango';
-    if (lowerSender.contains('taxi')) return 'taxi';
-    if (lowerSender.contains('bolt')) return 'bolt';
-    if (lowerSender.contains('uber')) return 'uber';
-    if (lowerSender.contains('free')) return 'free';
-    if (lowerSender.contains('expresso')) return 'expresso';
-    if (lowerSender.contains('wari')) return 'wari';
-    if (lowerSender.contains('jonah')) return 'jonah';
+  /// Détecte le fournisseur depuis l’expéditeur **et** le corps (codes courts réels sur téléphone).
+  String? detectProvider(String sender, [String body = '']) {
+    final hay = '${sender.toLowerCase()} ${body.toLowerCase()}';
+    if (hay.contains('wave')) return 'wave';
+    if (hay.contains('orange') || hay.contains('orangemoney') || hay.contains('orange money')) {
+      return 'orange_money';
+    }
+    if (hay.contains('yango')) return 'yango';
+    if (hay.contains('taxi')) return 'taxi';
+    if (hay.contains('bolt')) return 'bolt';
+    if (hay.contains('uber')) return 'uber';
+    if (hay.contains('free')) return 'free';
+    if (hay.contains('expresso')) return 'expresso';
+    if (hay.contains('wari')) return 'wari';
+    if (hay.contains('jonah')) return 'jonah';
     return null;
   }
 
@@ -66,8 +68,10 @@ class AutoTransactionService {
 
   /// Envoie le SMS au backend pour parsing async via la queue
   Future<Map<String, dynamic>?> sendToBackend(String smsBody, String sender) async {
-    final provider = detectProvider(sender);
+    final provider = detectProvider(sender, smsBody);
     if (provider == null) return null;
+    // API Laravel `/sms/parse` : uniquement wave | orange_money
+    if (provider != 'wave' && provider != 'orange_money') return null;
     if (!hasAmount(smsBody)) return null;
 
     try {
@@ -89,7 +93,7 @@ class AutoTransactionService {
   Future<void> handleAutoSms(String smsBody, String sender, BuildContext? context) async {
     if (!_isEnabled) return;
 
-    final provider = detectProvider(sender);
+    final provider = detectProvider(sender, smsBody);
     if (provider == null) return;
     if (!hasAmount(smsBody)) return;
 

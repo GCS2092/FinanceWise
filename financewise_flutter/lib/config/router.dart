@@ -1,19 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../providers/auth_provider.dart';
-import '../services/api_service.dart';
 import '../screens/splash_screen.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/home_screen.dart';
-import '../screens/dashboard_screen.dart';
 import '../screens/transactions_screen.dart';
 import '../screens/wallets_screen.dart';
 import '../screens/financial_goals_screen.dart';
-import '../screens/profile_screen.dart';
 import '../screens/wallet_form_screen.dart';
 import '../screens/transaction_form_screen.dart';
 import '../screens/financial_goal_form_screen.dart';
@@ -21,7 +15,6 @@ import '../screens/category_form_screen.dart';
 import '../screens/budgets_screen.dart';
 import '../screens/budget_form_screen.dart';
 import '../screens/categories_screen.dart';
-import '../screens/category_form_screen.dart';
 import '../screens/payment_reminders_screen.dart';
 import '../screens/payment_reminder_form_screen.dart';
 

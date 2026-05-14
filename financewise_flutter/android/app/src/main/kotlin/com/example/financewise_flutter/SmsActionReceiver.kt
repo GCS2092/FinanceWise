@@ -10,38 +10,42 @@ import io.flutter.plugin.common.MethodChannel
 class SmsActionReceiver : BroadcastReceiver() {
     companion object {
         private var methodChannel: MethodChannel? = null
-        private const val TAG = "SmsActionReceiver"
+        private const val TAG = "FinanceWise/SmsActionReceiver"
 
-        fun setMethodChannel(channel: MethodChannel) {
+        fun setMethodChannel(channel: MethodChannel?) {
             methodChannel = channel
-            Log.d(TAG, "MethodChannel set")
+            Log.i(TAG, "[SMS_CHANNEL] MethodChannel ${if (channel != null) "attached" else "cleared"}")
         }
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        context ?: return
-        intent ?: return
+        context ?: run {
+            Log.w(TAG, "[SMS_RECEIVED] context null")
+            return
+        }
+        intent ?: run {
+            Log.w(TAG, "[SMS_RECEIVED] intent null")
+            return
+        }
 
         val action = intent.action
-        Log.d(TAG, "Received action: $action")
+        Log.i(TAG, "[SMS_RECEIVED] SmsActionReceiver action=$action")
 
         when (action) {
             "ACTION_ADD_TRANSACTION" -> {
-                // Stocker les données SMS pour traitement par Flutter
-                val sender = intent.getStringExtra("sender") ?: ""
-                val body = intent.getStringExtra("body") ?: ""
+                val sender = intent.getStringExtra("sender").orEmpty()
+                val body = intent.getStringExtra("body").orEmpty()
+                Log.i(TAG, "[TRANSACTION_DETECTED] add action sender=$sender bodyLen=${body.length}")
 
                 val prefs = context.getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
-                val editor = prefs.edit()
-                editor.putString("sender", sender)
-                editor.putString("body", body)
-                editor.putLong("timestamp", System.currentTimeMillis())
-                editor.putBoolean("user_choice", true) // Utilisateur a choisi "Ajouter"
-                editor.apply()
+                prefs.edit()
+                    .putString("sender", sender)
+                    .putString("body", body)
+                    .putLong("timestamp", System.currentTimeMillis())
+                    .putBoolean("user_choice", true)
+                    .apply()
+                Log.d(TAG, "[OFFLINE_QUEUE] pending_sms stored user_choice=true")
 
-                Log.d(TAG, "SMS stored for Flutter processing: $sender")
-
-                // Ouvrir l'application avec les données SMS dans l'intent
                 val appIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     putExtra("pending_sms_sender", sender)
@@ -49,44 +53,53 @@ class SmsActionReceiver : BroadcastReceiver() {
                     putExtra("pending_sms_user_choice", true)
                     putExtra("pending_sms_timestamp", System.currentTimeMillis())
                 }
-                context.startActivity(appIntent)
-                Log.d(TAG, "Application launched with SMS data in intent")
+                try {
+                    context.startActivity(appIntent)
+                    Log.i(TAG, "[SMS_SENT_TO_FLUTTER] Activity launched with pending SMS extras")
+                } catch (e: Exception) {
+                    Log.e(TAG, "[SMS_SENT_TO_FLUTTER] startActivity failed: ${e.message}", e)
+                }
 
-                // Envoyer à Flutter si l'app est ouverte
-                Log.d(TAG, "Attempting to send to Flutter via MethodChannel")
-                methodChannel?.let {
-                    Log.d(TAG, "MethodChannel exists, invoking method")
-                    it.invokeMethod("onSmsActionAdd", mapOf(
-                        "sender" to sender,
-                        "body" to body,
-                        "timestamp" to System.currentTimeMillis()
-                    ), object : MethodChannel.Result {
-                        override fun success(result: Any?) {
-                            Log.d(TAG, "MethodChannel call succeeded: $result")
-                        }
-                        override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-                            Log.e(TAG, "MethodChannel call failed: $errorCode - $errorMessage")
-                        }
-                        override fun notImplemented() {
-                            Log.w(TAG, "MethodChannel method not implemented in Flutter")
-                        }
-                    })
-                } ?: Log.w(TAG, "MethodChannel is null, cannot send to Flutter")
+                val ch = methodChannel
+                if (ch != null) {
+                    SmsReceiver.invokeOnMain {
+                        try {
+                            ch.invokeMethod(
+                                "onSmsActionAdd",
+                                mapOf(
+                                    "sender" to sender,
+                                    "body" to body,
+                                    "timestamp" to System.currentTimeMillis(),
+                                ),
+                                object : MethodChannel.Result {
+                                    override fun success(result: Any?) {
+                                        Log.i(TAG, "[SMS_SENT_TO_FLUTTER] onSmsActionAdd success: $result")
+                                    }
 
-                // Annuler la notification
+                                    override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
+                                        Log.e(TAG, "[SMS_SENT_TO_FLUTTER] onSmsActionAdd error: $errorCode $errorMessage")
+                                    }
+
+                                    override fun notImplemented() {
+                                        Log.w(TAG, "[SMS_SENT_TO_FLUTTER] onSmsActionAdd notImplemented in Dart")
+                                    }
+                                },
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "[SMS_SENT_TO_FLUTTER] invokeMethod exception: ${e.message}", e)
+                        }
+                    }
+                } else {
+                    Log.w(TAG, "[SMS_SENT_TO_FLUTTER] MethodChannel null — Flutter will read SharedPreferences on resume")
+                }
+
                 cancelNotification(context)
             }
 
             "ACTION_DISMISS_TRANSACTION" -> {
-                // L'utilisateur a choisi "Pas" - ne pas stocker le SMS
                 val prefs = context.getSharedPreferences("pending_sms", Context.MODE_PRIVATE)
-                val editor = prefs.edit()
-                editor.clear()
-                editor.apply()
-
-                Log.d(TAG, "SMS dismissed by user")
-
-                // Annuler la notification
+                prefs.edit().clear().apply()
+                Log.i(TAG, "[OFFLINE_QUEUE] pending_sms cleared (dismiss)")
                 cancelNotification(context)
             }
         }
@@ -95,6 +108,6 @@ class SmsActionReceiver : BroadcastReceiver() {
     private fun cancelNotification(context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(SmsReceiver.NOTIFICATION_ID)
-        Log.d(TAG, "Notification cancelled")
+        Log.d(TAG, "Notification cancelled id=${SmsReceiver.NOTIFICATION_ID}")
     }
 }

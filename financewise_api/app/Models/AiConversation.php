@@ -19,4 +19,9 @@ class AiConversation extends Model
     {
         return $this->hasMany(AiMessage::class, 'conversation_id')->orderBy('created_at');
     }
+
+    public function summaries(): HasMany
+    {
+        return $this->hasMany(AiConversationSummary::class, 'conversation_id')->orderBy('to_message_id');
+    }
 }

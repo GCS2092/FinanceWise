@@ -51,7 +51,9 @@ return [
 
     'ai' => [
         'enabled' => filter_var(env('AI_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
-        'provider' => env('AI_PROVIDER', 'gemini'),
+        /** Primaire + fallback : ex. gemini,groq (Groq = LLM rapide type OpenAI, distinct de xAI Grok). */
+        'provider' => env('AI_PROVIDER', 'gemini,groq'),
+        /** Conservé pour compat ; la fenêtre réelle est `config/ai.php` → orchestrator.max_recent_messages. */
         'max_chat_history' => (int) env('AI_MAX_CHAT_HISTORY', 10),
         'max_tool_hops' => (int) env('AI_MAX_TOOL_HOPS', 3),
     ],

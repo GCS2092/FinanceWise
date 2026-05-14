@@ -8,6 +8,9 @@ class AiChatReply {
   final List<String> toolCalls;
   final bool offline;
   final bool error;
+  final String? intent;
+  final bool? usedLlm;
+  final String? provider;
 
   AiChatReply({
     required this.reply,
@@ -15,6 +18,22 @@ class AiChatReply {
     this.toolCalls = const [],
     this.offline = false,
     this.error = false,
+    this.intent,
+    this.usedLlm,
+    this.provider,
+  });
+}
+
+/// Page de messages (pagination serveur).
+class AiConversationMessagesPage {
+  final List<Map<String, dynamic>> messages;
+  final bool hasMore;
+  final int? nextBeforeId;
+
+  AiConversationMessagesPage({
+    required this.messages,
+    required this.hasMore,
+    this.nextBeforeId,
   });
 }
 
@@ -142,6 +161,9 @@ class AiService {
             .map((e) => (e is Map ? (e['name']?.toString() ?? '') : e.toString()))
             .where((s) => s.isNotEmpty)
             .toList(),
+        intent: res['intent']?.toString(),
+        usedLlm: res['used_llm'] is bool ? res['used_llm'] as bool : null,
+        provider: res['provider']?.toString(),
       );
     } catch (e) {
       _logger.error('AiService.chat error: $e');
@@ -167,19 +189,67 @@ class AiService {
     return [];
   }
 
-  /// Récupère les messages d'une conversation.
-  Future<List<Map<String, dynamic>>> getConversationMessages(int conversationId) async {
+  /// Récupère une page de messages (les plus récents d’abord si [beforeId] est null).
+  Future<AiConversationMessagesPage> fetchConversationMessagesPage(
+    int conversationId, {
+    int? beforeId,
+    int limit = 50,
+  }) async {
     try {
-      final res = await _api.get('/ai/conversations/$conversationId');
-      if (res is Map && res['messages'] is List) {
-        return List<Map<String, dynamic>>.from(
-          (res['messages'] as List).map((e) => Map<String, dynamic>.from(e as Map)),
-        );
+      final qs = <String>['limit=$limit'];
+      if (beforeId != null) qs.add('before_id=$beforeId');
+      final res = await _api.get('/ai/conversations/$conversationId?${qs.join('&')}');
+      if (res is! Map) {
+        return AiConversationMessagesPage(messages: [], hasMore: false);
       }
+      final raw = (res['messages'] as List?) ?? const [];
+      final messages = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final hasMore = res['has_more'] == true;
+      final next = res['next_before_id'];
+      final nextBeforeId = next is int ? next : int.tryParse(next?.toString() ?? '');
+
+      return AiConversationMessagesPage(
+        messages: messages,
+        hasMore: hasMore,
+        nextBeforeId: nextBeforeId,
+      );
     } catch (e) {
-      _logger.error('AiService.getConversationMessages error: $e');
+      _logger.error('AiService.fetchConversationMessagesPage error: $e');
+      return AiConversationMessagesPage(messages: [], hasMore: false);
     }
-    return [];
+  }
+
+  /// Charge toutes les pages disponibles (plafonné) pour afficher l’historique complet.
+  Future<List<Map<String, dynamic>>> loadAllConversationMessages(
+    int conversationId, {
+    int perPage = 50,
+    int maxPages = 40,
+  }) async {
+    final out = <Map<String, dynamic>>[];
+    int? beforeId;
+    for (var i = 0; i < maxPages; i++) {
+      final page = await fetchConversationMessagesPage(
+        conversationId,
+        beforeId: beforeId,
+        limit: perPage,
+      );
+      if (page.messages.isEmpty) break;
+      if (beforeId == null) {
+        out.addAll(page.messages);
+      } else {
+        out.insertAll(0, page.messages);
+      }
+      if (!page.hasMore) break;
+      beforeId = page.nextBeforeId;
+      if (beforeId == null) break;
+    }
+    return out;
+  }
+
+  /// Récupère les messages d'une conversation (première page seulement — compat legacy).
+  Future<List<Map<String, dynamic>>> getConversationMessages(int conversationId) async {
+    final page = await fetchConversationMessagesPage(conversationId);
+    return page.messages;
   }
 
   Future<bool> deleteConversation(int conversationId) async {
@@ -211,7 +281,7 @@ class AiService {
   Future<void> markInsightRead({String? period}) async {
     try {
       await _api.post('/ai/insights/monthly/read', {
-        if (period != null) 'period': period,
+        'period': ?period,
       });
     } catch (e) {
       _logger.error('AiService.markInsightRead error: $e');
@@ -226,7 +296,7 @@ class AiService {
     try {
       final res = await _api.post('/ai/categorize', {
         'description': description,
-        if (type != null) 'type': type,
+        'type': ?type,
       });
       if (res is Map && res['_offline'] != true && res['_server_error'] != true) {
         return AiCategorySuggestion.fromJson(Map<String, dynamic>.from(res));

@@ -42,15 +42,14 @@ class _ExportScreenState extends State<ExportScreen> {
   Future<void> _exportToCsv() async {
     setState(() => _exporting = true);
     try {
-      final csv = 'Date,Description,Catégorie,Type,Montant\n' +
-          _transactions.map((t) {
+      final csv = 'Date,Description,Catégorie,Type,Montant\n${_transactions.map((t) {
             final date = t['transaction_date'] ?? '';
             final desc = (t['description'] ?? '').toString().replaceAll(',', ' ');
             final cat = t['category'] is Map ? (t['category']['name'] ?? '') : '';
             final type = t['type'] ?? '';
             final amount = t['amount'] ?? 0;
             return '$date,$desc,$cat,$type,$amount';
-          }).join('\n');
+          }).join('\n')}';
       await Clipboard.setData(ClipboardData(text: csv));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

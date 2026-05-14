@@ -1,14 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
-import '../providers/theme_provider.dart';
-import '../services/biometric_service.dart';
-import '../services/notification_service.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/onboarding_tooltip.dart';
@@ -259,6 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                         if (confirm == true && mounted) {
                           await context.read<AuthProvider>().logout();
+                          if (!mounted) return;
                           context.go('/login');
                         }
                       },

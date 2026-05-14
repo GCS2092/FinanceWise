@@ -1,6 +1,4 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +10,6 @@ import '../services/biometric_service.dart';
 import '../services/sms_listener_service.dart';
 import '../services/expense_reminder_service.dart';
 import '../theme.dart';
-import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -129,6 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               if (value) {
                                 final availableBiometrics = await _bioService.getAvailableBiometrics();
                                 if (availableBiometrics == null || availableBiometrics.isEmpty) {
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Aucune empreinte ou FaceID configurée sur cet appareil. Allez dans Paramètres > Sécurité de votre appareil.'),
@@ -137,16 +135,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   );
                                   return;
                                 }
-                                
+
                                 final authenticated = await _bioService.authenticate();
                                 if (authenticated) {
                                   final prefs = await SharedPreferences.getInstance();
                                   await prefs.setBool('biometric_activated', true);
+                                  if (!mounted) return;
                                   setState(() => _biometricActivated = true);
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Authentification biométrique activée')),
                                   );
                                 } else {
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Authentification annulée ou échouée. Réessayez.'),
@@ -202,14 +203,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               if (!hasPermission) {
                                 final granted = await SmsListenerService.requestSmsPermission();
                                 if (!granted) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Permission SMS requise pour la détection automatique'),
-                                        duration: Duration(seconds: 3),
-                                      ),
-                                    );
-                                  }
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Permission SMS requise pour la détection automatique'),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
                                   return;
                                 }
                               }
@@ -255,8 +255,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: _reminderEnabled,
                           onChanged: (value) async {
                             await _reminderService.setReminderEnabled(value);
+                            if (!mounted) return;
                             setState(() => _reminderEnabled = value);
                             if (value) {
+                              if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Rappel activé. Vous recevrez une notification tous les 15 jours.'),
@@ -371,7 +373,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: _reminderDay == index ? const Icon(Icons.check, color: AppTheme.primary) : null,
               onTap: () async {
                 await _reminderService.setReminderDay(index);
+                if (!mounted) return;
                 setState(() => _reminderDay = index);
+                if (!mounted) return;
                 Navigator.pop(ctx);
               },
             );

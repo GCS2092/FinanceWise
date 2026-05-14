@@ -14,6 +14,7 @@ class AssistantScreen extends StatefulWidget {
 }
 
 class _AssistantScreenState extends State<AssistantScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AiService _ai = AiService();
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
@@ -22,7 +23,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
   int? _conversationId;
   bool _sending = false;
   bool _loadingStatus = true;
+  bool _loadingConversation = false;
   bool _aiAvailable = false;
+  List<Map<String, dynamic>> _drawerConversations = [];
 
   static const List<String> _suggestions = [
     "Combien j'ai dépensé ce mois ?",
@@ -45,6 +48,58 @@ class _AssistantScreenState extends State<AssistantScreen> {
     super.dispose();
   }
 
+  Future<void> _refreshDrawerConversations() async {
+    final list = await _ai.listConversations();
+    if (!mounted) return;
+    setState(() => _drawerConversations = list);
+  }
+
+  void _startNewConversation() {
+    Navigator.of(context).maybePop();
+    setState(() {
+      _messages.clear();
+      _conversationId = null;
+      _loadingConversation = false;
+      if (_aiAvailable) {
+        _messages.add(_ChatMsg.assistant(
+          "Salut ! Je suis ton assistant FinanceWise. Pose-moi une question sur tes finances ou choisis une suggestion ci-dessous.",
+        ));
+      } else {
+        _messages.add(_ChatMsg.assistant(
+          "L'assistant n'est pas configuré sur ce serveur. Demande à l'administrateur d'ajouter une clé API IA dans le fichier .env.",
+        ));
+      }
+    });
+  }
+
+  Future<void> _loadConversationFromServer(int id) async {
+    Navigator.of(context).maybePop();
+    setState(() {
+      _loadingConversation = true;
+      _messages.clear();
+      _conversationId = id;
+    });
+    final rows = await _ai.loadAllConversationMessages(id);
+    if (!mounted) return;
+    setState(() {
+      _loadingConversation = false;
+      _messages.clear();
+      for (final m in rows) {
+        final role = m['role']?.toString() ?? '';
+        final c = m['content']?.toString() ?? '';
+        if (role == 'user') {
+          _messages.add(_ChatMsg.user(c));
+        } else {
+          _messages.add(_ChatMsg.assistant(c));
+        }
+      }
+      if (_messages.isEmpty) {
+        _messages.add(_ChatMsg.assistant('Cette conversation est vide.'));
+      }
+    });
+    _scrollToBottom();
+  }
+
   Future<void> _checkStatus() async {
     final ok = await _ai.isEnabled();
     if (!mounted) return;
@@ -53,7 +108,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _loadingStatus = false;
       if (!ok) {
         _messages.add(_ChatMsg.assistant(
-          "L'assistant n'est pas configuré sur ce serveur. Demande à l'administrateur d'ajouter une clé Gemini dans le fichier .env.",
+          "L'assistant n'est pas configuré sur ce serveur. Demande à l'administrateur d'ajouter une clé API IA dans le fichier .env.",
         ));
       } else {
         _messages.add(_ChatMsg.assistant(
@@ -65,7 +120,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
 
   Future<void> _send(String text) async {
     final msg = text.trim();
-    if (msg.isEmpty || _sending) return;
+    if (msg.isEmpty || _sending || _loadingConversation) return;
 
     setState(() {
       _messages.add(_ChatMsg.user(msg));
@@ -104,7 +159,58 @@ class _AssistantScreenState extends State<AssistantScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
+      key: _scaffoldKey,
+      onDrawerChanged: (opened) {
+        if (opened) _refreshDrawerConversations();
+      },
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text('Conversations', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.add_comment_rounded),
+                title: Text('Nouvelle conversation', style: GoogleFonts.inter()),
+                onTap: _startNewConversation,
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: _drawerConversations.isEmpty
+                    ? Center(child: Text('Aucune conversation', style: GoogleFonts.inter(color: cs.onSurfaceVariant)))
+                    : ListView.builder(
+                        itemCount: _drawerConversations.length,
+                        itemBuilder: (context, i) {
+                          final c = _drawerConversations[i];
+                          final id = c['id'] is int ? c['id'] as int : int.tryParse(c['id']?.toString() ?? '') ?? 0;
+                          final title = c['title']?.toString() ?? 'Conversation';
+                          return ListTile(
+                            title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 14)),
+                            onTap: id > 0 ? () => _loadConversationFromServer(id) : null,
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
       appBar: AppBar(
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: cs.onSurface),
+          ),
+          tooltip: 'Retour',
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
             Container(
@@ -120,25 +226,22 @@ class _AssistantScreenState extends State<AssistantScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history_rounded),
+            tooltip: 'Historique',
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
           if (_messages.length > 1)
             IconButton(
               tooltip: 'Nouvelle conversation',
-              onPressed: _sending
-                  ? null
-                  : () {
-                      setState(() {
-                        _messages.clear();
-                        _conversationId = null;
-                        _checkStatus();
-                      });
-                    },
+              onPressed: (_sending || _loadingConversation) ? null : _startNewConversation,
               icon: const Icon(Icons.refresh_rounded),
             ),
         ],
       ),
       body: Column(
         children: [
-          if (_loadingStatus)
+          if (_loadingStatus || _loadingConversation)
             const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: ListView.builder(
@@ -240,7 +343,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
         children: _suggestions.map((s) {
           return ActionChip(
             label: Text(s, style: GoogleFonts.inter(fontSize: 12.5)),
-            onPressed: _sending ? null : () => _send(s),
+            onPressed: _sending || _loadingConversation ? null : () => _send(s),
             backgroundColor: cs.primaryContainer.withValues(alpha: 0.4),
             side: BorderSide(color: cs.outlineVariant),
           );
@@ -263,7 +366,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             Expanded(
               child: TextField(
                 controller: _input,
-                enabled: _aiAvailable && !_sending,
+                enabled: _aiAvailable && !_sending && !_loadingConversation,
                 minLines: 1,
                 maxLines: 4,
                 textInputAction: TextInputAction.send,
@@ -282,17 +385,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
             ),
             const Gap(8),
             Material(
-              color: _sending ? cs.surfaceContainerHighest : cs.primary,
+              color: (_sending || _loadingConversation) ? cs.surfaceContainerHighest : cs.primary,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
-                onTap: (_aiAvailable && !_sending) ? () => _send(_input.text) : null,
+                onTap: (_aiAvailable && !_sending && !_loadingConversation) ? () => _send(_input.text) : null,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Icon(
                     Icons.send_rounded,
                     size: 18,
-                    color: _sending ? cs.onSurfaceVariant : cs.onPrimary,
+                    color: (_sending || _loadingConversation) ? cs.onSurfaceVariant : cs.onPrimary,
                   ),
                 ),
               ),
@@ -344,7 +447,7 @@ class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderState
     final cs = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _ctrl,
-      builder: (_, __) {
+      builder: (_, _) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(3, (i) {

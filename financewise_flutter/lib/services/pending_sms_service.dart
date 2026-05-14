@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../theme.dart';
+import '../widgets/sms_confirmation_dialog.dart';
 import 'api_service.dart';
 import 'auto_transaction_service.dart';
+import 'logger_service.dart';
 import 'sms_parser_service.dart';
-import '../theme.dart';
 
 class PendingSmsService {
   static const _channel = MethodChannel('com.example.financewise_flutter/sms');
+  static final LoggerService _log = LoggerService();
+
+  static const Duration _maxPendingAge = Duration(minutes: 20);
 
   // Cache des wallets
   static List<dynamic> _wallets = [];
@@ -157,7 +163,7 @@ class PendingSmsService {
   static Future<Map<String, dynamic>?> getPendingSms() async {
     try {
       final result = await _channel.invokeMethod('getPendingSms');
-      print('PendingSmsService: Résultat getPendingSms=$result');
+      _log.debug('[FLUTTER_SMS_RECEIVED] getPendingSms result=$result');
       
       if (result != null && result is Map) {
         final sender = result['sender'] as String?;
@@ -165,7 +171,7 @@ class PendingSmsService {
         final timestamp = result['timestamp'] as int?;
         final userChoice = result['user_choice'] as bool?;
         
-        print('PendingSmsService: sender=$sender, body=$body, userChoice=$userChoice');
+        _log.debug('[FLUTTER_SMS_RECEIVED] pending fields sender=$sender userChoice=$userChoice');
         
         if (sender != null && body != null) {
           return {
@@ -186,7 +192,7 @@ class PendingSmsService {
   static Future<void> clearPendingSms() async {
     try {
       await _channel.invokeMethod('clearPendingSms');
-      print('PendingSmsService: Pending SMS cleared via MethodChannel');
+      _log.debug('[OFFLINE_QUEUE] clearPendingSms OK');
     } catch (e) {
       print('PendingSmsService: Erreur clearPendingSms=$e');
     }
@@ -194,90 +200,87 @@ class PendingSmsService {
   
   static Future<void> showPendingSmsDialog(BuildContext context, {VoidCallback? onTransactionAdded}) async {
     final pendingSms = await getPendingSms();
+    if (pendingSms == null) return;
 
-    if (pendingSms != null) {
-      final sender = pendingSms['sender'] as String;
-      final body = pendingSms['body'] as String;
-      final userChoice = pendingSms['user_choice'] as bool;
+    final sender = pendingSms['sender'] as String;
+    final body = pendingSms['body'] as String;
+    final userChoice = pendingSms['user_choice'] as bool;
+    final ts = pendingSms['timestamp'] as int?;
 
-      print('PendingSmsService: Traitement SMS - userChoice=$userChoice');
-
-      if (!userChoice) {
-        print('PendingSmsService: Utilisateur n\'a pas choisi "Ajouter", effacement');
+    if (ts != null) {
+      final age = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(ts));
+      if (age > _maxPendingAge) {
+        _log.debug('[FLUTTER_SMS_RECEIVED] pending expiré (${age.inMinutes} min) — effacement');
         await clearPendingSms();
         return;
       }
+    }
 
-      // Charger les wallets pour la sélection automatique
-      print('PendingSmsService: Début chargement wallets');
+    _log.debug('[FLUTTER_SMS_RECEIVED] showPendingSmsDialog userChoice=$userChoice');
+
+    final auto = AutoTransactionService();
+    await auto.loadSettings();
+
+    if (userChoice) {
       await _loadWallets();
-      print('PendingSmsService: Wallets chargés, défaut=$_defaultWalletId');
-
-      // Parser le SMS localement
       final parserService = SmsParserService();
       final transaction = await parserService.parseSmsWithCategories(body, sender);
-      print('PendingSmsService: Transaction parsée=$transaction');
-      print('PendingSmsService: transaction != null: ${transaction != null}');
-
-      if (transaction != null) {
-        // Sélectionner le wallet selon les mots-clés et le sender
-        final walletId = _selectWalletFromKeywords(body, sender);
-        print('PendingSmsService: Wallet ID sélectionné=$walletId');
-
-        try {
-          final api = ApiService();
-          final transactionData = transaction.toJson();
-          print('PendingSmsService: Données transaction avant wallet_id=$transactionData');
-
-          if (walletId != null) {
-            transactionData['wallet_id'] = walletId;
-            print('PendingSmsService: Wallet ID ajouté=$walletId');
-          } else {
-            print('PendingSmsService: ATTENTION: wallet_id est null!');
-          }
-
-          print('PendingSmsService: Données finales=$transactionData');
-          final result = await api.post('/transactions', transactionData);
-          print('PendingSmsService: Résultat API=$result');
-
-          if (result is Map<String, dynamic>) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Transaction ajoutée avec succès'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
-            }
-            // Rafraîchir le dashboard
-            onTransactionAdded?.call();
-          } else {
-            print('PendingSmsService: Erreur - résultat API n\'est pas une Map');
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Erreur lors de l\'ajout de la transaction'),
-                  backgroundColor: AppTheme.error,
-                ),
-              );
-            }
-          }
-        } catch (e) {
-          print('PendingSmsService: Exception=$e');
+      if (transaction == null) {
+        await clearPendingSms();
+        return;
+      }
+      final walletId = _selectWalletFromKeywords(body, sender);
+      try {
+        final api = ApiService();
+        final transactionData = transaction.toJson();
+        if (walletId != null) {
+          transactionData['wallet_id'] = walletId;
+        }
+        _log.debug('[OFFLINE_QUEUE] POST /transactions (userChoice notification Ajouter)');
+        final result = await api.post('/transactions', transactionData);
+        if (result is Map<String, dynamic>) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur: $e'),
-                backgroundColor: AppTheme.error,
-              ),
+              const SnackBar(content: Text('Transaction ajoutée avec succès'), backgroundColor: AppTheme.success),
             );
           }
+          onTransactionAdded?.call();
+        }
+      } catch (e) {
+        _log.error('[SYNC] PendingSmsService POST erreur: $e', e);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e'), backgroundColor: AppTheme.error),
+          );
         }
       }
-
-      // Effacer les données après traitement
       await clearPendingSms();
-      print('PendingSmsService: Données effacées');
+      return;
     }
+
+    // userChoice == false : SMS stocké par SmsReceiver / notification — proposer le dialogue
+    if (!auto.hasAmount(body)) {
+      _log.debug('[TRANSACTION_DETECTED] pending sans montant détectable — abandon');
+      await clearPendingSms();
+      return;
+    }
+    if (auto.detectProvider(sender, body) == null) {
+      _log.debug('[TRANSACTION_DETECTED] pending sans fournisseur reconnu — abandon');
+      await clearPendingSms();
+      return;
+    }
+
+    await _loadWallets();
+    final parserService = SmsParserService();
+    final transaction = await parserService.parseSmsWithCategories(body, sender);
+    if (transaction != null && context.mounted) {
+      _log.debug('[TRANSACTION_DETECTED] affichage dialogue confirmation (cold start / prefs)');
+      final confirmed = await showSmsConfirmationDialog(context, transaction);
+      if (confirmed == true) {
+        onTransactionAdded?.call();
+      }
+    }
+
+    await clearPendingSms();
   }
 }

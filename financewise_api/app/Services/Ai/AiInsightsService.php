@@ -60,7 +60,7 @@ class AiInsightsService
                     tools: [],
                     options: [
                         'system' => $this->systemPrompt($user, $period),
-                        'temperature' => 0.5,
+                        'temperature' => 0.3,
                         'max_tokens' => 800,
                         'json_mode' => true,
                     ],

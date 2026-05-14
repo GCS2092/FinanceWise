@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/skeleton_loader.dart';
@@ -160,7 +157,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     PieChartSectionData(
                       value: income.toDouble(),
                       color: AppTheme.primary,
-                      title: '${AppTheme.formatCurrency(income)}',
+                      title: AppTheme.formatCurrency(income),
                       radius: 60,
                       titleStyle: const TextStyle(
                         fontSize: 12,
@@ -171,7 +168,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     PieChartSectionData(
                       value: expense.toDouble(),
                       color: AppTheme.error,
-                      title: '${AppTheme.formatCurrency(expense)}',
+                      title: AppTheme.formatCurrency(expense),
                       radius: 60,
                       titleStyle: const TextStyle(
                         fontSize: 12,

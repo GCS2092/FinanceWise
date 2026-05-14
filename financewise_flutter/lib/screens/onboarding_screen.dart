@@ -94,18 +94,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         // Sauvegarder l'état onboarding complété
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('onboarding_completed', true);
-        
+
         final walletsCreated = response['wallets_created'] ?? 0;
         final budgetsCreated = response['budgets_created'] ?? 0;
         final goalsCreated = response['goals_created'] ?? 0;
-        
+
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Onboarding terminé ! $walletsCreated portefeuilles créés, $budgetsCreated budgets créés, $goalsCreated objectifs créés'),
             backgroundColor: AppTheme.primary,
           ),
         );
-        
+
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
@@ -746,7 +748,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   ),
-                                  value: _budgets[index]['category_id'],
+                                  initialValue: _budgets[index]['category_id'],
                                   hint: const Text('Sélectionner une catégorie'),
                                   items: _categories.map((cat) {
                                     return DropdownMenuItem<int>(

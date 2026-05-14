@@ -49,7 +49,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       await NotificationService().showNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: _isEdit ? 'Catégorie modifiée' : 'Catégorie créée',
-        body: '${_nameCtrl.text} (${_type})',
+        body: '${_nameCtrl.text} ($_type)',
       );
       
       if (mounted) {
@@ -117,7 +117,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _type,
+              initialValue: _type,
               decoration: InputDecoration(
                 labelText: 'Type',
                 prefixIcon: const Icon(Icons.category),

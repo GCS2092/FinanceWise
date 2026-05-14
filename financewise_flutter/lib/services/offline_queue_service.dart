@@ -6,6 +6,9 @@ class OfflineQueueService {
   factory OfflineQueueService() => _instance;
   OfflineQueueService._internal();
 
+  static const int _maxQueueSize = 100;
+  static const Duration _maxAge = Duration(days: 7);
+
   Future<SharedPreferences> get prefs async {
     return SharedPreferences.getInstance();
   }
@@ -17,7 +20,7 @@ class OfflineQueueService {
     Map<String, dynamic>? body,
   }) async {
     final p = await prefs;
-    
+
     final request = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'method': method,
@@ -25,10 +28,34 @@ class OfflineQueueService {
       'body': body,
       'timestamp': DateTime.now().toIso8601String(),
     };
-    
+
     List<dynamic> queue = await getQueue();
+
+    // Purge des requêtes trop anciennes
+    await _purgeOldRequests();
+
+    // Si la queue est pleine, supprimer la plus ancienne (FIFO)
+    if (queue.length >= _maxQueueSize) {
+      queue.removeAt(0);
+    }
+
     queue.add(request);
-    
+
+    await p.setString('offline_queue', jsonEncode(queue));
+  }
+
+  // Purger les requêtes plus vieilles que 7 jours
+  Future<void> _purgeOldRequests() async {
+    final p = await prefs;
+    List<dynamic> queue = await getQueue();
+    final now = DateTime.now();
+
+    queue.removeWhere((request) {
+      final timestamp = DateTime.tryParse(request['timestamp'] as String? ?? '');
+      if (timestamp == null) return true;
+      return now.difference(timestamp) > _maxAge;
+    });
+
     await p.setString('offline_queue', jsonEncode(queue));
   }
 

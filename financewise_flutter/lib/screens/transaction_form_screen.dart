@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/ai_service.dart';
 import '../services/notification_service.dart';
-import '../services/logger_service.dart';
 import '../theme.dart';
 
 class TransactionFormScreen extends StatefulWidget {
@@ -226,7 +225,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
-                      value: _walletId,
+                      initialValue: _walletId,
                       decoration: InputDecoration(
                         labelText: 'Wallet',
                         prefixIcon: const Icon(Icons.account_balance_wallet),
@@ -237,7 +236,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
-                      value: _categoryId,
+                      initialValue: _categoryId,
                       decoration: InputDecoration(
                         labelText: 'Catégorie',
                         prefixIcon: const Icon(Icons.category),

@@ -47,8 +47,8 @@ class LoggerService {
 
 // Extension pour un accès facile
 extension LogExtension on Object? {
-  void logDebug(String message) => LoggerService().debug('${runtimeType}: $message');
-  void logInfo(String message) => LoggerService().info('${runtimeType}: $message');
-  void logWarning(String message) => LoggerService().warning('${runtimeType}: $message');
-  void logError(String message, [dynamic error]) => LoggerService().error('${runtimeType}: $message', error);
+  void logDebug(String message) => LoggerService().debug('$runtimeType: $message');
+  void logInfo(String message) => LoggerService().info('$runtimeType: $message');
+  void logWarning(String message) => LoggerService().warning('$runtimeType: $message');
+  void logError(String message, [dynamic error]) => LoggerService().error('$runtimeType: $message', error);
 }

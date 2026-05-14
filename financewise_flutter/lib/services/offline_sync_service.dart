@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
 import 'api_service.dart';
 import 'offline_queue_service.dart';
 import 'offline_cache_service.dart';
@@ -14,6 +15,7 @@ class OfflineSyncService {
   final Connectivity _connectivity = Connectivity();
 
   bool _isSyncing = false;
+  static const int _maxRetries = 3;
 
   // Écouter les changements de connexion
   void startListening() {
@@ -31,39 +33,57 @@ class OfflineSyncService {
 
     try {
       final queue = await _queue.getQueue();
-      
+
       for (var request in queue) {
-        try {
-          final method = request['method'];
-          final endpoint = request['endpoint'];
-          final body = request['body'];
-          
-          dynamic response;
-          switch (method) {
-            case 'POST':
-              response = await _api.post(endpoint, body);
-              break;
-            case 'PUT':
-              response = await _api.put(endpoint, body);
-              break;
-            case 'DELETE':
-              response = await _api.delete(endpoint);
-              break;
-          }
-          
-          // Si succès, supprimer de la queue
-          if (response != null && !(response is Map && response.containsKey('_offline'))) {
-            await _queue.removeRequest(request['id']);
-          }
-        } catch (e) {
-          print('Erreur sync: $e');
-        }
+        await _syncRequestWithRetry(request);
       }
-      
+
       // Rafraîchir le cache après sync
       await refreshCache();
     } finally {
       _isSyncing = false;
+    }
+  }
+
+  // Synchroniser une requête avec retry et backoff exponentiel
+  Future<void> _syncRequestWithRetry(Map<String, dynamic> request) async {
+    final method = request['method'];
+    final endpoint = request['endpoint'];
+    final body = request['body'];
+
+    for (int attempt = 0; attempt < _maxRetries; attempt++) {
+      try {
+        dynamic response;
+        switch (method) {
+          case 'POST':
+            response = await _api.post(endpoint, body);
+            break;
+          case 'PUT':
+            response = await _api.put(endpoint, body);
+            break;
+          case 'DELETE':
+            response = await _api.delete(endpoint);
+            break;
+        }
+
+        // Si succès, supprimer de la queue
+        if (response != null && !(response is Map && response.containsKey('_offline'))) {
+          await _queue.removeRequest(request['id']);
+          return;
+        }
+      } catch (e) {
+        print('Erreur sync (tentative ${attempt + 1}/$_maxRetries): $e');
+
+        // Si dernier échec, laisser dans la queue pour tentative ultérieure
+        if (attempt == _maxRetries - 1) {
+          print('Échec après $_maxRetries tentatives, laissé dans la queue');
+          return;
+        }
+
+        // Backoff exponentiel : 1s, 2s, 4s
+        final delay = Duration(milliseconds: 1000 * (1 << attempt));
+        await Future.delayed(delay);
+      }
     }
   }
 

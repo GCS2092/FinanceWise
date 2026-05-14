@@ -8,14 +8,15 @@ class ConnectivityService {
   final Connectivity _connectivity = Connectivity();
 
   Stream<bool> get onConnectivityChanged async* {
-    final results = await _connectivity.onConnectivityChanged;
-    await for (var result in results) {
-      yield result != ConnectivityResult.none;
+    await for (var results in _connectivity.onConnectivityChanged) {
+      // results est une List<ConnectivityResult>
+      yield results.isNotEmpty && !results.contains(ConnectivityResult.none);
     }
   }
 
   Future<bool> get isConnected async {
-    final result = await _connectivity.checkConnectivity();
-    return result != ConnectivityResult.none;
+    final results = await _connectivity.checkConnectivity();
+    // results est une List<ConnectivityResult>
+    return results.isNotEmpty && !results.contains(ConnectivityResult.none);
   }
 }

@@ -23,7 +23,7 @@ class FailoverAiProvider implements AiProvider
      */
     public function __construct(
         protected array $providers,
-        protected int $cooldownSeconds = 10,
+        protected int $cooldownSeconds = 30,
     ) {
         if (empty($this->providers)) {
             throw new RuntimeException('FailoverAiProvider nécessite au moins un provider.');
@@ -53,6 +53,7 @@ class FailoverAiProvider implements AiProvider
                 continue;
             }
 
+            // Quarantaine réactivée avec cooldown de 30s pour éviter boucles d'échec
             $cooldownKey = 'ai_failover_cooldown:' . $provider->name();
             if (Cache::has($cooldownKey)) {
                 $errors[] = $provider->name() . ': en quarantaine';
@@ -67,11 +68,12 @@ class FailoverAiProvider implements AiProvider
                 $errors[] = $provider->name() . ': réponse vide';
             } catch (Throwable $e) {
                 $errors[] = $provider->name() . ': ' . $this->shortError($e->getMessage());
-                Log::warning('AI provider failed, trying next', [
-                    'provider' => $provider->name(),
+                Log::warning('[AI_FALLBACK]', [
+                    'failed_provider' => $provider->name(),
                     'error' => $e->getMessage(),
+                    'message' => 'Bascule ou fin de chaîne failover',
                 ]);
-                // Mettre en quarantaine seulement si c'est un problème durable (rate-limit, quota, 5xx)
+                // Quarantaine réactivée avec cooldown de 30s pour éviter boucles d'échec
                 if ($this->shouldQuarantine($e->getMessage())) {
                     Cache::put($cooldownKey, true, $this->cooldownSeconds);
                 }

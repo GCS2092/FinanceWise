@@ -36,7 +36,14 @@ class SmsParserService
 
             if (!empty($parsed['amount']) && !empty($parsed['type'])) {
                 $category = $this->detectCategory($parsed, $userId);
-                $wallet = \App\Models\Wallet::where('user_id', $userId)->first();
+
+                try {
+                    $wallet = \App\Models\Wallet::where('user_id', $userId)->firstOrFail();
+                } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                    $sms->update(['status' => 'failed', 'error_message' => 'Aucun wallet trouvé pour cet utilisateur']);
+                    Log::warning('SMS parse failed: no wallet for user', ['user_id' => $userId, 'sms_id' => $sms->id]);
+                    return $sms->refresh();
+                }
 
                 $transaction = $this->transactionService->create([
                     'category_id' => $category?->id,

@@ -121,7 +121,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                         ),
                       ),
                     DropdownButtonFormField<int>(
-                      value: _categoryId,
+                      initialValue: _categoryId,
                       decoration: InputDecoration(
                         labelText: 'Catégorie',
                         prefixIcon: const Icon(Icons.category),
@@ -146,7 +146,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _period,
+                      initialValue: _period,
                       decoration: InputDecoration(
                         labelText: 'Période',
                         prefixIcon: const Icon(Icons.calendar_view_month),
