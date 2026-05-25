@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Autoriser cleartext pour localhost (émulateur Android) en développement -->
+
+    <!-- Autoriser HTTP local -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">192.168.1.28</domain>
+         <domain includeSubdomains="true">192.168.1.5</domain>
+         
     </domain-config>
-    
-    <!-- En production, HTTPS est obligatoire par défaut -->
-    <base-config cleartextTrafficPermitted="false">
+
+    <!-- Autoriser cleartext globalement en développement -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+
 </network-security-config>

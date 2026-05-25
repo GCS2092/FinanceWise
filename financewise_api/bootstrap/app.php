@@ -12,6 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // ✅ FIX : intercepte avant que Laravel cherche route('login')
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->is('api/*')) {
+                abort(401, 'Unauthenticated.');
+            }
+            return '/login';
+        });
+
         $middleware->statefulApi();
         $middleware->validateCsrfTokens([
             'api/*',
@@ -19,5 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // ✅ Transforme le abort(401) en JSON propre
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
+            if ($e->getStatusCode() === 401 && $request->is('api/*')) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+        });
     })->create();

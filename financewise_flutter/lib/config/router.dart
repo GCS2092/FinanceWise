@@ -20,7 +20,7 @@ import '../screens/payment_reminder_form_screen.dart';
 
 // Configuration du router avec guards
 final router = GoRouter(
-  initialLocation: '/home',
+  initialLocation: '/',
   redirect: (context, state) {
     // Désactivé temporairement pour permettre au bouton retour de fonctionner
     // La logique d'authentification est gérée dans le SplashScreen

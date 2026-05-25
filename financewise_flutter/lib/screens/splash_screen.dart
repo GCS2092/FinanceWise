@@ -23,7 +23,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _bootstrapApp();
+    // FIX: attendre que le widget tree soit construit avant d'appeler checkAuth()
+    // sinon notifyListeners() déclenche un setState() pendant le build → exception
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bootstrapApp();
+    });
   }
 
   Future<void> _bootstrapApp() async {
@@ -40,11 +44,9 @@ class _SplashScreenState extends State<SplashScreen> {
       if (auth.isAuthenticated) {
         targetRoute = onboardingCompleted ? '/home' : '/onboarding';
       } else {
-        // Aucun profil détecté → rediriger vers login
         targetRoute = '/login';
       }
     } on TimeoutException {
-      // Fallback sécurisé: ne pas bloquer l'utilisateur sur le splash.
       targetRoute = '/welcome';
     } catch (_) {
       targetRoute = '/welcome';
@@ -57,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted || _navigated) return;
     _navigated = true;
-    context.push(targetRoute);
+    context.go(targetRoute);
   }
 
   @override
@@ -79,7 +81,6 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
         child: Stack(
           children: [
-            // Cercles décoratifs
             Positioned(
               top: -60,
               right: -40,
@@ -104,12 +105,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
             ),
-            // Contenu principal
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Animation Lottie
                   Lottie.asset(
                     'assets/animations/splash.json',
                     width: 150,
@@ -156,10 +155,10 @@ class _SplashScreenState extends State<SplashScreen> {
                       .animate()
                       .fadeIn(delay: 400.ms, duration: 500.ms),
                   const SizedBox(height: 56),
-                  SizedBox(
+                  const SizedBox(
                     width: 28,
                     height: 28,
-                    child: const CircularProgressIndicator(
+                    child: CircularProgressIndicator(
                       strokeWidth: 2.5,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),

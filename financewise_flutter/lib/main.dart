@@ -8,6 +8,8 @@ import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
 import 'services/api_service.dart';
 import 'services/offline_sync_service.dart';
+import 'services/server_discovery_service.dart';
+import 'config/app_constants.dart';
 import 'config/router.dart';
 import 'theme.dart';
 
@@ -39,14 +41,17 @@ class FadePageRoute extends PageRouteBuilder {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialiser les locales pour DateFormat (fr_FR)
   await initializeDateFormatting('fr_FR', null);
-  
+
+  // Découverte automatique du serveur backend
+  await AppConstants.init();
+
   // Initialiser le service de notifications
   await NotificationService().initialize();
   await NotificationService().requestPermissions();
-  
+
   // Initialiser le service de sync offline
   OfflineSyncService().startListening();
 
@@ -97,7 +102,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<bool> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     final api = ApiService();
-    
+
     // Essayer d'abord depuis l'API (source de vérité)
     try {
       await api.init();
@@ -113,7 +118,7 @@ class _AppInitializerState extends State<AppInitializer> {
     } catch (e) {
       // En cas d'erreur, utiliser SharedPreferences comme fallback
     }
-    
+
     // Fallback sur SharedPreferences
     return prefs.getBool('onboarding_completed') ?? false;
   }
@@ -145,7 +150,6 @@ class _BiometricCheckScreenState extends State<BiometricCheckScreen> {
     final lastAuthTime = prefs.getInt('last_biometric_auth_time');
 
     // Vérifier si l'authentification a été faite il y a moins de 5 minutes
-    // Si oui, ne pas redemander (évite de demander à chaque resume)
     bool recentAuth = false;
     if (lastAuthTime != null) {
       final lastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthTime);

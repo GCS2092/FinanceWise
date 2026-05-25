@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,10 +44,7 @@ class AuthProvider extends ChangeNotifier {
         _user = User.fromJson(result['user'] ?? {});
         await _saveUserData(result);
         await _saveLoginState(true);
-        
-        // Tenter de resynchroniser les transactions en attente
         PendingTransactionRetryService().retryPendingTransactions();
-        
         notifyListeners();
         return true;
       } else {
@@ -76,10 +74,7 @@ class AuthProvider extends ChangeNotifier {
         _user = User.fromJson(result['user'] ?? {});
         await _saveUserData(result);
         await _saveLoginState(true);
-        
-        // Tenter de resynchroniser les transactions en attente
         PendingTransactionRetryService().retryPendingTransactions();
-        
         notifyListeners();
         return true;
       } else {
@@ -108,31 +103,35 @@ class AuthProvider extends ChangeNotifier {
   Future<void> checkAuth() async {
     _isLoading = true;
     notifyListeners();
-    
-    await _api.init();
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString('user_data');
-    
-    if (_api.isAuthenticated && userData != null) {
-      _isAuthenticated = true;
-      _user = User.fromJson(jsonDecode(userData));
-      await _saveLoginState(true);
-      
-      // Tenter de resynchroniser les transactions en attente
-      PendingTransactionRetryService().retryPendingTransactions();
-    } else if (_api.isAuthenticated) {
-      // Si le token existe mais pas les données utilisateur, les récupérer
-      _user = await _api.getUser();
-      if (_user != null) {
+
+    try {
+      await _api.init();
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('user_data');
+
+      if (_api.isAuthenticated && userData != null) {
         _isAuthenticated = true;
-        await _saveUserData({'user': _user?.toJson()});
+        _user = User.fromJson(jsonDecode(userData));
         await _saveLoginState(true);
-        
-        // Tenter de resynchroniser les transactions en attente
         PendingTransactionRetryService().retryPendingTransactions();
+      } else if (_api.isAuthenticated) {
+        // Token présent mais pas de données locales → récupérer depuis l'API
+        _user = await _api.getUser().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => null,
+        );
+        if (_user != null) {
+          _isAuthenticated = true;
+          await _saveUserData({'user': _user?.toJson()});
+          await _saveLoginState(true);
+          PendingTransactionRetryService().retryPendingTransactions();
+        }
       }
+    } catch (_) {
+      // En cas d'erreur réseau, rester non authentifié
+      _isAuthenticated = false;
     }
-    
+
     _isLoading = false;
     notifyListeners();
   }
