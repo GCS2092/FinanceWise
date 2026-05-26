@@ -51,7 +51,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   void _onDescriptionChanged() {
-    if (_isEdit) return; // pas de suggestion en édition
+    if (_isEdit) return;
     _aiDebounce?.cancel();
     _aiDebounce = Timer(const Duration(milliseconds: 800), _requestAiSuggestion);
   }
@@ -70,7 +70,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         _aiSuggesting = false;
         _aiSuggestedCategoryId = s!.categoryId;
         _aiSuggestedCategoryName = s.categoryName;
-        // Pré-remplir si l'utilisateur n'a pas encore choisi manuellement
         _categoryId ??= s.categoryId;
       });
     } else {
@@ -105,22 +104,31 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       } else {
         // Valeurs par défaut uniquement pour la création
         if (_wallets.isNotEmpty && _walletId == null) _walletId = _wallets.first['id'];
-        if (_categories.isNotEmpty && _categoryId == null) _categoryId = _categories.first['id'];
+        // On ne pré-sélectionne une catégorie que pour les dépenses
+        if (_type == 'expense' && _categories.isNotEmpty && _categoryId == null) {
+          _categoryId = _categories.first['id'];
+        }
       }
     });
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_walletId == null || _categoryId == null) {
-      setState(() => _error = 'Sélectionne un wallet et une catégorie');
+
+    if (_walletId == null) {
+      setState(() => _error = 'Sélectionne un wallet');
       return;
     }
+    if (_type == 'expense' && _categoryId == null) {
+      setState(() => _error = 'Sélectionne une catégorie');
+      return;
+    }
+
     setState(() => _saving = true);
 
     final body = {
       'wallet_id': _walletId,
-      'category_id': _categoryId,
+      if (_type == 'expense') 'category_id': _categoryId,
       'type': _type,
       'amount': double.tryParse(_amountCtrl.text) ?? 0,
       'description': _descCtrl.text,
@@ -146,7 +154,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
     setState(() => _saving = false);
     if (result != null && result is Map && (result.containsKey('data') || result.containsKey('id'))) {
-      // Notification de succès
       await NotificationService().showNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: _isEdit ? 'Transaction modifiée' : 'Transaction créée',
@@ -159,7 +166,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _pickDate() async {
-    final d = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime(2020), lastDate: DateTime.now());
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
     if (d != null) setState(() => _date = d);
   }
 
@@ -199,7 +211,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                         ButtonSegment(value: 'expense', label: Text('Dépense'), icon: Icon(Icons.arrow_downward)),
                       ],
                       selected: {_type},
-                      onSelectionChanged: (s) => setState(() => _type = s.first),
+                      onSelectionChanged: (s) => setState(() {
+                        _type = s.first;
+                        // Reset catégorie si on passe en mode revenu
+                        if (_type == 'income') _categoryId = null;
+                      }),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -210,7 +226,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                         suffixText: 'FCFA',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: (v) => v != null && v.isNotEmpty ? null : 'Montant requis',
                     ),
                     const SizedBox(height: 16),
@@ -225,59 +241,87 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
-                      initialValue: _walletId,
+                      value: _walletId,
                       decoration: InputDecoration(
                         labelText: 'Wallet',
                         prefixIcon: const Icon(Icons.account_balance_wallet),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      items: _wallets.map<DropdownMenuItem<int>>((w) => DropdownMenuItem(value: w['id'] as int, child: Text('${w['name']} (${AppTheme.formatCurrency(w['balance'])})'))).toList(),
+                      items: _wallets
+                          .map<DropdownMenuItem<int>>((w) => DropdownMenuItem(
+                                value: w['id'] as int,
+                                child: Text('${w['name']} (${AppTheme.formatCurrency(w['balance'])})'),
+                              ))
+                          .toList(),
                       onChanged: (v) => setState(() => _walletId = v),
                     ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<int>(
-                      initialValue: _categoryId,
-                      decoration: InputDecoration(
-                        labelText: 'Catégorie',
-                        prefixIcon: const Icon(Icons.category),
-                        suffixIcon: _aiSuggesting
-                            ? const Padding(
-                                padding: EdgeInsets.all(14),
-                                child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5)),
-                              )
-                            : null,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    // Catégorie uniquement pour les dépenses
+                    if (_type == 'expense') ...[
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        value: _categoryId,
+                        decoration: InputDecoration(
+                          labelText: 'Catégorie',
+                          prefixIcon: const Icon(Icons.category),
+                          suffixIcon: _aiSuggesting
+                              ? const Padding(
+                                  padding: EdgeInsets.all(14),
+                                  child: SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                                  ),
+                                )
+                              : null,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: _categories
+                            .map<DropdownMenuItem<int>>((c) => DropdownMenuItem(
+                                  value: c['id'] as int,
+                                  child: Text(c['name']),
+                                ))
+                            .toList(),
+                        onChanged: (v) => setState(() => _categoryId = v),
                       ),
-                      items: _categories.map<DropdownMenuItem<int>>((c) => DropdownMenuItem(value: c['id'] as int, child: Text(c['name']))).toList(),
-                      onChanged: (v) => setState(() => _categoryId = v),
-                    ),
-                    if (_aiSuggestedCategoryName != null && _categoryId != _aiSuggestedCategoryId) ...[
-                      const SizedBox(height: 8),
-                      InkWell(
-                        onTap: _applyAiSuggestion,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.auto_awesome_rounded, size: 16, color: AppTheme.primary),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Suggestion IA : $_aiSuggestedCategoryName',
-                                  style: TextStyle(fontSize: 12.5, color: AppTheme.primary, fontWeight: FontWeight.w600),
+                      if (_aiSuggestedCategoryName != null && _categoryId != _aiSuggestedCategoryId) ...[
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _applyAiSuggestion,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.auto_awesome_rounded, size: 16, color: AppTheme.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Suggestion IA : $_aiSuggestedCategoryName',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              Text('Appliquer', style: TextStyle(fontSize: 11.5, color: AppTheme.primary, fontWeight: FontWeight.w700)),
-                            ],
+                                Text(
+                                  'Appliquer',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                     const SizedBox(height: 16),
                     Card(
@@ -288,7 +332,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                             color: Theme.of(context).colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary, size: 20),
+                          child: Icon(Icons.calendar_today,
+                              color: Theme.of(context).colorScheme.primary, size: 20),
                         ),
                         title: const Text('Date'),
                         subtitle: Text(DateFormat('dd MMMM yyyy', 'fr_FR').format(_date)),
@@ -303,7 +348,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       child: ElevatedButton(
                         onPressed: _saving ? null : _save,
                         child: _saving
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
                             : Text(_isEdit ? 'Enregistrer' : 'Créer'),
                       ),
                     ),
